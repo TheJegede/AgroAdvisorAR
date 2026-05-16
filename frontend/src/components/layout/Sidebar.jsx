@@ -1,0 +1,179 @@
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { useLang } from '../../contexts/LangContext'
+import { useSessions } from '../../hooks/useSessions'
+import { useProfile } from '../../hooks/useProfile'
+
+export default function Sidebar({ open, onClose }) {
+  const { logout } = useAuth()
+  const { lang, setLang, t } = useLang()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { listSessions } = useSessions()
+  const { profile } = useProfile()
+  const [sessions, setSessions] = useState([])
+
+  // Reload sessions on every navigation so new sessions appear
+  useEffect(() => {
+    listSessions()
+      .then(setSessions)
+      .catch(() => {})
+  }, [location.key])
+
+  function handleLogout() {
+    logout()
+    navigate('/login')
+  }
+
+  const initials = profile?.full_name
+    ? profile.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'F'
+
+  const currentSessionId = new URLSearchParams(location.search).get('session')
+  const isNewChat = location.pathname === '/' && !currentSessionId
+
+  return (
+    <>
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={[
+          'flex flex-col w-64 flex-shrink-0 bg-field-dark',
+          'fixed inset-y-0 left-0 z-30 transition-transform duration-200 ease-in-out',
+          open ? 'translate-x-0' : '-translate-x-full',
+          'md:static md:translate-x-0',
+        ].join(' ')}
+      >
+        {/* Brand */}
+        <div className="px-5 pt-6 pb-4 flex-shrink-0">
+          <p className="text-xl font-bold text-white tracking-tight">{t.appName}</p>
+          <p className="text-xs text-field-light mt-0.5">Arkansas Farming</p>
+        </div>
+
+        {/* New Chat button */}
+        <div className="px-4 pb-4 flex-shrink-0">
+          <button
+            onClick={() => { navigate('/'); onClose?.() }}
+            className="w-full border border-white/30 text-white rounded-lg py-2.5 text-sm font-medium
+              hover:bg-white/10 transition-colors flex items-center justify-center gap-2 min-h-touch"
+          >
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            {t.newChat}
+          </button>
+        </div>
+
+        {/* Nav + sessions */}
+        <nav className="px-2 flex-1 flex flex-col overflow-hidden min-h-0">
+          {/* New Chat nav item */}
+          <Link
+            to="/"
+            onClick={onClose}
+            className={[
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors flex-shrink-0',
+              isNewChat
+                ? 'bg-white/15 text-white border-l-2 border-white'
+                : 'text-white/70 hover:bg-white/10 hover:text-white',
+            ].join(' ')}
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            {t.newChat}
+          </Link>
+
+          {/* Recent conversations header */}
+          <div className="flex items-center gap-2 px-3 py-2 mt-2 flex-shrink-0">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="text-white/50">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">
+              {t.recentConversations}
+            </span>
+          </div>
+
+          {/* Sessions list */}
+          <div className="flex-1 overflow-y-auto flex flex-col gap-0.5 min-h-0 pb-2">
+            {sessions.length === 0 ? (
+              <p className="text-xs text-white/30 px-3 py-1.5">{t.noSessions}</p>
+            ) : (
+              sessions.slice(0, 12).map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => { navigate(`/?session=${s.id}`); onClose?.() }}
+                  className={[
+                    'text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ml-1',
+                    currentSessionId === s.id
+                      ? 'bg-white/15 text-white'
+                      : 'text-white/60 hover:bg-white/10 hover:text-white/90',
+                  ].join(' ')}
+                >
+                  {s.preview || t.newChat}
+                </button>
+              ))
+            )}
+          </div>
+        </nav>
+
+        {/* Bottom navigation items */}
+        <div className="px-2 pt-2 border-t border-white/10 flex-shrink-0">
+          <Link
+            to="/profile"
+            onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {t.settings}
+          </Link>
+
+          <button
+            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M3 12a8.959 8.959 0 01.284-2.253" />
+            </svg>
+            {t.languages} ({lang.toUpperCase()})
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+            </svg>
+            {t.logout}
+          </button>
+        </div>
+
+        {/* User profile footer */}
+        <div className="px-4 py-3 flex items-center gap-3 flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-harvest-dark flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-white text-sm font-medium truncate">
+              {profile?.full_name || 'Farmer'}
+            </p>
+            <p className="text-white/40 text-xs">{t.farmer}</p>
+          </div>
+        </div>
+      </aside>
+    </>
+  )
+}

@@ -1,0 +1,34 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
+PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod")
+UPSTASH_REDIS_REST_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+UPSTASH_REDIS_REST_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+EMBEDDING_MODEL_PATH = os.environ.get(
+    "EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2"
+)
+
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_ANON_KEY = os.environ["SUPABASE_ANON_KEY"]
+SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
+SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
+JWT_ALGORITHM = "HS256"
+
+GEMINI_PRIMARY_MODEL = "gemini-2.5-flash"
+GEMINI_CLASSIFIER_MODEL = "gemini-2.5-flash-lite"
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_CLASSIFIER_MODEL = "llama-3.3-70b-versatile"
+
+SSURGO_ENDPOINT = "https://sdmdataaccess.sc.egov.usda.gov/tabular/post.rest"
+NOAA_POINTS_URL = "https://api.weather.gov/points/{lat},{lon}"
+NOAA_USER_AGENT = "AgroAdvisor AR (jegedetaiwo95@gmail.com)"
+
+REDIS_TTL_SECONDS = 6 * 60 * 60  # 6 hours
+RATE_LIMIT_PER_HOUR = 20
+TOP_K_RETRIEVAL = 5
+MAX_HISTORY_EXCHANGES = 10

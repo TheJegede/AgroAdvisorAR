@@ -1,0 +1,74 @@
+"""Session and message CRUD. Uses the service-role Supabase client (bypasses RLS).
+Always filter by user_id manually in read operations to prevent cross-user data leaks."""
+from datetime import datetime, timezone
+from services.user import _get_service_client
+
+
+def create_session(user_id: str, preview: str) -> dict:
+    result = _get_service_client().table("chat_sessions").insert({
+        "user_id": user_id,
+        "preview": preview[:100].strip(),
+    }).execute()
+    if not result.data:
+        raise RuntimeError(f"Session insert returned no data for user {user_id}")
+    return result.data[0]
+
+
+def get_sessions(user_id: str, limit: int = 20) -> list[dict]:
+    result = (
+        _get_service_client()
+        .table("chat_sessions")
+        .select("*")
+        .eq("user_id", user_id)
+        .order("last_message_at", desc=True)
+        .limit(limit)
+        .execute()
+    )
+    return result.data
+
+
+def add_message(
+    session_id: str,
+    user_id: str,
+    role: str,
+    content: str,
+    content_type: str,
+) -> dict:
+    client = _get_service_client()
+    result = client.table("chat_messages").insert({
+        "session_id": session_id,
+        "user_id": user_id,
+        "role": role,
+        "content": content,
+        "content_type": content_type,
+    }).execute()
+    if not result.data:
+        raise RuntimeError(f"Message insert returned no data for session {session_id}")
+    now = datetime.now(timezone.utc).isoformat()
+    client.table("chat_sessions").update({
+        "last_message_at": now,
+    }).eq("id", session_id).execute()
+    return result.data[0]
+
+
+def get_messages(session_id: str, user_id: str) -> list[dict] | None:
+    client = _get_service_client()
+    # Manual user_id check because service client bypasses RLS
+    ownership = (
+        client.table("chat_sessions")
+        .select("id")
+        .eq("id", session_id)
+        .eq("user_id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    if ownership.data is None:
+        return None  # not found or not owned by this user
+    result = (
+        client.table("chat_messages")
+        .select("*")
+        .eq("session_id", session_id)
+        .order("created_at", desc=False)
+        .execute()
+    )
+    return result.data
