@@ -65,7 +65,7 @@ export default function ProfileForm() {
         value={form.county_fips} onChange={set('county_fips')} />
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-charcoal">{t.primaryCrops}</p>
+        <p className="text-sm font-medium text-charcoal dark:text-hc-fg">{t.primaryCrops}</p>
         <CropCheckboxGroup
           value={form.primary_crops}
           onChange={(crops) => setForm((f) => ({ ...f, primary_crops: crops }))}
@@ -73,15 +73,15 @@ export default function ProfileForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-charcoal">{t.languagePref}</p>
+        <p className="text-sm font-medium text-charcoal dark:text-hc-fg">{t.languagePref}</p>
         <div className="flex gap-4">
           {['en', 'es'].map((l) => (
             <label key={l} className="flex items-center gap-2 cursor-pointer min-h-touch">
               <input type="radio" name="language" value={l}
                 checked={form.language === l}
                 onChange={() => setForm((f) => ({ ...f, language: l }))}
-                className="accent-field w-5 h-5" />
-              <span className="text-base">{l === 'en' ? 'English' : 'Espanol'}</span>
+                className="accent-field dark:accent-hc-fg w-5 h-5" />
+              <span className="text-base dark:text-hc-fg">{l === 'en' ? 'English' : 'Espanol'}</span>
             </label>
           ))}
         </div>

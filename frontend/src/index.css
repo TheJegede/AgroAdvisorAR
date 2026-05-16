@@ -10,6 +10,37 @@ body {
   margin: 0;
 }
 
+/* High-contrast mode: global focus ring + text/bg defaults */
+[data-theme="hc"] {
+  color: #000000;
+  background-color: #FFFFFF;
+}
+[data-theme="hc"] *:focus-visible {
+  outline: 3px solid #FFD700 !important;
+  outline-offset: 2px !important;
+}
+[data-theme="hc"] ::placeholder {
+  color: #4A4A4A !important;
+  opacity: 1;
+}
+
+/* HC: force full-opacity whites inside the black sidebar (overrides text-white/70 etc) */
+[data-theme="hc"] aside p,
+[data-theme="hc"] aside span,
+[data-theme="hc"] aside a,
+[data-theme="hc"] aside button {
+  color: #FFFFFF !important;
+}
+[data-theme="hc"] aside a:hover,
+[data-theme="hc"] aside button:hover {
+  background-color: #FFD700 !important;
+  color: #000000 !important;
+}
+[data-theme="hc"] aside a:hover *,
+[data-theme="hc"] aside button:hover * {
+  color: #000000 !important;
+}
+
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;

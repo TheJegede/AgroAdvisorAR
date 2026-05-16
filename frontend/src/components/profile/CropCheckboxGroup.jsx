@@ -22,9 +22,9 @@ export default function CropCheckboxGroup({ value = [], onChange }) {
             type="checkbox"
             checked={value.includes(crop.value)}
             onChange={() => toggle(crop.value)}
-            className="w-5 h-5 accent-field"
+            className="w-5 h-5 accent-field dark:accent-hc-fg"
           />
-          <span className="text-base text-charcoal">{crop[lang]}</span>
+          <span className="text-base text-charcoal dark:text-hc-fg">{crop[lang]}</span>
         </label>
       ))}
     </div>

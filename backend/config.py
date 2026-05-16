@@ -13,6 +13,15 @@ EMBEDDING_MODEL_PATH = os.environ.get(
     "EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2"
 )
 
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+CORS_ORIGINS: list[str] = [
+    origin.strip()
+    for origin in os.environ.get(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",")
+    if origin.strip()
+]
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_ANON_KEY = os.environ["SUPABASE_ANON_KEY"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]

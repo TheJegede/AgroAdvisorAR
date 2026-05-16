@@ -1,10 +1,10 @@
 import { useState } from 'react'
 
 const VARIANTS = {
-  info:    'bg-blue-50 border-blue-300 text-blue-800',
-  warning: 'bg-harvest/10 border-harvest text-charcoal',
-  error:   'bg-arred/10 border-arred text-arred-dark',
-  success: 'bg-field/10 border-field text-field-dark',
+  info:    'bg-blue-50 border-blue-300 text-blue-800 dark:bg-hc-bg dark:border-hc-border dark:border-2 dark:text-hc-fg',
+  warning: 'bg-harvest/10 border-harvest text-charcoal dark:bg-hc-bg dark:border-hc-border dark:border-2 dark:text-hc-fg',
+  error:   'bg-arred/10 border-arred text-arred-dark dark:bg-hc-bg dark:border-hc-danger dark:border-2 dark:text-hc-danger',
+  success: 'bg-field/10 border-field text-field-dark dark:bg-hc-bg dark:border-hc-accent dark:border-2 dark:text-hc-accent',
 }
 
 export default function Alert({ variant = 'info', children, dismissible = false, className = '' }) {

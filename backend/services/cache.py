@@ -1,6 +1,9 @@
 import json
+import logging
 from upstash_redis import Redis
 import config
+
+logger = logging.getLogger(__name__)
 
 _redis: Redis | None = None
 
@@ -23,6 +26,7 @@ def cache_get(key: str) -> dict | None:
         val = client.get(key)
         return json.loads(val) if val else None
     except Exception:
+        logger.exception("Redis cache_get failed for key %s", key)
         return None
 
 
@@ -33,7 +37,7 @@ def cache_set(key: str, value: dict, ttl: int = config.REDIS_TTL_SECONDS) -> Non
     try:
         client.set(key, json.dumps(value), ex=ttl)
     except Exception:
-        pass
+        logger.exception("Redis cache_set failed for key %s", key)
 
 
 def rate_limit_hit(key: str, limit: int, window_seconds: int) -> tuple[bool, int]:
@@ -53,4 +57,5 @@ def rate_limit_hit(key: str, limit: int, window_seconds: int) -> tuple[bool, int
         remaining = max(0, limit - count)
         return count <= limit, remaining
     except Exception:
+        logger.exception("Redis rate_limit_hit failed for key %s", key)
         return True, limit

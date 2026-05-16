@@ -7,11 +7,15 @@ appends a row to the `eval_runs` Supabase table. The admin dashboard
 ## What the workflow does
 
 1. Checks out the repo
-2. Installs Python 3.11 + `evals/requirements.txt`
-3. Embeds every query in `evals/eval_set_v2.jsonl` with the base
-   `sentence-transformers/all-MiniLM-L6-v2` model
-4. Queries Pinecone top-5 per query, computes MRR@5 + NDCG@5 + Hit@1 + Hit@5
-5. Writes one row to `public.eval_runs` (service-role key, bypasses RLS)
+2. Installs Python 3.11 + `evals/requirements.txt` + `backend/requirements.txt`
+3. **Retrieval eval (always runs):** embeds every query in
+   `evals/eval_set_v2.jsonl` with the base `all-MiniLM-L6-v2`, queries
+   Pinecone top-5, computes MRR@5 + NDCG@5 + Hit@1 + Hit@5
+4. **Answer eval (when `RUN_ANSWER_EVAL=1`):** samples 20 items, runs the
+   full RAG chain on each (Gemini → Groq fallback), then judges each
+   advisory against the gold chunk with Groq llama-3.3-70b. Average ×100
+   → `answer_correct_pct`
+5. Writes a single row to `public.eval_runs` containing all metrics
 6. Uploads the JSON result as a workflow artifact (retained 30 days)
 
 Trigger:
@@ -21,18 +25,31 @@ Trigger:
 
 ## Required GitHub secrets
 
-Add the following at GitHub → repo → Settings → Secrets and variables →
-Actions → "New repository secret":
+Add at GitHub → repo → Settings → Secrets and variables → Actions →
+"New repository secret":
 
-| Name                  | Value                                                 |
-|-----------------------|-------------------------------------------------------|
+**Always required (retrieval eval):**
+
+| Name                  | Value                                                  |
+|-----------------------|--------------------------------------------------------|
 | `PINECONE_API_KEY`    | Same as your `.env` value                              |
 | `PINECONE_INDEX_NAME` | `agroar-prod`                                          |
 | `SUPABASE_URL`        | `https://fxncwvrplzlhrmbxvrfu.supabase.co`             |
 | `SUPABASE_SERVICE_KEY`| The `sb_secret_…` key (service role — bypasses RLS)    |
 
-Do not paste these into the workflow file. Secrets are encrypted at rest and
-injected into the runner only when the job runs.
+**Additional secrets for answer eval (`RUN_ANSWER_EVAL=1`):**
+
+| Name                       | Value                                                  |
+|----------------------------|--------------------------------------------------------|
+| `GOOGLE_API_KEY`           | Google AI Studio key (Gemini)                          |
+| `GROQ_API_KEY`             | Groq key (used by judge + Gemini fallback)             |
+| `SUPABASE_ANON_KEY`        | The `sb_publishable_…` key                             |
+| `SUPABASE_JWT_SECRET`      | JWT secret from your `.env`                            |
+| `UPSTASH_REDIS_REST_URL`   | Upstash Redis REST URL (optional but recommended)      |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token (optional)                    |
+
+Secrets are encrypted at rest and injected into the runner only when the
+job runs.
 
 ## Interpreting failures
 
@@ -119,9 +136,31 @@ To replicate what CI does, set the same env vars and run:
 
 ```bash
 EVAL_WRITE_TO_DB=1 \
+RUN_ANSWER_EVAL=1 \
 EMBEDDING_MODEL_PATH=sentence-transformers/all-MiniLM-L6-v2 \
 python evals/eval_runner.py --eval-set evals/eval_set_v2.jsonl
 ```
 
 By default (`EVAL_WRITE_TO_DB` unset), local runs only write to
 `evals/results/`. The `eval_runs` Supabase table is left alone.
+
+To run only the answer-eval portion (skip retrieval), invoke the script
+directly:
+
+```bash
+GROQ_API_KEY=... python evals/answer_eval.py --sample 20
+```
+
+This is useful for spot-checking judge behavior or tuning the rubric
+without burning a full retrieval run.
+
+## Tuning answer eval
+
+- `ANSWER_EVAL_SAMPLE` env var (default 20): how many eval items to sample
+  per run. Lower for cost, higher for tighter confidence intervals.
+- `JUDGE_MODEL` env var (default `llama-3.3-70b-versatile`): change the
+  Groq judge model. Use a smaller model for cheaper-but-noisier scoring.
+- The score rubric (`evals/judge.py:JUDGE_USER_TEMPLATE`) hands out
+  `1.0 / 0.5 / 0.0` only. Easy to widen to a finer scale; you would then
+  multiply by 100 inside `score_corpus` to keep `answer_correct_pct` in
+  the same numeric(4,1) range.

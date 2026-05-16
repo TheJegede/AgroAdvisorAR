@@ -1,10 +1,13 @@
 """SSURGO soil data + NOAA weather context injection service."""
 import asyncio
 import json
+import logging
 import httpx
 from utils.counties import get_county_info, fips_to_areasymbol
 from services.cache import cache_get, cache_set
 import config
+
+logger = logging.getLogger(__name__)
 
 SSURGO_QUERY = """
 SELECT TOP 1
@@ -68,6 +71,7 @@ async def fetch_ssurgo(fips: str) -> dict:
             "flood_frequency": row.get("flood_frequency"),
         }
     except Exception:
+        logger.exception("SSURGO context fetch failed for fips %s", fips)
         return _unavailable()
 
     cache_set(cache_key, result)
@@ -124,6 +128,7 @@ async def fetch_noaa(fips: str) -> dict:
             "forecast_7day": daily,
         }
     except Exception:
+        logger.exception("NOAA context fetch failed for fips %s", fips)
         return _unavailable()
 
     cache_set(cache_key, result)

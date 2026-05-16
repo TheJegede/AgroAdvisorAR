@@ -10,12 +10,12 @@ export default function ConfidenceExplainer({ explanation }) {
     <div className="mt-1">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-xs text-gray-500 underline min-h-touch flex items-center"
+        className="text-xs text-gray-500 dark:text-hc-fg underline min-h-touch flex items-center"
       >
         {t.whyConfidence}
       </button>
       {open && (
-        <p className="text-xs text-gray-600 italic mt-1 leading-relaxed">{explanation}</p>
+        <p className="text-xs text-gray-600 dark:text-hc-fg italic mt-1 leading-relaxed">{explanation}</p>
       )}
     </div>
   )

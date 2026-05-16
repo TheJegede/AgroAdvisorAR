@@ -1,9 +1,19 @@
 """Auth endpoints — proxies to Supabase GoTrue for token issuance."""
+import logging
+
 from fastapi import APIRouter, HTTPException, status
 from supabase import create_client, Client
-from models.user import LoginRequest, RegisterRequest, TokenResponse
+from models.user import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+)
 from services.user import create_profile
 import config
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -51,6 +61,36 @@ async def register(body: RegisterRequest):
         access_token=auth_resp.session.access_token,
         refresh_token=auth_resp.session.refresh_token,
     )
+
+
+@router.post("/forgot", status_code=status.HTTP_200_OK)
+async def forgot_password(body: ForgotPasswordRequest):
+    """Send a password-reset email via Supabase. Always returns 200 to prevent email enumeration."""
+    client = _get_anon_client()
+    try:
+        client.auth.reset_password_email(
+            body.email,
+            {"redirect_to": f"{config.FRONTEND_URL}/reset-password"},
+        )
+    except Exception as e:
+        logger.warning("reset_password_email failed for %s: %s", body.email, e)
+    return {"detail": "If an account with that email exists, a reset link has been sent."}
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(body: ResetPasswordRequest):
+    """Apply a new password using the recovery tokens from the magic link."""
+    client = create_client(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
+    try:
+        client.auth.set_session(body.access_token, body.refresh_token)
+        client.auth.update_user({"password": body.new_password})
+    except Exception as e:
+        logger.warning("reset_password failed: %s", e)
+        raise HTTPException(
+            status_code=400,
+            detail="Reset link is invalid or expired. Request a new one.",
+        )
+    return {"detail": "Password updated. You can now log in."}
 
 
 @router.post("/login", response_model=TokenResponse)

@@ -1,7 +1,7 @@
 export default function Spinner({ size = 24, className = '' }) {
   return (
     <svg
-      className={`animate-spin text-field ${className}`}
+      className={`animate-spin text-field dark:text-hc-fg ${className}`}
       width={size}
       height={size}
       viewBox="0 0 24 24"

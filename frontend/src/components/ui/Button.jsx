@@ -1,10 +1,10 @@
 import Spinner from './Spinner'
 
 const VARIANTS = {
-  primary:   'bg-field text-white hover:bg-field-dark active:bg-field-dark',
-  secondary: 'bg-harvest text-charcoal hover:bg-harvest-dark active:bg-harvest-dark',
-  danger:    'bg-arred text-white hover:bg-arred-dark active:bg-arred-dark',
-  ghost:     'bg-transparent text-field border border-field hover:bg-field/10',
+  primary:   'bg-field text-white hover:bg-field-dark active:bg-field-dark dark:bg-hc-accent dark:text-hc-accent-fg dark:border-2 dark:border-hc-border dark:hover:bg-hc-fg',
+  secondary: 'bg-harvest text-charcoal hover:bg-harvest-dark active:bg-harvest-dark dark:bg-hc-bg dark:text-hc-fg dark:border-2 dark:border-hc-border dark:hover:bg-hc-muted dark:hover:text-hc-bg',
+  danger:    'bg-arred text-white hover:bg-arred-dark active:bg-arred-dark dark:bg-hc-danger dark:text-hc-danger-fg dark:border-2 dark:border-hc-border',
+  ghost:     'bg-transparent text-field border border-field hover:bg-field/10 dark:text-hc-fg dark:border-2 dark:border-hc-border dark:hover:bg-hc-fg dark:hover:text-hc-bg',
 }
 
 const SIZES = {

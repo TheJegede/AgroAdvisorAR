@@ -118,14 +118,14 @@ export default function ChatPage() {
         /* Empty state — centered welcome */
         <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6 text-center">
           <div>
-            <div className="w-14 h-14 rounded-2xl bg-field flex items-center justify-center mx-auto mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-field dark:bg-hc-accent dark:border-2 dark:border-hc-border flex items-center justify-center mx-auto mb-4">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round"
                   d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-charcoal mb-1">{t.appName}</h1>
-            <p className="text-sm text-gray-500">{t.welcomeHeading}</p>
+            <h1 className="text-xl font-bold text-charcoal dark:text-hc-fg mb-1">{t.appName}</h1>
+            <p className="text-sm text-gray-500 dark:text-hc-fg">{t.welcomeHeading}</p>
           </div>
           <div className="flex flex-wrap gap-2 justify-center max-w-md">
             {examples.map((q) => (
@@ -135,7 +135,8 @@ export default function ChatPage() {
                 disabled={streaming}
                 className="text-sm bg-white border border-gray-200 rounded-full px-4 py-2
                   hover:border-field hover:bg-field/5 transition-colors text-gray-600
-                  min-h-touch disabled:opacity-50"
+                  min-h-touch disabled:opacity-50
+                  dark:bg-hc-bg dark:text-hc-fg dark:border-2 dark:border-hc-border dark:hover:bg-hc-fg dark:hover:text-hc-bg"
               >
                 {q}
               </button>
@@ -156,7 +157,8 @@ export default function ChatPage() {
               disabled={streaming}
               className="flex-shrink-0 text-xs bg-white border border-gray-200 rounded-full px-3 py-1.5
                 hover:border-field hover:bg-field/5 transition-colors text-gray-600
-                disabled:opacity-50"
+                disabled:opacity-50
+                dark:bg-hc-bg dark:text-hc-fg dark:border-2 dark:border-hc-border dark:hover:bg-hc-fg dark:hover:text-hc-bg"
             >
               {q}
             </button>

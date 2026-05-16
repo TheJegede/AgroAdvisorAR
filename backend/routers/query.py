@@ -1,22 +1,30 @@
 """POST /api/v1/query — core query endpoint with SSE streaming."""
 import json
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from services.auth import get_current_user
 from services.classifier import classify_query
 from services.rag import run_rag_query
 from services.session import add_message as save_message
 from services.user import get_profile
+from services.cache import rate_limit_hit
+from services.sanitizer import sanitize, InjectionDetected
 from utils.prompt import OUT_OF_SCOPE_MESSAGE
+import config
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+# Sliding-window query rate limit per authenticated user.
+QUERY_WINDOW_SECONDS = 3600
 
 
 class QueryRequest(BaseModel):
     message: str
     language: str = "en"
-    session_history: list[dict] = []
+    session_history: list[dict] = Field(default_factory=list)
     session_id: str | None = None
 
 
@@ -33,6 +41,29 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
 
     if len(req.message) > 800:
         raise HTTPException(status_code=400, detail="message exceeds 800 character limit")
+
+    # Rate limit before any LLM call to cap free-tier abuse.
+    allowed, _remaining = rate_limit_hit(
+        f"query_throttle:{user['sub']}",
+        config.RATE_LIMIT_PER_HOUR,
+        QUERY_WINDOW_SECONDS,
+    )
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"You have reached the {config.RATE_LIMIT_PER_HOUR}-queries-per-hour "
+                "limit. Please try again later."
+            ),
+            headers={"Retry-After": str(QUERY_WINDOW_SECONDS)},
+        )
+
+    # Strip / reject prompt-injection attempts before the message reaches the
+    # classifier and RAG chain. Mutates req.message to the sanitized form.
+    try:
+        req.message = sanitize(req.message)
+    except InjectionDetected as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     profile = get_profile(user["sub"])
     if profile is None:
@@ -54,7 +85,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 )
                 oos_message_id = oos_row["id"]
             except Exception:
-                pass  # persistence failure must never break the response
+                logger.exception("Failed to persist out-of-scope query response")
         return OutOfScopeResponse(
             message=OUT_OF_SCOPE_MESSAGE,
             category=category,
@@ -83,7 +114,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                     )
                     assistant_message_id = assistant_row["id"]
                 except Exception:
-                    pass  # persistence failure must never break the advisory response
+                    logger.exception("Failed to persist advisory query response")
 
             envelope = {
                 "advisory": result.model_dump(),

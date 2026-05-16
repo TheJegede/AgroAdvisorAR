@@ -43,14 +43,14 @@ export default function FeedbackWidget({ messageId }) {
   }
 
   return (
-    <div className="mt-4 pt-3 border-t border-gray-100 text-sm">
+    <div className="mt-4 pt-3 border-t border-gray-100 dark:border-t-2 dark:border-hc-border text-sm">
       {status === 'done' ? (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-gray-500">{t.feedbackThanks}</span>
+          <span className="text-gray-500 dark:text-hc-fg">{t.feedbackThanks}</span>
           <button
             type="button"
             onClick={resetForNewSubmission}
-            className="text-xs text-field hover:underline"
+            className="text-xs text-field dark:text-hc-accent font-bold hover:underline"
           >
             {t.feedbackPrompt}
           </button>
@@ -58,7 +58,7 @@ export default function FeedbackWidget({ messageId }) {
       ) : (
         <>
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-gray-600">{t.feedbackPrompt}</span>
+            <span className="text-gray-600 dark:text-hc-fg">{t.feedbackPrompt}</span>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -67,10 +67,10 @@ export default function FeedbackWidget({ messageId }) {
                 onClick={() => chooseRating(1)}
                 disabled={submitting}
                 className={
-                  'w-9 h-9 rounded-full border flex items-center justify-center transition-colors ' +
+                  'w-9 h-9 rounded-full border flex items-center justify-center transition-colors dark:border-2 ' +
                   (pendingRating === 1
-                    ? 'bg-field text-white border-field'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-field hover:text-field')
+                    ? 'bg-field text-white border-field dark:bg-hc-accent dark:text-hc-accent-fg dark:border-hc-border'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-field hover:text-field dark:bg-hc-bg dark:text-hc-fg dark:border-hc-border dark:hover:bg-hc-accent dark:hover:text-hc-accent-fg')
                 }
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -85,10 +85,10 @@ export default function FeedbackWidget({ messageId }) {
                 onClick={() => chooseRating(-1)}
                 disabled={submitting}
                 className={
-                  'w-9 h-9 rounded-full border flex items-center justify-center transition-colors ' +
+                  'w-9 h-9 rounded-full border flex items-center justify-center transition-colors dark:border-2 ' +
                   (pendingRating === -1
-                    ? 'bg-arred text-white border-arred'
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-arred hover:text-arred')
+                    ? 'bg-arred text-white border-arred dark:bg-hc-danger dark:text-hc-danger-fg dark:border-hc-border'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-arred hover:text-arred dark:bg-hc-bg dark:text-hc-fg dark:border-hc-border dark:hover:bg-hc-danger dark:hover:text-hc-danger-fg')
                 }
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -105,9 +105,10 @@ export default function FeedbackWidget({ messageId }) {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder={t.feedbackCommentPlaceholder}
+                aria-label={t.feedbackCommentPlaceholder}
                 maxLength={500}
                 rows={2}
-                className="w-full text-sm border border-gray-200 rounded-md px-3 py-2
+                className="w-full text-sm border border-gray-200 dark:border-2 dark:border-hc-border dark:bg-hc-bg dark:text-hc-fg rounded-md px-3 py-2
                   focus:outline-none focus:ring-2 focus:ring-field/40 focus:border-field
                   resize-none"
               />
@@ -116,13 +117,14 @@ export default function FeedbackWidget({ messageId }) {
                   type="button"
                   onClick={handleSend}
                   disabled={submitting}
-                  className="bg-field text-white text-sm font-medium rounded-md px-4 py-1.5
-                    hover:bg-field/90 disabled:opacity-50 min-h-touch"
+                  className="bg-field text-white text-sm font-bold rounded-md px-4 py-1.5
+                    hover:bg-field/90 disabled:opacity-50 min-h-touch
+                    dark:bg-hc-accent dark:text-hc-accent-fg dark:border-2 dark:border-hc-border"
                 >
                   {submitting ? t.feedbackSubmitting : t.feedbackSubmit}
                 </button>
                 {status === 'error' && (
-                  <span className="text-xs text-arred">{errorMsg}</span>
+                  <span className="text-xs text-arred dark:text-hc-danger font-bold">{errorMsg}</span>
                 )}
               </div>
             </div>

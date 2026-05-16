@@ -12,7 +12,7 @@ Supabase logging: set EVAL_WRITE_TO_DB=1 (CI default) to append a row to
 the eval_runs table. Local CLI runs default to off so they don't pollute the
 dashboard with experiments.
 """
-import os, json, math, argparse
+import os, json, math, argparse, sys
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
@@ -33,11 +33,38 @@ RESULTS_DIR = Path(__file__).parent / "results"
 TOP_K = 5
 
 EVAL_WRITE_TO_DB = os.environ.get("EVAL_WRITE_TO_DB", "0") == "1"
+RUN_ANSWER_EVAL = os.environ.get("RUN_ANSWER_EVAL", "0") == "1"
+ANSWER_EVAL_SAMPLE = int(os.environ.get("ANSWER_EVAL_SAMPLE", "20"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+EVAL_FAIL_CI_ON_STATUS = {
+    s.strip()
+    for s in os.environ.get("EVAL_FAIL_CI_ON_STATUS", "failed").split(",")
+    if s.strip()
+}
 
 
-def _write_to_supabase(summary: dict) -> None:
+def _maybe_run_answer_eval(eval_set_path: Path) -> tuple[float | None, str, str | None]:
+    """Optionally run LLM-as-judge answer correctness eval."""
+    if not RUN_ANSWER_EVAL:
+        return None, "not_run", None
+    try:
+        import asyncio
+        from answer_eval import score_corpus
+        print(f"\nRunning answer eval on {ANSWER_EVAL_SAMPLE} sampled items...")
+        result = asyncio.run(score_corpus(
+            eval_set_path=eval_set_path,
+            sample_size=ANSWER_EVAL_SAMPLE,
+            verbose=True,
+        ))
+        print(f"\nAnswer eval: {result}")
+        return result["answer_correct_pct"], "ok", None
+    except Exception as e:
+        print(f"Answer eval failed: {e}")
+        return None, "failed", str(e)
+
+
+def _write_to_supabase(summary: dict, answer_pct: float | None) -> None:
     """Insert an eval_runs row. Silent no-op if Supabase env vars missing."""
     if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
         print("Skipping Supabase write — SUPABASE_URL / SUPABASE_SERVICE_KEY not set")
@@ -48,9 +75,13 @@ def _write_to_supabase(summary: dict) -> None:
         client.table("eval_runs").insert({
             "mrr_at_5": summary["mrr_at_5"],
             "ndcg_at_5": summary["ndcg_at_5"],
-            "answer_correct_pct": None,
+            "answer_correct_pct": answer_pct,
             "total_items": summary["n_items"],
             "model_version": summary["model"],
+            "retrieval_status": summary["retrieval_status"],
+            "answer_status": summary["answer_status"],
+            "run_status": summary["run_status"],
+            "error_message": summary.get("error_message"),
         }).execute()
         print("Wrote eval_runs row to Supabase")
     except Exception as e:
@@ -110,7 +141,22 @@ def run_eval(eval_set_path: Path = DEFAULT_EVAL_SET) -> dict:
         "ndcg_at_5": round(sum(ndcg_scores) / n, 4),
         "hit_at_1": round(hits1 / n, 4),
         "hit_at_5": round(hits5 / n, 4),
+        "retrieval_status": "ok",
+        "answer_status": "not_run",
+        "run_status": "ok",
+        "error_message": None,
     }
+
+    answer_pct, answer_status, answer_error = _maybe_run_answer_eval(eval_set_path)
+    summary["answer_status"] = answer_status
+    if answer_pct is not None:
+        summary["answer_correct_pct"] = answer_pct
+    if answer_error:
+        summary["error_message"] = answer_error
+    if summary["retrieval_status"] == "failed":
+        summary["run_status"] = "failed"
+    elif answer_status == "failed":
+        summary["run_status"] = "partial"
 
     print("\n=== EVAL RESULTS ===")
     for k, v in summary.items():
@@ -123,7 +169,7 @@ def run_eval(eval_set_path: Path = DEFAULT_EVAL_SET) -> dict:
     print(f"\nSaved -> {out}")
 
     if EVAL_WRITE_TO_DB:
-        _write_to_supabase(summary)
+        _write_to_supabase(summary, answer_pct)
 
     return summary
 
@@ -133,4 +179,25 @@ if __name__ == "__main__":
     parser.add_argument("--eval-set", type=Path, default=DEFAULT_EVAL_SET,
                         help="Path to eval_set.jsonl (default: evals/eval_set.jsonl)")
     args = parser.parse_args()
-    run_eval(args.eval_set)
+    try:
+        eval_summary = run_eval(args.eval_set)
+    except Exception as e:
+        eval_summary = {
+            "model": EMBEDDING_MODEL_PATH,
+            "timestamp": datetime.utcnow().isoformat(),
+            "n_items": 0,
+            "mrr_at_5": None,
+            "ndcg_at_5": None,
+            "hit_at_1": None,
+            "hit_at_5": None,
+            "retrieval_status": "failed",
+            "answer_status": "not_run",
+            "run_status": "failed",
+            "error_message": str(e),
+        }
+        print(f"Eval failed: {e}")
+        if EVAL_WRITE_TO_DB:
+            _write_to_supabase(eval_summary, None)
+
+    if eval_summary["run_status"] in EVAL_FAIL_CI_ON_STATUS:
+        sys.exit(1)

@@ -2,7 +2,7 @@ export default function Select({ label, id, options = [], error, className = '',
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
-        <label htmlFor={id} className="text-sm font-medium text-charcoal">
+        <label htmlFor={id} className="text-sm font-medium text-charcoal dark:text-hc-fg">
           {label}
         </label>
       )}
@@ -11,7 +11,8 @@ export default function Select({ label, id, options = [], error, className = '',
         className={`
           w-full rounded-lg border px-4 py-3 text-base text-charcoal bg-white
           focus:outline-none focus:ring-2 focus:ring-field min-h-touch
-          ${error ? 'border-arred focus:ring-arred' : 'border-gray-300'}
+          dark:bg-hc-bg dark:text-hc-fg dark:border-2 dark:border-hc-border
+          ${error ? 'border-arred focus:ring-arred dark:border-hc-danger' : 'border-gray-300'}
         `}
         {...rest}
       >
@@ -22,7 +23,7 @@ export default function Select({ label, id, options = [], error, className = '',
           </option>
         ))}
       </select>
-      {error && <p className="text-sm text-arred">{error}</p>}
+      {error && <p className="text-sm text-arred dark:text-hc-danger font-bold">{error}</p>}
     </div>
   )
 }

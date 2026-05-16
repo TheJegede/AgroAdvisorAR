@@ -1,9 +1,12 @@
 """JWT validation and FastAPI auth dependency."""
+import logging
 import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 import config
+
+logger = logging.getLogger(__name__)
 
 _bearer = HTTPBearer()
 
@@ -49,13 +52,14 @@ def decode_token(token: str) -> dict:
             token,
             key,
             algorithms=[alg],
-            options={"verify_aud": False},
+            audience="authenticated",
         )
         return payload
     except JWTError as e:
+        logger.warning("JWT validation failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {e}",
+            detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

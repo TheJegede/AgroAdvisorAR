@@ -17,7 +17,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.error) {
       return (
-        <div className="bg-arred/10 border border-arred rounded-card p-4 my-2 text-sm text-arred-dark">
+        <div className="bg-arred/10 dark:bg-hc-surface border border-arred dark:border-2 dark:border-hc-danger rounded-card p-4 my-2 text-sm text-arred-dark dark:text-hc-danger">
           Could not display advisory response. Please try again.
         </div>
       )
@@ -28,7 +28,7 @@ class ErrorBoundary extends Component {
 
 function AdvisoryCardInner({ response, messageId }) {
   return (
-    <div className="bg-white rounded-card shadow-sm border border-gray-100 p-4 my-2 w-full max-w-2xl">
+    <div className="bg-white dark:bg-hc-surface rounded-card shadow-sm dark:shadow-none border border-gray-100 dark:border-2 dark:border-hc-border p-4 my-2 w-full max-w-2xl">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <ConfidenceBadge confidence={response.confidence} />
         <ContextMetaBar meta={response.context_meta} />

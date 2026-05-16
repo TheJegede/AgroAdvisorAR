@@ -1,5 +1,13 @@
 import { useState, useCallback, useRef } from 'react'
 
+export function parseSSEPayload(payload) {
+  try {
+    return { parsed: JSON.parse(payload), malformed: false }
+  } catch {
+    return { parsed: null, malformed: true }
+  }
+}
+
 export function useSSEQuery() {
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState(null)
@@ -72,14 +80,13 @@ export function useSSEQuery() {
           if (!line.startsWith('data:')) continue
           const payload = line.slice(5).trim()
           if (payload === '[DONE]') return
-          try {
-            const parsed = JSON.parse(payload)
-            if (parsed.error) throw new Error(parsed.error)
-            // Envelope shape: { advisory: AdvisoryResponse, message_id: uuid|null }
-            onResult(parsed.advisory ?? parsed, parsed.message_id ?? null)
-          } catch {
-            // ignore non-JSON keep-alive lines
+          const { parsed, malformed } = parseSSEPayload(payload)
+          if (malformed) {
+            continue
           }
+          if (parsed.error) throw new Error(parsed.error)
+          // Envelope shape: { advisory: AdvisoryResponse, message_id: uuid|null }
+          onResult(parsed.advisory ?? parsed, parsed.message_id ?? null)
         }
       }
     } catch (err) {

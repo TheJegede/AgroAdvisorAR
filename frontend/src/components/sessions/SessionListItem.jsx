@@ -15,12 +15,13 @@ export default function SessionListItem({ session, onSelect }) {
     <button
       onClick={() => onSelect(session.id)}
       className="w-full text-left bg-white border border-gray-100 rounded-card px-4 py-3
-        min-h-touch hover:border-field hover:bg-field/5 transition-colors flex flex-col gap-0.5"
+        min-h-touch hover:border-field hover:bg-field/5 transition-colors flex flex-col gap-0.5
+        dark:bg-hc-bg dark:border-2 dark:border-hc-border dark:hover:bg-hc-muted dark:hover:text-hc-bg"
     >
-      <p className="text-sm text-charcoal line-clamp-2 leading-snug">
+      <p className="text-sm text-charcoal dark:text-hc-fg line-clamp-2 leading-snug">
         {session.preview || '...'}
       </p>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-gray-600 dark:text-hc-fg">
         {relativeDate(session.last_message_at, t)}
       </p>
     </button>

@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  darkMode: ['selector', '[data-theme="hc"] &'],
   theme: {
     extend: {
       colors: {
@@ -23,6 +24,20 @@ export default {
         parchment: '#F7F4EF',
         charcoal: '#1C1917',
         surface: '#FFFFFF',
+        hc: {
+          bg: '#FFFFFF',
+          surface: '#FFFFFF',
+          fg: '#000000',
+          muted: '#1A1A1A',
+          border: '#000000',
+          accent: '#0033A0',
+          'accent-fg': '#FFFFFF',
+          danger: '#B00020',
+          'danger-fg': '#FFFFFF',
+          focus: '#FFD700',
+          'sidebar-bg': '#000000',
+          'sidebar-fg': '#FFFFFF',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

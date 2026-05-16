@@ -1,9 +1,9 @@
 import { useLang } from '../../contexts/LangContext'
 
 const STYLES = {
-  High:   'bg-field text-white',
-  Medium: 'bg-harvest text-charcoal',
-  Low:    'bg-arred text-white',
+  High:   'bg-field text-white dark:bg-hc-accent dark:text-hc-accent-fg dark:border-2 dark:border-hc-border',
+  Medium: 'bg-harvest text-charcoal dark:bg-hc-bg dark:text-hc-fg dark:border-2 dark:border-hc-border',
+  Low:    'bg-arred text-white dark:bg-hc-danger dark:text-hc-danger-fg dark:border-2 dark:border-hc-border',
 }
 
 export default function ConfidenceBadge({ confidence }) {

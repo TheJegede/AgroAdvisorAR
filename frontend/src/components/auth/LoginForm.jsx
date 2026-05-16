@@ -53,12 +53,17 @@ export default function LoginForm() {
         required
         autoComplete="current-password"
       />
+      <div className="-mt-2 text-right">
+        <Link to="/forgot-password" className="text-xs text-field dark:text-hc-accent font-bold hover:underline">
+          {t.forgotPassword}
+        </Link>
+      </div>
       <Button type="submit" loading={loading} className="w-full mt-2">
         {t.login}
       </Button>
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-gray-600 dark:text-hc-fg">
         {t.noAccount}{' '}
-        <Link to="/register" className="text-field font-medium hover:underline">
+        <Link to="/register" className="text-field dark:text-hc-accent font-bold hover:underline">
           {t.register}
         </Link>
       </p>
