@@ -23,6 +23,7 @@ class QueryRequest(BaseModel):
 class OutOfScopeResponse(BaseModel):
     message: str
     category: str
+    message_id: str | None = None  # populated when session_id provided
 
 
 @router.post("/query")
@@ -43,11 +44,26 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     category = await classify_query(req.message)
 
     if category == "OUT_OF_SCOPE":
-        return OutOfScopeResponse(message=OUT_OF_SCOPE_MESSAGE, category=category)
+        oos_message_id: str | None = None
+        if req.session_id:
+            try:
+                save_message(req.session_id, user["sub"], "user", req.message, "text")
+                oos_row = save_message(
+                    req.session_id, user["sub"], "assistant",
+                    OUT_OF_SCOPE_MESSAGE, "oos",
+                )
+                oos_message_id = oos_row["id"]
+            except Exception:
+                pass  # persistence failure must never break the response
+        return OutOfScopeResponse(
+            message=OUT_OF_SCOPE_MESSAGE,
+            category=category,
+            message_id=oos_message_id,
+        )
 
     async def event_stream():
         try:
-            result = await run_rag_query(
+            result, retrieved_chunks = await run_rag_query(
                 message=req.message,
                 county_fips=county_fips,
                 language=language,
@@ -55,18 +71,25 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 session_history=req.session_history,
             )
 
+            assistant_message_id: str | None = None
             if req.session_id:
                 try:
                     save_message(req.session_id, user["sub"], "user", req.message, "text")
-                    save_message(
+                    assistant_row = save_message(
                         req.session_id, user["sub"], "assistant",
                         json.dumps(result.model_dump(), ensure_ascii=False),
                         "advisory",
+                        retrieved_chunks=retrieved_chunks,
                     )
+                    assistant_message_id = assistant_row["id"]
                 except Exception:
                     pass  # persistence failure must never break the advisory response
 
-            payload = json.dumps(result.model_dump(), ensure_ascii=False)
+            envelope = {
+                "advisory": result.model_dump(),
+                "message_id": assistant_message_id,
+            }
+            payload = json.dumps(envelope, ensure_ascii=False)
             yield f"data: {payload}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:

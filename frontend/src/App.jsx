@@ -3,11 +3,14 @@ import { AuthProvider } from './contexts/AuthContext'
 import { LangProvider } from './contexts/LangContext'
 import AppShell from './components/layout/AppShell'
 import ProtectedRoute from './components/ui/ProtectedRoute'
+import AdminRoute from './components/ui/AdminRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ChatPage from './pages/ChatPage'
 import ProfilePage from './pages/ProfilePage'
 import SessionsPage from './pages/SessionsPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
+import EvalQueuePage from './pages/EvalQueuePage'
 
 // Remounts ChatPage when ?session param changes so session state fully resets
 function ChatPageWrapper() {
@@ -34,6 +37,14 @@ export default function App() {
               <Route path="/" element={<ChatPageWrapper />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/sessions" element={<SessionsPage />} />
+              <Route
+                path="/admin"
+                element={<AdminRoute><AdminDashboardPage /></AdminRoute>}
+              />
+              <Route
+                path="/admin/queue"
+                element={<AdminRoute><EvalQueuePage /></AdminRoute>}
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

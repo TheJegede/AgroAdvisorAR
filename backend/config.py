@@ -24,6 +24,12 @@ GEMINI_CLASSIFIER_MODEL = "gemini-2.5-flash-lite"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_CLASSIFIER_MODEL = "llama-3.3-70b-versatile"
 
+ADMIN_USER_IDS: set[str] = {
+    uid.strip()
+    for uid in os.environ.get("ADMIN_USER_IDS", "").split(",")
+    if uid.strip()
+}
+
 SSURGO_ENDPOINT = "https://sdmdataaccess.sc.egov.usda.gov/tabular/post.rest"
 NOAA_POINTS_URL = "https://api.weather.gov/points/{lat},{lon}"
 NOAA_USER_AGENT = "AgroAdvisor AR (jegedetaiwo95@gmail.com)"

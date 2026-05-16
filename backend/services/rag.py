@@ -90,7 +90,9 @@ async def run_rag_query(
     language: str,
     category: str,
     session_history: list[dict],
-) -> AdvisoryResponse:
+) -> tuple[AdvisoryResponse, list[dict]]:
+    """Returns (advisory, retrieved_chunks). Chunks shape:
+    [{document_title, section_heading, snippet (≤500 chars)}, ...]"""
     # Fetch context and retrieve docs concurrently
     context_task = asyncio.create_task(get_context(county_fips))
 
@@ -155,4 +157,13 @@ async def run_rag_query(
     if result is None:
         raise RuntimeError(f"RAG generation failed: {last_err}") from last_err
 
-    return _postprocess(result, docs, soil, weather, county_fips)
+    advisory = _postprocess(result, docs, soil, weather, county_fips)
+    retrieved_chunks = [
+        {
+            "document_title": d.metadata.get("document_title", ""),
+            "section_heading": d.metadata.get("section_heading", ""),
+            "snippet": (d.page_content or "")[:500],
+        }
+        for d in docs
+    ]
+    return advisory, retrieved_chunks

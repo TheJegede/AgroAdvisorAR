@@ -9,6 +9,7 @@ import RecommendedActions from './RecommendedActions'
 import ProductsRates from './ProductsRates'
 import CitationsSection from './CitationsSection'
 import ConfidenceExplainer from './ConfidenceExplainer'
+import FeedbackWidget from './FeedbackWidget'
 
 class ErrorBoundary extends Component {
   state = { error: null }
@@ -25,7 +26,7 @@ class ErrorBoundary extends Component {
   }
 }
 
-function AdvisoryCardInner({ response }) {
+function AdvisoryCardInner({ response, messageId }) {
   return (
     <div className="bg-white rounded-card shadow-sm border border-gray-100 p-4 my-2 w-full max-w-2xl">
       <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -41,14 +42,15 @@ function AdvisoryCardInner({ response }) {
       <RecommendedActions actions={response.recommended_actions} />
       <ProductsRates products={response.products_rates} />
       <CitationsSection citations={response.citations} />
+      <FeedbackWidget messageId={messageId} />
     </div>
   )
 }
 
-export default function AdvisoryCard({ response }) {
+export default function AdvisoryCard({ response, messageId }) {
   return (
     <ErrorBoundary>
-      <AdvisoryCardInner response={response} />
+      <AdvisoryCardInner response={response} messageId={messageId} />
     </ErrorBoundary>
   )
 }

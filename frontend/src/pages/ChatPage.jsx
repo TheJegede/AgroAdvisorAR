@@ -58,10 +58,16 @@ export default function ChatPage() {
       language: lang,
       sessionHistory: updatedHistory,
       sessionId: activeSessionId,
-      onResult: (advisory) => {
+      onResult: (advisory, messageId) => {
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, role: 'assistant', type: 'advisory', content: advisory },
+          {
+            id: Date.now() + 1,
+            messageId,
+            role: 'assistant',
+            type: 'advisory',
+            content: advisory,
+          },
         ])
         setSessionHistory((h) => [
           ...h,
@@ -69,10 +75,16 @@ export default function ChatPage() {
           { role: 'assistant', content: advisory.problem_summary },
         ])
       },
-      onOOS: (msg) => {
+      onOOS: (msg, messageId) => {
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, role: 'assistant', type: 'oos', content: msg },
+          {
+            id: Date.now() + 1,
+            messageId,
+            role: 'assistant',
+            type: 'oos',
+            content: msg,
+          },
         ])
       },
       onError: (errMsg) => {

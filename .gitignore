@@ -15,8 +15,8 @@ build/
 ingestion/raw_pdfs/
 ingestion/logs/
 ingestion/corpus_manifest.json
-models/
-checkpoints/
+/models/
+/checkpoints/
 evals/results/
 node_modules/
 .DS_Store

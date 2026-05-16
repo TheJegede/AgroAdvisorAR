@@ -20,6 +20,7 @@ export function useSessions() {
 
     const messages = raw.map((m) => ({
       id: m.id,
+      messageId: m.id,
       role: m.role,
       type: m.content_type,
       content: m.content_type === 'advisory' ? JSON.parse(m.content) : m.content,

@@ -1,0 +1,50 @@
+name: Nightly retrieval eval
+
+on:
+  schedule:
+    # 08:00 UTC = 02:00 CST (winter) / 03:00 CDT (summer).
+    # GitHub Actions cron is UTC-only and ignores DST.
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  eval:
+    name: Run retrieval eval on base model
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      EVAL_WRITE_TO_DB: "1"
+      EMBEDDING_MODEL_PATH: sentence-transformers/all-MiniLM-L6-v2
+      PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+      PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: evals/requirements.txt
+
+      - name: Install eval deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r evals/requirements.txt
+
+      - name: Run retrieval eval
+        run: |
+          python evals/eval_runner.py --eval-set evals/eval_set_v2.jsonl
+
+      - name: Upload run artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results-${{ github.run_id }}
+          path: evals/results/eval_*.json
+          retention-days: 30

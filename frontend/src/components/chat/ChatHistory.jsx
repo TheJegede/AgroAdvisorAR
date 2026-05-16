@@ -18,10 +18,22 @@ export default function ChatHistory({ messages, streaming }) {
           return <MessageBubble key={msg.id} role={msg.role} content={msg.content} id={msg.id} />
         }
         if (msg.type === 'advisory') {
-          return <AdvisoryCard key={msg.id} response={msg.content} />
+          return (
+            <AdvisoryCard
+              key={msg.id}
+              response={msg.content}
+              messageId={msg.messageId}
+            />
+          )
         }
         if (msg.type === 'oos') {
-          return <OutOfScopeCard key={msg.id} message={msg.content} />
+          return (
+            <OutOfScopeCard
+              key={msg.id}
+              message={msg.content}
+              messageId={msg.messageId}
+            />
+          )
         }
         if (msg.type === 'error') {
           return (

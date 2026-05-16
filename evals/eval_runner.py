@@ -7,6 +7,10 @@ queries Pinecone top-5, computes retrieval metrics. Saves results to evals/resul
 Run: python evals/eval_runner.py
      python evals/eval_runner.py --eval-set evals/eval_set_v2.jsonl
 To test fine-tuned model: set EMBEDDING_MODEL_PATH=./models/agroar-embeddings-v2 first.
+
+Supabase logging: set EVAL_WRITE_TO_DB=1 (CI default) to append a row to
+the eval_runs table. Local CLI runs default to off so they don't pollute the
+dashboard with experiments.
 """
 import os, json, math, argparse
 from pathlib import Path
@@ -27,6 +31,30 @@ PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod")
 DEFAULT_EVAL_SET = Path(__file__).parent / "eval_set.jsonl"
 RESULTS_DIR = Path(__file__).parent / "results"
 TOP_K = 5
+
+EVAL_WRITE_TO_DB = os.environ.get("EVAL_WRITE_TO_DB", "0") == "1"
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+
+
+def _write_to_supabase(summary: dict) -> None:
+    """Insert an eval_runs row. Silent no-op if Supabase env vars missing."""
+    if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
+        print("Skipping Supabase write — SUPABASE_URL / SUPABASE_SERVICE_KEY not set")
+        return
+    try:
+        from supabase import create_client
+        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        client.table("eval_runs").insert({
+            "mrr_at_5": summary["mrr_at_5"],
+            "ndcg_at_5": summary["ndcg_at_5"],
+            "answer_correct_pct": None,
+            "total_items": summary["n_items"],
+            "model_version": summary["model"],
+        }).execute()
+        print("Wrote eval_runs row to Supabase")
+    except Exception as e:
+        print(f"Supabase write failed: {e}")
 
 
 def _mrr(retrieved: list[str], relevant: str, k: int = 5) -> float:
@@ -93,6 +121,10 @@ def run_eval(eval_set_path: Path = DEFAULT_EVAL_SET) -> dict:
     out = RESULTS_DIR / f"eval_{ts}.json"
     out.write_text(json.dumps(summary, indent=2))
     print(f"\nSaved -> {out}")
+
+    if EVAL_WRITE_TO_DB:
+        _write_to_supabase(summary)
+
     return summary
 
 

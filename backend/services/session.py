@@ -33,15 +33,19 @@ def add_message(
     role: str,
     content: str,
     content_type: str,
+    retrieved_chunks: list[dict] | None = None,
 ) -> dict:
     client = _get_service_client()
-    result = client.table("chat_messages").insert({
+    row = {
         "session_id": session_id,
         "user_id": user_id,
         "role": role,
         "content": content,
         "content_type": content_type,
-    }).execute()
+    }
+    if retrieved_chunks is not None:
+        row["retrieved_chunks"] = retrieved_chunks
+    result = client.table("chat_messages").insert(row).execute()
     if not result.data:
         raise RuntimeError(f"Message insert returned no data for session {session_id}")
     now = datetime.now(timezone.utc).isoformat()

@@ -52,7 +52,7 @@ export function useSSEQuery() {
 
       if (!contentType.includes('text/event-stream')) {
         const body = await res.json()
-        onOOS(body.message)
+        onOOS(body.message, body.message_id ?? null)
         return
       }
 
@@ -75,7 +75,8 @@ export function useSSEQuery() {
           try {
             const parsed = JSON.parse(payload)
             if (parsed.error) throw new Error(parsed.error)
-            onResult(parsed)
+            // Envelope shape: { advisory: AdvisoryResponse, message_id: uuid|null }
+            onResult(parsed.advisory ?? parsed, parsed.message_id ?? null)
           } catch {
             // ignore non-JSON keep-alive lines
           }
