@@ -179,7 +179,7 @@ Fix: npm audit fix --force → installs react-simple-maps@1.0.0 (breaking change
 
 | Category | Finding | Fix applied | Commit |
 |---|---|---|---|
-| A07 | `POST /auth/login` had no brute-force protection | Redis rate limit: 10 attempts/15 min per email hash (`login_throttle:{sha256[:24]}`) | (fill after Task 4 commit) |
+| A07 | `POST /auth/login` had no brute-force protection | Redis rate limit: 10 attempts/15 min per email hash (`login_throttle:{sha256[:24]}`) | 975cf97 |
 
 ---
 
