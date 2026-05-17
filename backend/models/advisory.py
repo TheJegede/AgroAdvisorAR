@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from typing import List, Optional, Literal
 
 
@@ -38,9 +38,3 @@ class AdvisoryResponse(BaseModel):
     language: Literal["en", "es"]
     context_meta: ContextMeta
 
-    @field_validator("citations")
-    @classmethod
-    def citations_not_empty(cls, v):
-        if len(v) == 0:
-            raise ValueError("citations must contain at least one entry")
-        return v

@@ -26,6 +26,11 @@ CATEGORIES = {
     "SAFETY_CRITICAL",
 }
 
+# Specific crop categories — eligible for follow-up inheritance
+SPECIFIC_CROP_CATEGORIES = {"IN_SCOPE_RICE", "IN_SCOPE_SOYBEANS", "IN_SCOPE_POULTRY"}
+# Ambiguous follow-up threshold (word count)
+_FOLLOWUP_WORD_LIMIT = 8
+
 CLASSIFIER_PROMPT = """Classify this farmer query into exactly one category:
 - IN_SCOPE_RICE
 - IN_SCOPE_SOYBEANS
@@ -63,15 +68,14 @@ CATEGORY_TO_NAMESPACE = {
 }
 
 
-async def classify_query(message: str) -> str:
+async def classify_query(message: str, last_category: str | None = None) -> str:
     prompt = CLASSIFIER_PROMPT.format(message=message)
     llm = _get_llm()
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
         category = response.content.strip().upper()
         if category not in CATEGORIES:
-            return "IN_SCOPE_GENERAL_AG"
-        return category
+            category = "IN_SCOPE_GENERAL_AG"
     except Exception as e:
         err = str(e)
         if "RESOURCE_EXHAUSTED" in err or "429" in err:
@@ -80,8 +84,21 @@ async def classify_query(message: str) -> str:
                 if groq:
                     response = await groq.ainvoke([HumanMessage(content=prompt)])
                     category = response.content.strip().upper()
-                    return category if category in CATEGORIES else "IN_SCOPE_GENERAL_AG"
+                    if category not in CATEGORIES:
+                        category = "IN_SCOPE_GENERAL_AG"
+                else:
+                    category = "IN_SCOPE_GENERAL_AG"
             except Exception:
-                pass
-            return "IN_SCOPE_GENERAL_AG"
-        raise
+                category = "IN_SCOPE_GENERAL_AG"
+        else:
+            raise
+
+    # Inherit last crop context for short, ambiguous follow-ups
+    if (
+        category == "IN_SCOPE_GENERAL_AG"
+        and last_category in SPECIFIC_CROP_CATEGORIES
+        and len(message.split()) <= _FOLLOWUP_WORD_LIMIT
+    ):
+        return last_category
+
+    return category

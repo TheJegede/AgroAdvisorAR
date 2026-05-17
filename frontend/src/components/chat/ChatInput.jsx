@@ -3,11 +3,14 @@ import { useLang } from '../../contexts/LangContext'
 
 const MAX_CHARS = 800
 const WARN_AT = 600
+const EMPTY_ERROR_MS = 2500
 
 export default function ChatInput({ onSubmit, disabled }) {
   const { t } = useLang()
   const [text, setText] = useState('')
+  const [emptyError, setEmptyError] = useState(false)
   const textareaRef = useRef(null)
+  const emptyTimerRef = useRef(null)
 
   useEffect(() => {
     const el = textareaRef.current
@@ -15,6 +18,8 @@ export default function ChatInput({ onSubmit, disabled }) {
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 120) + 'px'
   }, [text])
+
+  useEffect(() => () => clearTimeout(emptyTimerRef.current), [])
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -25,7 +30,14 @@ export default function ChatInput({ onSubmit, disabled }) {
 
   function submit() {
     const trimmed = text.trim()
-    if (!trimmed || disabled || trimmed.length > MAX_CHARS) return
+    if (disabled || trimmed.length > MAX_CHARS) return
+    if (!trimmed) {
+      setEmptyError(true)
+      clearTimeout(emptyTimerRef.current)
+      emptyTimerRef.current = setTimeout(() => setEmptyError(false), EMPTY_ERROR_MS)
+      return
+    }
+    setEmptyError(false)
     onSubmit(trimmed)
     setText('')
   }
@@ -38,7 +50,12 @@ export default function ChatInput({ onSubmit, disabled }) {
       className="bg-white dark:bg-hc-bg border-t border-gray-100 dark:border-hc-border dark:border-t-2 px-4 py-3 flex-shrink-0"
       style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
     >
-      {showCounter && (
+      {emptyError && (
+        <p className="text-xs mb-2 text-arred dark:text-hc-danger" role="alert">
+          {t.emptyMessageError}
+        </p>
+      )}
+      {!emptyError && showCounter && (
         <p className={`text-xs mb-2 text-right ${remaining < 0 ? 'text-arred dark:text-hc-danger' : 'text-gray-600 dark:text-hc-fg'}`}>
           {remaining} {t.charsRemaining}
         </p>
@@ -96,6 +113,9 @@ export default function ChatInput({ onSubmit, disabled }) {
           </svg>
         </button>
       </div>
+      <p className="text-xs text-gray-400 dark:text-hc-fg/60 mt-1.5 text-right">
+        {t.charLimit}
+      </p>
     </div>
   )
 }

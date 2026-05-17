@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useLang } from '../contexts/LangContext'
 import { useSSEQuery } from '../hooks/useSSEQuery'
 import { useSessions } from '../hooks/useSessions'
+import { deriveFollowUps } from '../utils/deriveFollowUps'
 import ChatHistory from '../components/chat/ChatHistory'
 import ChatInput from '../components/chat/ChatInput'
 import Alert from '../components/ui/Alert'
@@ -17,10 +18,26 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([])
   const [sessionHistory, setSessionHistory] = useState([])
   const [sessionId, setSessionId] = useState(null)
+  const [lastCategory, setLastCategory] = useState(null)
+  const [lastAdvisory, setLastAdvisory] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [loadingSession, setLoadingSession] = useState(false)
 
   const sessionParam = searchParams.get('session')
+
+  // 3 random chips from the 15-item pool, stable per mount, re-randomizes on New Chat
+  const welcomeChips = useMemo(() => {
+    const pool = t.questionPool || t.exampleQuestions || []
+    if (pool.length <= 3) return pool
+    return [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Context-aware chips after first advisory; fall back to welcome pool otherwise
+  const midChatChips = useMemo(() => {
+    if (!lastAdvisory) return welcomeChips
+    const derived = deriveFollowUps(lastAdvisory.advisory, lastAdvisory.category, t)
+    return derived.length >= 2 ? derived : welcomeChips
+  }, [lastAdvisory, t, welcomeChips])
 
   // Load past session from URL param on mount
   useEffect(() => {
@@ -58,7 +75,9 @@ export default function ChatPage() {
       language: lang,
       sessionHistory: updatedHistory,
       sessionId: activeSessionId,
-      onResult: (advisory, messageId) => {
+      lastCategory,
+      onCategory: (cat) => setLastCategory(cat),
+      onResult: (advisory, messageId, category) => {
         setMessages((prev) => [
           ...prev,
           {
@@ -67,6 +86,7 @@ export default function ChatPage() {
             role: 'assistant',
             type: 'advisory',
             content: advisory,
+            category,
           },
         ])
         setSessionHistory((h) => [
@@ -74,6 +94,7 @@ export default function ChatPage() {
           { role: 'user', content: message },
           { role: 'assistant', content: advisory.problem_summary },
         ])
+        setLastAdvisory({ advisory, category })
       },
       onOOS: (msg, messageId) => {
         setMessages((prev) => [
@@ -88,15 +109,14 @@ export default function ChatPage() {
         ])
       },
       onError: (errMsg) => {
+        const isTechnical = /pydantic|langchain|structured output|validation error|OUTPUT_PARSING|Request failed: 5/i.test(errMsg)
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, role: 'assistant', type: 'error', content: errMsg },
+          { id: Date.now() + 1, role: 'assistant', type: 'error', content: isTechnical ? t.errorGeneric : errMsg },
         ])
       },
     })
   }
-
-  const examples = (t.exampleQuestions || [])
 
   if (loadingSession) {
     return (
@@ -128,7 +148,7 @@ export default function ChatPage() {
             <p className="text-sm text-gray-600 dark:text-hc-fg">{t.welcomeHeading}</p>
           </div>
           <div className="flex flex-wrap gap-2 justify-center max-w-md">
-            {examples.map((q) => (
+            {welcomeChips.map((q) => (
               <button
                 key={q}
                 onClick={() => handleSubmit(q)}
@@ -150,7 +170,7 @@ export default function ChatPage() {
       {/* Suggestion chips row — shown above input when messages present */}
       {messages.length > 0 && !streaming && (
         <div className="flex-shrink-0 px-4 pt-2 flex gap-2 overflow-x-auto scrollbar-none">
-          {examples.map((q) => (
+          {midChatChips.map((q) => (
             <button
               key={q}
               onClick={() => handleSubmit(q)}

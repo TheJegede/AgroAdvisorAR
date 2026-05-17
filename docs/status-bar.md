@@ -1,12 +1,27 @@
 # AgroAdvisor AR — Completion to Production
 
-**Last updated:** 2026-05-16  
+**Last updated:** 2026-05-17  
 **MVP target:** September 2026  
-**Overall:** 70%
+**Production readiness:** 71%  
+**PRD phase progress:** 80%
 
 ```
-Overall  [██████████████░░░░░░]  70%
+Production readiness  [██████████████░░░░░░]  71%
+PRD phase progress    [████████████████░░░░]  80%
 ```
+
+---
+
+## PRD Phase Rollup
+
+```
+Phase 1 — Foundation        [███████████████████░]  95%
+Phase 2 — RAG               [███████████████████░]  95%
+Phase 3 — Frontend          [████████████████████]  98%
+Phase 4 — Test/Pilot/NIW    [██████░░░░░░░░░░░░░░]  30%
+```
+
+PRD phase progress is the average of the current phase percentages from `docs/prd-progress-audit-2026-05-16.md`: `(95 + 95 + 98 + 30) / 4 = 79.5%`, rounded to 80%.
 
 ---
 
@@ -15,7 +30,7 @@ Overall  [██████████████░░░░░░]  70%
 ```
 Core RAG system        [███████████████████░]  93%
 Frontend UI            [███████████████████░]  96%
-Security / testing     [████████████████░░░░]  79%
+Security / testing     [████████████████░░░░]  80%
 Deployment (prod URL)  [██░░░░░░░░░░░░░░░░░░]  10%
 Real users / data      [░░░░░░░░░░░░░░░░░░░░]   0%
 NIW evidence package   [█░░░░░░░░░░░░░░░░░░░]   5%
@@ -32,12 +47,12 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | 3 | 20 pilot farmers recruited + 500 real queries | Real users / data | +12% | ☐ |
 | 4 | arXiv preprint submitted | NIW evidence | +6% | ☐ |
 | 5 | UA Extension agent scoring in eval queue | NIW evidence | +7% | ☐ |
-| 6 | Add `GROQ_API_KEY` to GH secrets (answer_correct_pct CI) | Security/testing | +1% | ☐ |
+| 6 | Add `GROQ_API_KEY` to GH secrets (answer_correct_pct CI) | Security/testing | +1% | ☑ |
 | 7 | Full WCAG audit on auth-gated routes (Playwright + axe) | Security/testing | +1% | ☑ |
 | 8 | Public GitHub README (arch diagram + eval results) | NIW evidence | +2% | ☐ |
 | 9 | Locust load test (50 concurrent users) | Security/testing | +1% | ☐ |
 
-**Check off items above → update bars + overall % → update "Last updated" date.**
+**Check off items above → update bars + production-readiness % → update PRD phase rollup when `docs/prd-progress-audit-2026-05-16.md` changes → update "Last updated" date.**
 
 ---
 
@@ -48,6 +63,9 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | OWASP Top 10 audit (1 critical fixed: A07 login rate limit) | Security/testing | 2026-05-16 |
 | Playwright E2E suite (15 tests across 7 spec files + CI workflow) | Security/testing | 2026-05-16 |
 | Locust load test file written (local + prod run commands ready) | Security/testing | 2026-05-16 |
+| `GROQ_API_KEY` added to GH secrets — nightly answer-eval CI now fully operational | Security/testing | 2026-05-17 |
+| Playwright CI stabilized — helpers.js, selector fixes, JSON parse fix, vite proxy config; CI workflow updated | Security/testing | 2026-05-17 |
+| SQL migration 004 made idempotent (DROP POLICY IF EXISTS before CREATE POLICY) | Core RAG | 2026-05-17 |
 | Full WCAG 2.1 AA audit on 4 auth-gated routes (0 violations: /, /profile, /admin, /admin/queue) | Security/testing | 2026-05-16 |
 | Supabase schema + RLS (all 6 tables) | Core RAG | 2026-05-16 |
 | Pinecone index (384-dim, 20,546 vectors) | Core RAG | 2026-05-16 |
@@ -83,9 +101,10 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 1. Complete a blocker item above
 2. Check its box ☑
 3. Add it to the Completed table with date
-4. Recalculate overall % (current 63% + item delta)
+4. Recalculate production-readiness % (current 70% + item delta)
 5. Recount filled blocks: `round(pct / 5)` blocks out of 20
 6. Update "Last updated" date
 7. Update relevant dimension bar
+8. If a PRD phase percentage changed in the audit, update `PRD phase progress`
 
 **Block scale:** each `█` = 5%. e.g. 70% = 14 filled blocks → `[██████████████░░░░░░]`

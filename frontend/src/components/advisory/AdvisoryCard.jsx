@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { useLang } from '../../contexts/LangContext'
 import ConfidenceBadge from './ConfidenceBadge'
 import ContextMetaBar from './ContextMetaBar'
 import LowConfidenceBanner from './LowConfidenceBanner'
@@ -26,11 +27,32 @@ class ErrorBoundary extends Component {
   }
 }
 
-function AdvisoryCardInner({ response, messageId }) {
+const CROP_CHIP_CONFIG = {
+  IN_SCOPE_RICE:      { key: 'cropChipRice',     cls: 'bg-field/10 text-field border-field/30' },
+  IN_SCOPE_SOYBEANS:  { key: 'cropChipSoybeans', cls: 'bg-harvest/10 text-harvest-dark border-harvest/30' },
+  IN_SCOPE_POULTRY:   { key: 'cropChipPoultry',  cls: 'bg-terracotta/10 text-terracotta border-terracotta/30' },
+  SAFETY_CRITICAL:    { key: 'cropChipSafety',   cls: 'bg-arred/10 text-arred border-arred/30' },
+}
+
+function CropChip({ category }) {
+  const { t } = useLang()
+  const config = CROP_CHIP_CONFIG[category]
+  if (!config) return null
+  return (
+    <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${config.cls}`}>
+      {t[config.key]}
+    </span>
+  )
+}
+
+function AdvisoryCardInner({ response, messageId, category }) {
   return (
     <div className="bg-white dark:bg-hc-surface rounded-card shadow-sm dark:shadow-none border border-gray-100 dark:border-2 dark:border-hc-border p-4 my-2 w-full max-w-2xl">
       <div className="flex items-start justify-between gap-2 flex-wrap">
-        <ConfidenceBadge confidence={response.confidence} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <ConfidenceBadge confidence={response.confidence} />
+          <CropChip category={category} />
+        </div>
         <ContextMetaBar meta={response.context_meta} />
       </div>
       <ConfidenceExplainer explanation={response.confidence_explanation} />
@@ -47,10 +69,10 @@ function AdvisoryCardInner({ response, messageId }) {
   )
 }
 
-export default function AdvisoryCard({ response, messageId }) {
+export default function AdvisoryCard({ response, messageId, category }) {
   return (
     <ErrorBoundary>
-      <AdvisoryCardInner response={response} messageId={messageId} />
+      <AdvisoryCardInner response={response} messageId={messageId} category={category} />
     </ErrorBoundary>
   )
 }

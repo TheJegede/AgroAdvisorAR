@@ -15,11 +15,13 @@ import SessionsPage from './pages/SessionsPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import EvalQueuePage from './pages/EvalQueuePage'
 
-// Remounts ChatPage when ?session param changes so session state fully resets
+// Remounts ChatPage when ?session param changes OR when navigating to / fresh.
+// sessionParam stabilises the key while viewing a saved session.
+// location.key is unique per navigation, so every trip to / (new chat) remounts.
 function ChatPageWrapper() {
   const location = useLocation()
-  const sessionParam = new URLSearchParams(location.search).get('session') ?? 'new'
-  return <ChatPage key={sessionParam} />
+  const sessionParam = new URLSearchParams(location.search).get('session')
+  return <ChatPage key={sessionParam ?? location.key} />
 }
 
 export default function App() {

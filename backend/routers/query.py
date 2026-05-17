@@ -26,6 +26,7 @@ class QueryRequest(BaseModel):
     language: str = "en"
     session_history: list[dict] = Field(default_factory=list)
     session_id: str | None = None
+    last_category: str | None = None
 
 
 class OutOfScopeResponse(BaseModel):
@@ -69,7 +70,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     county_fips = (profile or {}).get("county_fips") or "05055"
     language = req.language
 
-    category = await classify_query(req.message)
+    category = await classify_query(req.message, last_category=req.last_category)
 
     if category == "OUT_OF_SCOPE":
         oos_message_id: str | None = None
@@ -116,6 +117,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
             envelope = {
                 "advisory": result.model_dump(),
                 "message_id": assistant_message_id,
+                "category": category,
             }
             payload = json.dumps(envelope, ensure_ascii=False)
             yield f"data: {payload}\n\n"

@@ -18,9 +18,11 @@ export function useSSEQuery() {
     language,
     sessionHistory,
     sessionId,
+    lastCategory,
     onResult,
     onOOS,
     onError,
+    onCategory,
   }) => {
     setStreaming(true)
     setError(null)
@@ -41,6 +43,7 @@ export function useSSEQuery() {
           language,
           session_history: sessionHistory,
           session_id: sessionId ?? null,
+          last_category: lastCategory ?? null,
         }),
         signal: controller.signal,
       })
@@ -85,8 +88,9 @@ export function useSSEQuery() {
             continue
           }
           if (parsed.error) throw new Error(parsed.error)
-          // Envelope shape: { advisory: AdvisoryResponse, message_id: uuid|null }
-          onResult(parsed.advisory ?? parsed, parsed.message_id ?? null)
+          // Envelope shape: { advisory: AdvisoryResponse, message_id: uuid|null, category: string }
+          if (parsed.category) onCategory?.(parsed.category)
+          onResult(parsed.advisory ?? parsed, parsed.message_id ?? null, parsed.category ?? null)
         }
       }
     } catch (err) {

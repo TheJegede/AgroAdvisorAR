@@ -23,6 +23,7 @@ export default function ChatHistory({ messages, streaming }) {
               key={msg.id}
               response={msg.content}
               messageId={msg.messageId}
+              category={msg.category}
             />
           )
         }
