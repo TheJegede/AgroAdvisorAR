@@ -1,8 +1,21 @@
 # AgroAdvisor AR
 
+[![Nightly retrieval eval](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/nightly-eval.yml/badge.svg)](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/nightly-eval.yml)
+[![Playwright E2E Tests](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/playwright.yml/badge.svg)](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/playwright.yml)
+![MRR@5](https://img.shields.io/badge/MRR%405-0.6565-2D6A4F)
+![WCAG 2.1 AA](https://img.shields.io/badge/WCAG_2.1-AA_0_violations-2D6A4F)
+
 Bilingual (EN/ES) RAG-powered agricultural advisory system for Arkansas farmers. Targets rice, soybean, and poultry producers, with county-level soil and weather context injected into every response.
 
 The system retrieves from a corpus of University of Arkansas Cooperative Extension publications and combines that evidence with live SSURGO soil data and NOAA weather forecasts to produce structured, cited advisories.
+
+## Why this exists
+
+Arkansas is one of the top rice and soybean producing states in the US, yet most small and mid-size farm operations lack affordable access to agronomist expertise. Extension agents are thinly spread — 75 counties, one specialist per commodity area at most.
+
+AgroAdvisor AR bridges that gap: a farmer can describe a crop problem in plain English or Spanish and receive a structured advisory grounded in University of Arkansas Extension publications, their county's live soil profile, and current weather conditions — in under 8 seconds, at no cost.
+
+The bilingual interface (EN/ES) extends access to Spanish-speaking agricultural workers and operators who are underserved by existing English-only tools.
 
 ## Architecture
 
@@ -132,12 +145,28 @@ Two rounds of fine-tuning on `all-MiniLM-L6-v2`. Current production model is `mo
 | Hit@1  | 0.105  | 0.225  | **0.530**  | — |
 | Hit@5  | 0.285  | 0.410  | **0.825**  | — |
 
+Retrieval metrics are evaluated nightly in CI against the 200-item `eval_set_v2.jsonl`. Each run also samples 20 queries through the full RAG chain and scores the generated advisory against the gold chunk using an LLM-as-judge (Groq `llama-3.3-70b`), reported as `answer_correct_pct`.
+
 Rollback:
 
 ```bash
 EMBEDDING_MODEL_PATH=./models/agroar-embeddings-v1 python ingestion/pipeline.py --force
 EMBEDDING_MODEL_PATH=sentence-transformers/all-MiniLM-L6-v2 python ingestion/pipeline.py --force
 ```
+
+## Security
+
+- **Brute-force protection.** Login attempts rate-limited to 10 per 15 minutes per email (Redis; fail-open if Redis unavailable).
+- **Query rate limiting.** 20 queries/hour/user via Redis key `query_throttle:{user_id}`. Returns 429 + `Retry-After: 3600`.
+- **Prompt injection sanitizer.** `services/sanitizer.py` rejects high-confidence injection attempts (role override, instruction-ignore, literal role tokens `<|im_start|>`, `<system>`, `[INST]`) and silently strips lower-risk patterns. Tuned to avoid false positives on natural phrases.
+- **CORS.** Locked to `CORS_ORIGINS` env var — no wildcard origin in production.
+- **OWASP Top 10.** Audited 2026-05-16; one critical finding (A07 — missing login rate limit) identified and resolved.
+
+## Accessibility
+
+WCAG 2.1 AA verified with axe-core across all six routes (`/login`, `/register`, `/`, `/profile`, `/admin`, `/admin/queue`): **0 violations**.
+
+High-contrast mode available via sidebar toggle — sets `data-theme="hc"` on `<html>`, persists in `localStorage`. Tested in both light and HC modes.
 
 ## API
 
@@ -165,4 +194,4 @@ See `CLAUDE.md` for `curl` examples.
 
 ## License
 
-See repository for license details.
+MIT

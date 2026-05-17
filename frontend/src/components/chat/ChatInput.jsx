@@ -113,7 +113,7 @@ export default function ChatInput({ onSubmit, disabled }) {
           </svg>
         </button>
       </div>
-      <p className="text-xs text-gray-400 dark:text-hc-fg/60 mt-1.5 text-right">
+      <p className="text-xs text-gray-500 dark:text-hc-fg/60 mt-1.5 text-right">
         {t.charLimit}
       </p>
     </div>
