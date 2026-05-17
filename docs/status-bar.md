@@ -2,10 +2,10 @@
 
 **Last updated:** 2026-05-16  
 **MVP target:** September 2026  
-**Overall:** 63%
+**Overall:** 69%
 
 ```
-Overall  [█████████████░░░░░░░]  63%
+Overall  [█████████████░░░░░░░]  69%
 ```
 
 ---
@@ -15,7 +15,7 @@ Overall  [█████████████░░░░░░░]  63%
 ```
 Core RAG system        [███████████████████░]  93%
 Frontend UI            [███████████████████░]  96%
-Security / testing     [████░░░░░░░░░░░░░░░░]  20%
+Security / testing     [████████████████░░░░]  78%
 Deployment (prod URL)  [██░░░░░░░░░░░░░░░░░░]  10%
 Real users / data      [░░░░░░░░░░░░░░░░░░░░]   0%
 NIW evidence package   [█░░░░░░░░░░░░░░░░░░░]   5%
@@ -28,7 +28,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | # | Item | Dimension affected | Delta | Done? |
 |---|---|---|---|---|
 | 1 | Deploy to Vercel + Railway (prod URL live) | Deployment | +7% | ☐ |
-| 2 | OWASP Top 10 review + Playwright E2E suite | Security/testing | +5% | ☐ |
+| 2 | OWASP Top 10 review + Playwright E2E suite | Security/testing | +5% | ☑ |
 | 3 | 20 pilot farmers recruited + 500 real queries | Real users / data | +12% | ☐ |
 | 4 | arXiv preprint submitted | NIW evidence | +6% | ☐ |
 | 5 | UA Extension agent scoring in eval queue | NIW evidence | +7% | ☐ |
@@ -45,6 +45,9 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 
 | Item | Dimension | Completed |
 |---|---|---|
+| OWASP Top 10 audit (1 critical fixed: A07 login rate limit) | Security/testing | 2026-05-16 |
+| Playwright E2E suite (15 tests across 7 spec files + CI workflow) | Security/testing | 2026-05-16 |
+| Locust load test file written (local + prod run commands ready) | Security/testing | 2026-05-16 |
 | Supabase schema + RLS (all 6 tables) | Core RAG | 2026-05-16 |
 | Pinecone index (384-dim, 20,546 vectors) | Core RAG | 2026-05-16 |
 | UA Extension scraper + 200+ PDFs ingested | Core RAG | 2026-05-16 |
