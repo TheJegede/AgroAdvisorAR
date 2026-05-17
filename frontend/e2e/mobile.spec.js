@@ -19,5 +19,5 @@ test('chat flow works at 375px viewport', async ({ page }) => {
 
   await page.locator('textarea').fill('What fertilizer for rice in Arkansas?');
   await page.locator('[data-testid="chat-send"]').click();
-  await expect(page.getByText(/problem|summary|fertilizer|rice/i)).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/problem|summary|fertilizer|rice/i).first()).toBeVisible({ timeout: 30000 });
 });

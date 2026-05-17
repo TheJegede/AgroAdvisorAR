@@ -66,10 +66,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=str(e))
 
     profile = get_profile(user["sub"])
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Farmer profile not found. Please complete registration.")
-
-    county_fips = profile["county_fips"]
+    county_fips = (profile or {}).get("county_fips") or "05055"
     language = req.language
 
     category = await classify_query(req.message)

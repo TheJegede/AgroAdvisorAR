@@ -12,7 +12,16 @@ def _with_admin_flag(profile: dict, user_id: str) -> dict:
     return {**profile, "is_admin": user_id in config.ADMIN_USER_IDS}
 
 
-_EMPTY_PROFILE = {"full_name": "", "county_fips": "", "primary_crops": [], "language": "en"}
+_EMPTY_PROFILE = {
+    "id": "",
+    "full_name": "",
+    "county_fips": "",
+    "county_name": "",
+    "primary_crops": [],
+    "language": "en",
+    "created_at": "",
+    "last_active": "",
+}
 
 @router.get("", response_model=FarmerProfile)
 async def read_profile(user: dict = Depends(get_current_user)):

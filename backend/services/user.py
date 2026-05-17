@@ -44,7 +44,7 @@ def get_profile(user_id: str) -> dict | None:
 
 def update_profile(user_id: str, updates: dict) -> dict:
     """updates dict contains only non-None fields from UpdateProfileRequest."""
-    if "county_fips" in updates:
+    if "county_fips" in updates and updates["county_fips"]:
         updates["county_name"] = AR_COUNTIES[updates["county_fips"]][0]
     client = _get_service_client()
     result = (
@@ -53,6 +53,19 @@ def update_profile(user_id: str, updates: dict) -> dict:
         .eq("id", user_id)
         .execute()
     )
-    if not result.data:
-        raise RuntimeError(f"Profile update returned no data for user {user_id}")
-    return result.data[0]
+    if result.data:
+        return result.data[0]
+    # No existing row (user created outside /register) — create with defaults
+    default_fips = updates.get("county_fips") or "05055"
+    row = {
+        "id": user_id,
+        "full_name": updates.get("full_name", ""),
+        "county_fips": default_fips,
+        "county_name": AR_COUNTIES[default_fips][0],
+        "primary_crops": updates.get("primary_crops", []),
+        "language": updates.get("language", "en"),
+    }
+    result2 = client.table("farmer_profiles").insert(row).execute()
+    if not result2.data:
+        raise RuntimeError(f"Profile insert returned no data for user {user_id}")
+    return result2.data[0]

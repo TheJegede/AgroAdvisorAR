@@ -4,7 +4,7 @@ import { loginAs, submitQuery, EMAIL, PASSWORD } from './helpers.js';
 test('thumbs-down opens comment field and submits feedback', async ({ page }) => {
   await loginAs(page, EMAIL, PASSWORD);
   await submitQuery(page, 'What causes rice sheath blight?');
-  await expect(page.getByText(/problem|summary/i)).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/problem|summary/i).first()).toBeVisible({ timeout: 30000 });
 
   const thumbsDown = page.getByRole('button', { name: /thumbs.?down|dislike|not helpful/i }).first();
   await thumbsDown.click();
@@ -20,7 +20,7 @@ test('thumbs-down opens comment field and submits feedback', async ({ page }) =>
 test('feedback API 429 shows retry message', async ({ page }) => {
   await loginAs(page, EMAIL, PASSWORD);
   await submitQuery(page, 'What causes rice sheath blight?');
-  await expect(page.getByText(/problem|summary/i)).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/problem|summary/i).first()).toBeVisible({ timeout: 30000 });
 
   await page.route('**/api/v1/feedback', (route) => {
     route.fulfill({

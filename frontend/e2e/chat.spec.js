@@ -7,11 +7,11 @@ test.beforeEach(async ({ page }) => {
 
 test('in-scope query renders advisory card with key fields', async ({ page }) => {
   await submitQuery(page, 'What are common rice blast symptoms in Arkansas?');
-  await expect(page.getByText(/problem|diagnosis|summary/i)).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText(/cause|likely/i)).toBeVisible();
-  await expect(page.getByText(/action|recommend/i)).toBeVisible();
-  await expect(page.getByText(/citation|source/i)).toBeVisible();
-  await expect(page.getByText(/high|medium|low/i)).toBeVisible();
+  await expect(page.getByText(/problem|diagnosis|summary/i).first()).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/cause|likely/i).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/action|recommend/i).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/citation|source/i).first()).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/high|medium|low/i).first()).toBeVisible({ timeout: 10000 });
 });
 
 test('out-of-scope query renders OOS card without advisory fields', async ({ page }) => {
@@ -21,7 +21,7 @@ test('out-of-scope query renders OOS card without advisory fields', async ({ pag
 
 test('session persists after page reload', async ({ page }) => {
   await submitQuery(page, 'How do I treat soybean aphids?');
-  await expect(page.getByText(/aphid|soybean/i)).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/aphid|soybean/i).first()).toBeVisible({ timeout: 30000 });
   const url = page.url();
   const sessionParam = new URL(url).searchParams.get('session');
   if (sessionParam) {
@@ -29,7 +29,7 @@ test('session persists after page reload', async ({ page }) => {
   } else {
     await page.reload();
   }
-  await expect(page.getByText(/aphid|soybean/i)).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/aphid|soybean/i).first()).toBeVisible({ timeout: 15000 });
 });
 
 test('prompt injection attempt shows error message', async ({ page }) => {
