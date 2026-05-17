@@ -16,7 +16,7 @@ test('in-scope query renders advisory card with key fields', async ({ page }) =>
 
 test('out-of-scope query renders OOS card without advisory fields', async ({ page }) => {
   await submitQuery(page, 'What is the capital of France?');
-  await expect(page.getByText(/specialized|out.?of.?scope|general.?purpose/i)).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText(/specialized|out.?of.?scope|general.?purpose/i).first()).toBeVisible({ timeout: 20000 });
 });
 
 test('session persists after page reload', async ({ page }) => {
