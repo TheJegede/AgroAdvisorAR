@@ -25,9 +25,15 @@ CREATE INDEX IF NOT EXISTS human_eval_scores_evaluator_recent
 -- RLS: evaluators can read their own scores; service-role bypasses for queue queries.
 ALTER TABLE public.human_eval_scores ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "evaluator_read_own_scores"
+    ON public.human_eval_scores;
+
 CREATE POLICY "evaluator_read_own_scores"
     ON public.human_eval_scores FOR SELECT
     USING (evaluator_id = auth.uid());
+
+DROP POLICY IF EXISTS "evaluator_insert_own_scores"
+    ON public.human_eval_scores;
 
 CREATE POLICY "evaluator_insert_own_scores"
     ON public.human_eval_scores FOR INSERT
