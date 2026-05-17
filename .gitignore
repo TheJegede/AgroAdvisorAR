@@ -36,3 +36,4 @@ docs/*
 !docs/superpowers/**
 AGENTS.md
 logs.md
+test-results/*
