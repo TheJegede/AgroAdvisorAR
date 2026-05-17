@@ -1,4 +1,5 @@
 """Auth endpoints — proxies to Supabase GoTrue for token issuance."""
+import hashlib
 import logging
 
 from fastapi import APIRouter, HTTPException, status
@@ -10,6 +11,7 @@ from models.user import (
     ResetPasswordRequest,
     TokenResponse,
 )
+from services.cache import rate_limit_hit
 from services.user import create_profile
 import config
 
@@ -95,6 +97,15 @@ async def reset_password(body: ResetPasswordRequest):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest):
+    email_key = hashlib.sha256(body.email.lower().encode()).hexdigest()[:24]
+    allowed, _ = rate_limit_hit(f"login_throttle:{email_key}", 10, 900)
+    if not allowed:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts. Please try again in 15 minutes.",
+            headers={"Retry-After": "900"},
+        )
+
     client = _get_anon_client()
     try:
         auth_resp = client.auth.sign_in_with_password({

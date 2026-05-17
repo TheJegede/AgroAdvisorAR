@@ -81,6 +81,25 @@ def test_admin_metrics_uses_rpc(monkeypatch):
     assert calls == ["get_admin_dashboard_metrics"]
 
 
+def test_login_rate_limit_returns_429_after_10_attempts(monkeypatch):
+    auth_router = importlib.import_module("routers.auth")
+    call_count = [0]
+
+    def fake_rate_limit(key, limit, window):
+        call_count[0] += 1
+        return False, 0  # False = not allowed (over limit)
+
+    monkeypatch.setattr(auth_router, "rate_limit_hit", fake_rate_limit)
+
+    login_body = auth_router.LoginRequest(email="farmer@test.com", password="pw")
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(auth_router.login(login_body))
+
+    assert exc_info.value.status_code == 429
+    assert call_count[0] == 1
+
+
 def test_query_stream_emits_error_payload_and_logs_persistence(monkeypatch, caplog):
     query_router = importlib.import_module("routers.query")
 
