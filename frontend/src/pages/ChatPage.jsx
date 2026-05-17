@@ -125,7 +125,7 @@ export default function ChatPage() {
               </svg>
             </div>
             <h1 className="text-xl font-bold text-charcoal dark:text-hc-fg mb-1">{t.appName}</h1>
-            <p className="text-sm text-gray-500 dark:text-hc-fg">{t.welcomeHeading}</p>
+            <p className="text-sm text-gray-600 dark:text-hc-fg">{t.welcomeHeading}</p>
           </div>
           <div className="flex flex-wrap gap-2 justify-center max-w-md">
             {examples.map((q) => (

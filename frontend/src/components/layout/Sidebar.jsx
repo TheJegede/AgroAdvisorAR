@@ -73,7 +73,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Brand */}
         <div className="px-5 pt-6 pb-4 flex-shrink-0">
           <p className="text-xl font-bold text-white tracking-tight">{t.appName}</p>
-          <p className="text-xs text-field-light mt-0.5">Arkansas Farming</p>
+          <p className="text-xs text-emerald-200 mt-0.5">Arkansas Farming</p>
         </div>
 
         {/* New Chat button */}
@@ -114,7 +114,7 @@ export default function Sidebar({ open, onClose }) {
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="text-white/50">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold text-white/75 uppercase tracking-wider">
               {t.recentConversations}
             </span>
           </div>
@@ -122,7 +122,7 @@ export default function Sidebar({ open, onClose }) {
           {/* Sessions list */}
           <div className="flex-1 overflow-y-auto flex flex-col gap-0.5 min-h-0 pb-2">
             {sessions.length === 0 ? (
-              <p className="text-xs text-white/30 px-3 py-1.5">{t.noSessions}</p>
+              <p className="text-xs text-white/60 px-3 py-1.5">{t.noSessions}</p>
             ) : (
               sessions.slice(0, 12).map((s) => (
                 <button
@@ -201,7 +201,7 @@ export default function Sidebar({ open, onClose }) {
             <p className="text-white text-sm font-medium truncate">
               {profile?.full_name || 'Farmer'}
             </p>
-            <p className="text-white/40 text-xs">{t.farmer}</p>
+            <p className="text-white/70 text-xs">{t.farmer}</p>
           </div>
         </div>
       </aside>

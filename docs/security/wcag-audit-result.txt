@@ -1,0 +1,15 @@
+Logged in as user.
+
+--- Auditing / ---
+PASS /: 0 violations
+
+--- Auditing /profile ---
+PASS /profile: 0 violations
+
+Logged in as admin.
+
+--- Auditing /admin ---
+PASS /admin: 0 violations
+
+--- Auditing /admin/queue ---
+PASS /admin/queue: 0 violations
