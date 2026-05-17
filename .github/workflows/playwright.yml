@@ -59,9 +59,11 @@ jobs:
       - name: Wait for backend to be ready
         run: |
           for i in $(seq 1 20); do
-            curl -s http://localhost:8000/docs > /dev/null && echo "Backend ready" && break
+            curl -s http://localhost:8000/docs > /dev/null && echo "Backend ready" && exit 0
             sleep 2
           done
+          echo "Backend did not become ready in time"
+          exit 1
 
       - name: Run Playwright tests
         working-directory: frontend
@@ -77,5 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
           retention-days: 7

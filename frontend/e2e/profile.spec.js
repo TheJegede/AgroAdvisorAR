@@ -1,12 +1,15 @@
 import { test, expect } from '@playwright/test';
-import { loginAs, EMAIL, PASSWORD } from './helpers.js';
+import { loginAs, mockProfileBackend, EMAIL, PASSWORD } from './helpers.js';
 
 test('update county persists after page reload', async ({ page }) => {
+  await mockProfileBackend(page);
   await loginAs(page, EMAIL, PASSWORD);
   await page.goto('/profile');
   await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL('/profile');
 
   const countySelect = page.locator('select').first();
+  await expect(countySelect).toBeVisible();
   await countySelect.selectOption({ index: 3 });
   const savedCounty = await countySelect.inputValue();
 

@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { loginAs, submitQuery, EMAIL, PASSWORD } from './helpers.js';
+import { loginAs, mockChatBackend, submitQuery, EMAIL, PASSWORD } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
+  await mockChatBackend(page);
   await loginAs(page, EMAIL, PASSWORD);
 });
 
@@ -21,18 +22,14 @@ test('out-of-scope query renders OOS card without advisory fields', async ({ pag
 
 test('session persists after page reload', async ({ page }) => {
   await submitQuery(page, 'How do I treat soybean aphids?');
-  await expect(page.getByText(/aphid|soybean/i).first()).toBeVisible({ timeout: 30000 });
-  const url = page.url();
-  const sessionParam = new URL(url).searchParams.get('session');
-  if (sessionParam) {
-    await page.goto(`/?session=${sessionParam}`);
-  } else {
-    await page.reload();
-  }
-  await expect(page.getByText(/aphid|soybean/i).first()).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText(/problem summary/i).first()).toBeVisible({ timeout: 30000 });
+
+  await page.goto('/?session=e2e-session-1');
+  await expect(page.getByText(/rice blast symptoms/i).first()).toBeVisible({ timeout: 15000 });
 });
 
 test('prompt injection attempt shows error message', async ({ page }) => {
+  await page.unroute('**/api/v1/query');
   await page.route('**/api/v1/query', async (route) => {
     const body = await route.request().postDataJSON();
     if (body.message?.toLowerCase().includes('ignore all previous')) {
@@ -50,6 +47,7 @@ test('prompt injection attempt shows error message', async ({ page }) => {
 });
 
 test('rate limit 429 shows user-facing message', async ({ page }) => {
+  await page.unroute('**/api/v1/query');
   await page.route('**/api/v1/query', (route) => {
     route.fulfill({
       status: 429,

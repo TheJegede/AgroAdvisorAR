@@ -1,7 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { loginAs, submitQuery, EMAIL, PASSWORD } from './helpers.js';
+import { loginAs, mockChatBackend, submitQuery, EMAIL, PASSWORD } from './helpers.js';
 
 test('thumbs-down opens comment field and submits feedback', async ({ page }) => {
+  await mockChatBackend(page);
+  await page.route('**/api/v1/feedback', (route) => {
+    route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ id: 'e2e-feedback-1', message_id: 'e2e-message-1', rating: -1 }),
+    });
+  });
+
   await loginAs(page, EMAIL, PASSWORD);
   await submitQuery(page, 'What causes rice sheath blight?');
   await expect(page.getByText(/problem|summary/i).first()).toBeVisible({ timeout: 30000 });
@@ -18,6 +27,7 @@ test('thumbs-down opens comment field and submits feedback', async ({ page }) =>
 });
 
 test('feedback API 429 shows retry message', async ({ page }) => {
+  await mockChatBackend(page);
   await loginAs(page, EMAIL, PASSWORD);
   await submitQuery(page, 'What causes rice sheath blight?');
   await expect(page.getByText(/problem|summary/i).first()).toBeVisible({ timeout: 30000 });

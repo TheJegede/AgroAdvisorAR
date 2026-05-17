@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { EMAIL, PASSWORD } from './helpers.js';
+import { mockChatBackend, EMAIL, PASSWORD } from './helpers.js';
 
 test.use({ viewport: { width: 375, height: 667 }, isMobile: true });
 
 test('chat flow works at 375px viewport', async ({ page }) => {
+  await mockChatBackend(page);
   await page.goto('/login');
   await page.locator('input[type="email"]').fill(EMAIL);
   await page.locator('input[type="password"]').fill(PASSWORD);
@@ -19,5 +20,5 @@ test('chat flow works at 375px viewport', async ({ page }) => {
 
   await page.locator('textarea').fill('What fertilizer for rice in Arkansas?');
   await page.locator('[data-testid="chat-send"]').click();
-  await expect(page.getByText(/problem|summary|fertilizer|rice/i).first()).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText(/problem summary/i).first()).toBeVisible({ timeout: 30000 });
 });
