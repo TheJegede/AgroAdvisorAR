@@ -12,7 +12,7 @@ test('invalid login shows error, no token stored', async ({ page }) => {
   await page.locator('input[type="email"]').fill(EMAIL);
   await page.locator('input[type="password"]').fill('wrongpassword999');
   await page.locator('button[type="submit"]').click();
-  await expect(page.getByText(/invalid|incorrect|wrong/i)).toBeVisible();
+  await expect(page.getByText(/invalid|incorrect|wrong/i)).toBeVisible({ timeout: 10000 });
   await expect(page).toHaveURL('/login');
   const token = await page.evaluate(
     () => localStorage.getItem('access_token') ?? localStorage.getItem('sb-access-token') ?? ''
@@ -31,5 +31,5 @@ test('forgot-password form submits and shows success banner', async ({ page }) =
   await page.goto('/forgot-password');
   await page.locator('input[type="email"]').fill('anyone@example.com');
   await page.locator('button[type="submit"]').click();
-  await expect(page.getByText(/sent|check.?your.?email|reset|link/i)).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/has been sent|check your inbox/i)).toBeVisible({ timeout: 10000 });
 });

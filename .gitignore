@@ -35,3 +35,4 @@ docs/*
 !docs/superpowers/
 !docs/superpowers/**
 AGENTS.md
+logs.md

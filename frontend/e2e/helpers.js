@@ -8,7 +8,7 @@ export async function loginAs(page, email, password) {
 
 export async function submitQuery(page, text) {
   await page.locator('textarea').fill(text);
-  await page.locator('button[type="submit"]').click();
+  await page.locator('[data-testid="chat-send"]').click();
 }
 
 export const EMAIL = process.env.TEST_EMAIL ?? '';

@@ -12,11 +12,11 @@ def _with_admin_flag(profile: dict, user_id: str) -> dict:
     return {**profile, "is_admin": user_id in config.ADMIN_USER_IDS}
 
 
+_EMPTY_PROFILE = {"full_name": "", "county_fips": "", "primary_crops": [], "language": "en"}
+
 @router.get("", response_model=FarmerProfile)
 async def read_profile(user: dict = Depends(get_current_user)):
-    profile = get_profile(user["sub"])
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Profile not found")
+    profile = get_profile(user["sub"]) or _EMPTY_PROFILE
     return _with_admin_flag(profile, user["sub"])
 
 

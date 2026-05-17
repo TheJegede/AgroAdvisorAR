@@ -80,6 +80,8 @@ export default function ChatInput({ onSubmit, disabled }) {
 
         {/* Send — circle button */}
         <button
+          type="button"
+          data-testid="chat-send"
           onClick={submit}
           disabled={disabled || !text.trim() || text.length > MAX_CHARS}
           className="w-9 h-9 flex items-center justify-center rounded-full bg-field text-white
