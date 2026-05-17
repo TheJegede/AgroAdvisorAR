@@ -28,5 +28,10 @@ context.md
 CLAUDE.md
 handoff-*.md
 AgroAdvisor_AR_PRD_v2.md
-docs/
+docs/*
+!docs/security/
+!docs/security/**
+!docs/status-bar.md
+!docs/superpowers/
+!docs/superpowers/**
 AGENTS.md
