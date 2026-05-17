@@ -13,6 +13,14 @@ export async function submitQuery(page, text) {
   await page.locator('[data-testid="chat-send"]').click();
 }
 
+function requestJson(route) {
+  try {
+    return route.request().postDataJSON() ?? {};
+  } catch {
+    return {};
+  }
+}
+
 export const advisoryFixture = {
   problem_summary: 'Rice blast symptoms include diamond-shaped leaf lesions and neck blast in Arkansas rice.',
   likely_causes: [
@@ -51,7 +59,7 @@ export async function mockChatBackend(page) {
 
   await page.route('**/api/v1/sessions', async (route) => {
     if (route.request().method() !== 'POST') return route.continue();
-    const body = await route.request().postDataJSON().catch(() => ({}));
+    const body = requestJson(route);
     latestUserMessage = body.preview || latestUserMessage;
     return route.fulfill({
       status: 201,
@@ -94,7 +102,7 @@ export async function mockChatBackend(page) {
   });
 
   await page.route('**/api/v1/query', async (route) => {
-    const body = await route.request().postDataJSON().catch(() => ({}));
+    const body = requestJson(route);
     latestUserMessage = body.message || latestUserMessage;
 
     if (latestUserMessage.toLowerCase().includes('capital of france')) {
@@ -132,7 +140,7 @@ export async function mockProfileBackend(page) {
 
   await page.route('**/api/v1/profile', async (route) => {
     if (route.request().method() === 'PATCH') {
-      const updates = await route.request().postDataJSON().catch(() => ({}));
+      const updates = requestJson(route);
       profile = { ...profile, ...updates };
     }
 
