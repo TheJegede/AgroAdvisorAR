@@ -8,6 +8,7 @@ from routers.query import router as query_router
 from routers.sessions import router as sessions_router
 from routers.feedback import router as feedback_router
 from routers.admin import router as admin_router
+from routers.drift_reports import router as drift_reports_router
 
 if config.SENTRY_DSN:
     sentry_sdk.init(dsn=config.SENTRY_DSN, traces_sample_rate=0.1)
@@ -32,6 +33,7 @@ app.include_router(query_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
 app.include_router(feedback_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(drift_reports_router, prefix="/api/v1")
 
 
 @app.get("/health")
