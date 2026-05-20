@@ -67,3 +67,30 @@ export function useEvalQueue() {
 
   return { items, loading, error, filter, offset, load, submitScore }
 }
+
+
+export function useDriftReportAdmin() {
+  const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const refresh = useCallback(async ({ dateFrom, dateTo } = {}) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = {}
+      if (dateFrom) params.date_from = dateFrom
+      if (dateTo) params.date_to = dateTo
+      const { data } = await api.get('/admin/drift-reports', { params })
+      setReports(data)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to load drift reports')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { refresh() }, [refresh])
+
+  return { reports, loading, error, refresh }
+}

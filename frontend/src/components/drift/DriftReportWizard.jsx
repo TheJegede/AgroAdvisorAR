@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLang } from '../../contexts/LangContext'
 import { useProfile } from '../../hooks/useProfile'
 import { useDriftReports, getDriftStepErrors } from '../../hooks/useDriftReports'
@@ -70,6 +70,7 @@ export default function DriftReportWizard() {
   const [step, setStep] = useState(1)
   const [errs, setErrs] = useState({})
   const [submitted, setSubmitted] = useState(null)
+  const profileCountySynced = useRef(false)
 
   const [form, setForm] = useState({
     incident_date: '',
@@ -86,7 +87,8 @@ export default function DriftReportWizard() {
   })
 
   useEffect(() => {
-    if (profile?.county_fips && !form.county_fips) {
+    if (profile?.county_fips && !profileCountySynced.current) {
+      profileCountySynced.current = true
       set('county_fips', profile.county_fips)
     }
   }, [profile?.county_fips])
