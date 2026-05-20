@@ -52,3 +52,18 @@ def admin_submit_score(req: ScoreRequest, user: dict = Depends(require_admin)):
         "accuracy_score": row["accuracy_score"],
         "created_at": row["created_at"],
     }
+
+
+@router.get("/drift-reports")
+def admin_drift_reports(
+    county_fips: str | None = Query(default=None),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    _: dict = Depends(require_admin),
+):
+    from services.drift_service import list_all_reports
+    return list_all_reports(
+        county_fips=county_fips,
+        date_from=date_from,
+        date_to=date_to,
+    )
