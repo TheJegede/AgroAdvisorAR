@@ -6,6 +6,7 @@ import AppShell from './components/layout/AppShell'
 import ProtectedRoute from './components/ui/ProtectedRoute'
 import AdminRoute from './components/ui/AdminRoute'
 import LoginPage from './pages/LoginPage'
+import AuthCallbackPage from './pages/AuthCallbackPage'
 import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -14,6 +15,7 @@ import ProfilePage from './pages/ProfilePage'
 import SessionsPage from './pages/SessionsPage'
 import AdminDashboardPage from './pages/AdminDashboardPage'
 import EvalQueuePage from './pages/EvalQueuePage'
+import DriftReportPage from './pages/DriftReportPage'
 
 // Remounts ChatPage when ?session param changes OR when navigating to / fresh.
 // sessionParam stabilises the key while viewing a saved session.
@@ -35,6 +37,7 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route
               element={
                 <ProtectedRoute>
@@ -45,6 +48,7 @@ export default function App() {
               <Route path="/" element={<ChatPageWrapper />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/sessions" element={<SessionsPage />} />
+              <Route path="/drift-report" element={<DriftReportPage />} />
               <Route
                 path="/admin"
                 element={<AdminRoute><AdminDashboardPage /></AdminRoute>}
