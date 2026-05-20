@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLang } from '../../contexts/LangContext'
 import { useProfile } from '../../hooks/useProfile'
 import { useDriftReports, getDriftStepErrors } from '../../hooks/useDriftReports'
@@ -29,7 +29,7 @@ function StepIndicator({ step, titles }) {
         const isDone = n < step
         return (
           <li key={n} className="flex-1 flex items-center">
-            <div className="flex flex-col items-center flex-1">
+            <div className="flex flex-col items-center">
               <span
                 aria-current={isCurrent ? 'step' : undefined}
                 className={[
@@ -84,6 +84,12 @@ export default function DriftReportWizard() {
     photos_records: false,
     aspb_submitted: false,
   })
+
+  useEffect(() => {
+    if (profile?.county_fips && !form.county_fips) {
+      set('county_fips', profile.county_fips)
+    }
+  }, [profile?.county_fips])
 
   const stepTitles = lang === 'es' ? STEP_TITLES_ES : STEP_TITLES_EN
 
@@ -175,7 +181,7 @@ export default function DriftReportWizard() {
           {lang === 'es' ? 'Descargar PDF de queja ASPB' : 'Download ASPB Complaint PDF'}
         </button>
         <button
-          onClick={() => { setSubmitted(null); setStep(1); setForm(f => ({ ...f, incident_date: '', affected_crop: '', affected_acres: '', symptom_types: [], symptoms_description: '', neighboring_applicator: '' })) }}
+          onClick={() => { setSubmitted(null); setStep(1); setForm(f => ({ ...f, incident_date: '', affected_crop: '', affected_acres: '', symptom_types: [], symptoms_description: '', neighboring_applicator: '', photos_field: false, photos_gps: false, photos_records: false, aspb_submitted: false })) }}
           className={BTN_GHOST_CLS + ' w-full mt-2'}
         >
           {lang === 'es' ? 'Nuevo reporte' : 'File another report'}
