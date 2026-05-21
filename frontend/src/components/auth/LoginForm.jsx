@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLang } from '../../contexts/LangContext'
 import api from '../../lib/api'
+import { supabase } from '../../lib/supabase'
 import Alert from '../ui/Alert'
 
 function MailIcon() {
@@ -54,6 +55,14 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  async function handleGoogleSignIn() {
+    setError('')
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -125,7 +134,7 @@ export default function LoginForm() {
             className="peer sr-only"
           />
           <span className="relative h-5 w-10 rounded-full border border-white/20 bg-white/20 shadow-inner transition after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-emerald-300/80 peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-200/60 dark:border-hc-border dark:bg-hc-bg" />
-          <span>Remember me</span>
+          <span>{t.rememberMe}</span>
         </label>
         <Link to="/forgot-password" className="font-medium text-white/80 transition hover:text-white hover:underline dark:text-hc-accent">
           {t.forgotPassword}
@@ -137,28 +146,28 @@ export default function LoginForm() {
         disabled={loading}
         className="mt-3 min-h-touch w-full rounded-xl bg-gradient-to-r from-emerald-400 via-lime-300 to-harvest px-5 py-3 font-bold text-[#092014] shadow-[0_16px_36px_rgba(45,106,79,0.34),inset_0_1px_0_rgba(255,255,255,0.42)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-emerald-100/70 disabled:cursor-not-allowed disabled:opacity-60 dark:border-2 dark:border-hc-border dark:bg-hc-accent dark:bg-none dark:text-hc-accent-fg"
       >
-        {loading ? t.sending : 'Enter AgroAdvisor'}
+        {loading ? t.sending : t.enterApp}
       </button>
 
       <div className="my-4 flex items-center gap-3 text-xs text-white/50 dark:text-hc-fg">
         <span className="h-px flex-1 bg-white/20 dark:bg-hc-border" />
-        <span>quick access via</span>
+        <span>{t.quickAccessVia}</span>
         <span className="h-px flex-1 bg-white/20 dark:bg-hc-border" />
       </div>
 
       <button
         type="button"
-        onClick={() => setError('Google sign-in is not connected yet. Use email and password for now.')}
+        onClick={handleGoogleSignIn}
         className="flex min-h-touch w-full items-center justify-center gap-3 rounded-xl border border-white/20 bg-black/20 px-4 py-2.5 text-sm font-semibold text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-emerald-200/50 dark:border-2 dark:border-hc-border dark:bg-hc-bg dark:text-hc-fg"
       >
         <GoogleIcon />
-        <span>Continue with Google</span>
+        <span>{t.continueWithGoogle}</span>
       </button>
 
       <p className="pt-2 text-center text-sm text-white/70 dark:text-hc-fg">
         {t.noAccount}{' '}
         <Link to="/register" className="font-bold text-white transition hover:text-emerald-100 hover:underline dark:text-hc-accent">
-          Create Account
+          {t.createAccount}
         </Link>
       </p>
     </form>
