@@ -24,7 +24,7 @@ function SidebarNavItem({ to, onClick, children, ariaPressed, ariaLabel }) {
 
 export default function Sidebar({ open, onClose }) {
   const { logout } = useAuth()
-  const { lang, setLang, t } = useLang()
+  const { lang, setLang, resetLang, t } = useLang()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
@@ -41,6 +41,7 @@ export default function Sidebar({ open, onClose }) {
 
   function handleLogout() {
     logout()
+    resetLang()
     navigate('/login')
   }
 

@@ -200,6 +200,11 @@ export const LABELS = {
     continueWithGoogle: 'Continue with Google',
     createAccount: 'Create Account',
     driftReport: 'Drift Report',
+    authEyebrow: 'Arkansas field intelligence',
+    loginSubtitle: 'Your crop and livestock advisor awaits',
+    loginCrops: 'Rice - soybeans - poultry',
+    registerSubtitle: 'Arkansas Agricultural Advisor',
+    copyright: '(c) 2026 AgroAdvisor AR. All rights reserved.',
   },
   es: {
     appName: 'AgroAdvisor AR',
@@ -402,5 +407,10 @@ export const LABELS = {
     continueWithGoogle: 'Continuar con Google',
     createAccount: 'Crear cuenta',
     driftReport: 'Reporte de Deriva',
+    authEyebrow: 'Inteligencia de campo de Arkansas',
+    loginSubtitle: 'Tu asesor de cultivos y ganado te espera',
+    loginCrops: 'Arroz - soya - avicultura',
+    registerSubtitle: 'Asesor Agricola de Arkansas',
+    copyright: '(c) 2026 AgroAdvisor AR. Todos los derechos reservados.',
   },
 }

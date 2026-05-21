@@ -18,6 +18,7 @@ api.interceptors.response.use(
       if (!isAuthEndpoint) {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
+        localStorage.removeItem('agro_lang')
         window.location.href = '/login'
       }
     }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useLang } from '../contexts/LangContext'
 import api from '../lib/api'
 import Alert from '../components/ui/Alert'
+import AuthLanguageSwitcher from '../components/auth/AuthLanguageSwitcher'
 import farmBg from '../assets/farm-bg.png'
 
 export default function ForgotPasswordPage() {
@@ -41,10 +42,11 @@ export default function ForgotPasswordPage() {
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(108deg,transparent_4%,rgba(255,255,255,0.12)_43%,rgba(255,255,255,0.045)_49%,transparent_60%)] dark:hidden" aria-hidden="true" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/15 to-transparent dark:hidden" aria-hidden="true" />
           <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:hidden" aria-hidden="true" />
+          <AuthLanguageSwitcher />
 
           <div className="relative mb-8 text-center">
             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-emerald-100/70 dark:text-hc-fg">
-              Arkansas field intelligence
+              {t.authEyebrow}
             </p>
             <h1 className="text-3xl font-bold text-white drop-shadow-lg dark:text-hc-fg">{t.appName}</h1>
             <p className="mt-3 text-sm font-medium text-white/80 dark:text-hc-fg">
@@ -102,7 +104,7 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
       <p className="relative z-10 mt-6 text-xs text-white/50 drop-shadow dark:text-hc-fg">
-        (c) 2026 AgroAdvisor AR. All rights reserved.
+        {t.copyright}
       </p>
     </main>
   )
