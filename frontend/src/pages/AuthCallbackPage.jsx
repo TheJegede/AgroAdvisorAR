@@ -15,6 +15,7 @@ export default function AuthCallbackPage() {
     handled.current = true
 
     async function handleCallback() {
+      if (!supabase) { setFailed(true); return }
       const { data: { session }, error } = await supabase.auth.getSession()
       if (error || !session) {
         setFailed(true)

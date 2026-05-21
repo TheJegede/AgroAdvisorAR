@@ -43,7 +43,7 @@ async function mockRoutes(page) {
     return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(FAKE_REPORT) });
   });
   await page.route('**/api/v1/drift-reports/*/pdf', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/pdf', body: Buffer.from('%PDF-1.4 mock') })
+    route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4 mock' })
   );
 }
 

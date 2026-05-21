@@ -1,6 +1,6 @@
 # AgroAdvisor AR — Completion to Production
 
-**Last updated:** 2026-05-19  
+**Last updated:** 2026-05-20  
 **MVP target:** September 2026  
 **Production readiness:** 71%  
 **PRD phase progress:** 80%
@@ -52,7 +52,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | 8 | Public GitHub README (arch diagram + eval results) | NIW evidence | +2% | ☐ |
 | 9 | Locust load test (50 concurrent users) | Security/testing | +1% | ☐ |
 | **Tier 1 Features (planned — Tier1_Implementation_Plan Addition.md)** | | | | |
-| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☐ |
+| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☐ (code done 2026-05-20; pending Railway deploy) |
 | T2 | F3 · First RWW/Palmer alert fired to pilot farmer | Real users / data | +3% | ☐ |
 | T3 | F2 · Citation guard v2 live (confidence scores in prod) | Security / testing | +2% | ☐ |
 | T4 | F5 · AWD scheduler live + first re-flood alert fired | Core RAG system | +2% | ☐ |
@@ -104,6 +104,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | Auth page glassmorphism parity (Register/Forgot/Reset now match Login style; white wrapper removed from RegisterPage) | Frontend UI | 2026-05-19 |
 | i18n cleanup — 5 hardcoded LoginForm strings moved to `i18n.js` EN+ES (`enterApp`, `rememberMe`, `quickAccessVia`, `continueWithGoogle`, `createAccount`) | Frontend UI | 2026-05-19 |
 | `isNewChat` lint fix — `npm run lint` now passes 0 errors | Frontend UI | 2026-05-19 |
+| F4 Dicamba drift tool — wizard (3-step, EN+ES), Open-Meteo weather auto-fill, reportlab PDF, migration 006, admin drift tab + amber choropleth layer, 3 Playwright E2E tests | Frontend UI + Core RAG | 2026-05-20 |
 
 ---
 
