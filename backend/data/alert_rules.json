@@ -1,0 +1,18 @@
+[
+  {
+    "crop": "rice",
+    "pest": "rice_water_weevil",
+    "gdd_lower": 150,
+    "gdd_upper": null,
+    "message_en": "Rice water weevil adult emergence likely. Apply insecticide within 5–7 days of flood. See UA Extension MP144.",
+    "message_es": "Emergencia probable de gorgojo acuático del arroz. Aplique insecticida dentro de 5–7 días del riego. Ver MP144."
+  },
+  {
+    "crop": "soybean",
+    "pest": "palmer_amaranth",
+    "gdd_lower": 200,
+    "gdd_upper": 450,
+    "message_en": "Palmer amaranth germination window open. Spray now — window closes at GDD 450. See UA Extension FSA2153.",
+    "message_es": "Ventana de germinación de amaranto Palmer abierta. Aplique herbicida ahora — cierra a GDD 450. Ver FSA2153."
+  }
+]
