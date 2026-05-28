@@ -1,0 +1,452 @@
+{
+  "05001": {
+    "county": "Arkansas",
+    "agent_name": "Grant Beckwith",
+    "phone": "(870) 659-2058",
+    "email": "arkansas-dewitt@uada.edu"
+  },
+  "05003": {
+    "county": "Ashley",
+    "agent_name": "Kevin A Norton",
+    "phone": "(870) 853-2080",
+    "email": "ashley-hamburg@uada.edu"
+  },
+  "05005": {
+    "county": "Baxter",
+    "agent_name": "Amanda Rychtarik",
+    "phone": "(870) 425-2335",
+    "email": "baxter-mthome@uada.edu"
+  },
+  "05007": {
+    "county": "Benton",
+    "agent_name": "Johnny Gunsaulis",
+    "phone": "(479) 271-1060",
+    "email": "benton-bentonville@uada.edu"
+  },
+  "05009": {
+    "county": "Boone",
+    "agent_name": "Cody Salmon",
+    "phone": "(870) 741-6168",
+    "email": "boone-harrison@uada.edu"
+  },
+  "05011": {
+    "county": "Bradley",
+    "agent_name": "Penny Waits",
+    "phone": "(870) 226-8410",
+    "email": "bradley-warren@uada.edu"
+  },
+  "05013": {
+    "county": "Calhoun",
+    "agent_name": "Shaney Hill",
+    "phone": "(870) 798-2231",
+    "email": "calhoun-hampton@uada.edu"
+  },
+  "05015": {
+    "county": "Carroll",
+    "agent_name": "Torrie A Smith",
+    "phone": "(870) 423-2958",
+    "email": "carroll-berryville@uada.edu"
+  },
+  "05017": {
+    "county": "Chicot",
+    "agent_name": "Christa Mazzanti",
+    "phone": "(870) 265-8055",
+    "email": "chicot-lakevillage@uada.edu"
+  },
+  "05019": {
+    "county": "Clark",
+    "agent_name": "Amy Simpson",
+    "phone": "(870) 246-2281",
+    "email": "clark-arkadelphia@uada.edu"
+  },
+  "05021": {
+    "county": "Clay",
+    "agent_name": "Stewart K Runsick",
+    "phone": "(870) 598-2246",
+    "email": "clay-piggott@uada.edu"
+  },
+  "05023": {
+    "county": "Cleburne",
+    "agent_name": "Amy E Heck",
+    "phone": "(501) 362-2524",
+    "email": "cleburne-hebersprings@uada.edu"
+  },
+  "05025": {
+    "county": "Cleveland",
+    "agent_name": "David West",
+    "phone": "(870) 325-6321",
+    "email": "cleveland-rison@uada.edu"
+  },
+  "05027": {
+    "county": "Columbia",
+    "agent_name": "Hannah Boyte",
+    "phone": "(870) 235-3720",
+    "email": "columbia-magnolia@uada.edu"
+  },
+  "05029": {
+    "county": "Conway",
+    "agent_name": "Alicia Hugen",
+    "phone": "(501) 977-2146",
+    "email": "conway-morrilton@uada.edu"
+  },
+  "05031": {
+    "county": "Craighead",
+    "agent_name": "Branon Ralph Thiesse",
+    "phone": "(870) 933-4565",
+    "email": "craighead-jonesboro@uada.edu"
+  },
+  "05033": {
+    "county": "Crawford",
+    "agent_name": "Landon Gunnell",
+    "phone": "(479) 474-5286",
+    "email": "crawford-vanburen@uada.edu"
+  },
+  "05035": {
+    "county": "Crittenden",
+    "agent_name": "Katrina Wallace",
+    "phone": "(870) 739-3239",
+    "email": "crittenden-marion@uada.edu"
+  },
+  "05037": {
+    "county": "Cross",
+    "agent_name": "Jenna Martin",
+    "phone": "(870) 238-5745",
+    "email": "cross-wynne@uada.edu"
+  },
+  "05039": {
+    "county": "Dallas",
+    "agent_name": "JoAnn Vann",
+    "phone": "(870) 352-3505",
+    "email": "dallas-fordyce@uada.edu"
+  },
+  "05041": {
+    "county": "Desha",
+    "agent_name": "Heather Maria Reed",
+    "phone": "(870) 222-3972",
+    "email": "desha-mcgehee@uada.edu"
+  },
+  "05043": {
+    "county": "Drew",
+    "agent_name": "Hazelene McCray",
+    "phone": "870-460-6270",
+    "email": "drew-monticello@uada.edu"
+  },
+  "05045": {
+    "county": "Faulkner",
+    "agent_name": "Mary Beth Groce",
+    "phone": "(501) 329-8344",
+    "email": "faulkner-conway@uada.edu"
+  },
+  "05047": {
+    "county": "Franklin",
+    "agent_name": "Casey Ford",
+    "phone": "(479) 667-3720",
+    "email": "franklin-ozark@uada.edu"
+  },
+  "05049": {
+    "county": "Fulton",
+    "agent_name": "MaLinda Coffman",
+    "phone": "(870) 895-3301",
+    "email": "fulton-salem@uada.edu"
+  },
+  "05051": {
+    "county": "Garland",
+    "agent_name": "Jimmy K Driggers",
+    "phone": "(501) 623-6841",
+    "email": "garland-hotsprings@uada.edu"
+  },
+  "05053": {
+    "county": "Grant",
+    "agent_name": "Brad McGinley",
+    "phone": "(870) 942-2231",
+    "email": "grant-sheridan@uada.edu"
+  },
+  "05055": {
+    "county": "Greene",
+    "agent_name": "Lance Blythe",
+    "phone": "(870)\u00a0236-6921",
+    "email": "greene-paragould@uada.edu"
+  },
+  "05057": {
+    "county": "Hempstead",
+    "agent_name": "Terrie James",
+    "phone": "(870)\u00a0777-5771",
+    "email": "hempstead-hope@uada.edu"
+  },
+  "05059": {
+    "county": "Hot Spring",
+    "agent_name": "Rachel Bearden",
+    "phone": "(501)\u00a0332-5267",
+    "email": "hotspring-malvern@uada.edu"
+  },
+  "05061": {
+    "county": "Howard",
+    "agent_name": "Samantha Horn",
+    "phone": "(870)\u00a0845-7517",
+    "email": "dbailey@uada.edu"
+  },
+  "05063": {
+    "county": "Independence",
+    "agent_name": "Michelle Mobley",
+    "phone": "(870)\u00a0793-8840",
+    "email": "independence-batesville@uada.edu"
+  },
+  "05065": {
+    "county": "Izard",
+    "agent_name": "Michael A Paskewitz",
+    "phone": "(870)\u00a0368-4323",
+    "email": "izard-melbourne@uada.edu"
+  },
+  "05067": {
+    "county": "Jackson",
+    "agent_name": "Joy L. West",
+    "phone": "(870)\u00a0523-7450",
+    "email": "jackson-newport@uada.edu"
+  },
+  "05069": {
+    "county": "Jefferson",
+    "agent_name": "Kevin L Harris",
+    "phone": "(870)\u00a0534-1033",
+    "email": "jefferson-pinebluff@uada.edu"
+  },
+  "05071": {
+    "county": "Johnson",
+    "agent_name": "Jesse Taylor",
+    "phone": "(479)\u00a0754-2240",
+    "email": "johnson-clarksville@uada.edu"
+  },
+  "05073": {
+    "county": "Lafayette",
+    "agent_name": "Jerri Lea Dew",
+    "phone": "(870)\u00a0921-4744",
+    "email": "lafayette-lewisville@uada.edu"
+  },
+  "05075": {
+    "county": "Lawrence",
+    "agent_name": "Bryce N Baldridge",
+    "phone": "(870)\u00a0886-3741",
+    "email": "lawrence-walnutridge@uada.edu"
+  },
+  "05077": {
+    "county": "Lee",
+    "agent_name": "Ashley L Cuzzort",
+    "phone": "(870)\u00a0295-7720",
+    "email": "lee-marianna@uada.edu"
+  },
+  "05079": {
+    "county": "Lincoln",
+    "agent_name": "Steven Ray Stone",
+    "phone": "(870)\u00a0628-4247",
+    "email": "lincoln-starcity@uada.edu"
+  },
+  "05081": {
+    "county": "Little River",
+    "agent_name": "Jennifer Jo Sansom",
+    "phone": "(870) 898-7224",
+    "email": "littleriver-ashdown@uada.edu"
+  },
+  "05083": {
+    "county": "Logan",
+    "agent_name": "Bob S Harper",
+    "phone": "(479)\u00a0963-2360",
+    "email": "logan-paris@uada.edu"
+  },
+  "05085": {
+    "county": "Lonoke",
+    "agent_name": "Kyle Sanders",
+    "phone": "(501) 676-3124",
+    "email": "lonoke-lonoke@uada.edu"
+  },
+  "05087": {
+    "county": "Madison",
+    "agent_name": "Caramie Edwards",
+    "phone": "(479)\u00a0738-6826",
+    "email": "madison-huntsville@uada.edu"
+  },
+  "05089": {
+    "county": "Marion",
+    "agent_name": "Brian Scott See",
+    "phone": "(870)\u00a0449-6349",
+    "email": "marion-yellville@uada.edu"
+  },
+  "05091": {
+    "county": "Miller",
+    "agent_name": "Jennifer Ashley Caraway",
+    "phone": "(870)\u00a0779-3609",
+    "email": "miller-texarkana@uada.edu"
+  },
+  "05093": {
+    "county": "Mississippi",
+    "agent_name": "Alan Beach",
+    "phone": "870-563-0236",
+    "email": "mississippi-blytheville@uada.edu"
+  },
+  "05095": {
+    "county": "Monroe",
+    "agent_name": "Valerie N Turner",
+    "phone": "(870)\u00a0747-3397",
+    "email": "monroe-clarendon@uada.edu"
+  },
+  "05097": {
+    "county": "Montgomery",
+    "agent_name": "Karalee Black",
+    "phone": "(870)\u00a0867-2311",
+    "email": "montgomery-mtida@uada.edu"
+  },
+  "05099": {
+    "county": "Nevada",
+    "agent_name": "Stacey R Stone",
+    "phone": "(870)\u00a0887-2818",
+    "email": "nevada-prescott@uada.edu"
+  },
+  "05101": {
+    "county": "Newton",
+    "agent_name": "Adam Willis",
+    "phone": "(870)\u00a0446-2240",
+    "email": "newton-jasper@uada.edu"
+  },
+  "05103": {
+    "county": "Ouachita",
+    "agent_name": "Keri Weatherford",
+    "phone": "(870)\u00a0231-1160",
+    "email": "ouachita-camden@uada.edu"
+  },
+  "05105": {
+    "county": "Perry",
+    "agent_name": "Blake Erbach",
+    "phone": "(501)\u00a0889-2661",
+    "email": "perry-perryville@uada.edu"
+  },
+  "05107": {
+    "county": "Phillips",
+    "agent_name": "Shawn D Payne",
+    "phone": "(870)\u00a0338-8027",
+    "email": "phillips-helena@uada.edu"
+  },
+  "05109": {
+    "county": "Pike",
+    "agent_name": "Eva Langley",
+    "phone": "(870)\u00a0285-2161",
+    "email": "pike-murfreesboro@uada.edu"
+  },
+  "05111": {
+    "county": "Poinsett",
+    "agent_name": "Michael Chaney",
+    "phone": "(870)\u00a0578-4490",
+    "email": "poinsett-harrisburg@uada.edu"
+  },
+  "05113": {
+    "county": "Polk",
+    "agent_name": "Bridgett Shenoa Martin",
+    "phone": "(479)\u00a0394-6018",
+    "email": "polk-mena@uada.edu"
+  },
+  "05115": {
+    "county": "Pope",
+    "agent_name": "Brandon Yarbery",
+    "phone": "(479)\u00a0968-7098",
+    "email": "pope-russellville@uada.edu"
+  },
+  "05117": {
+    "county": "Prairie",
+    "agent_name": "Jacob Holloway",
+    "phone": "(870)\u00a0998-2614",
+    "email": "prairie-devallsbluff@uada.edu"
+  },
+  "05119": {
+    "county": "Pulaski",
+    "agent_name": "Blanca Margarita Hernandez",
+    "phone": "(501)\u00a0340-6650",
+    "email": "pulaski-littlerock@uada.edu"
+  },
+  "05121": {
+    "county": "Randolph",
+    "agent_name": "Mike Clifford Andrews",
+    "phone": "(870)\u00a0892-4504",
+    "email": "randolph-pocahontas@uada.edu"
+  },
+  "05125": {
+    "county": "Saline",
+    "agent_name": "Nicole Julia Nichols",
+    "phone": "(501)\u00a0303-5672",
+    "email": "saline-benton@uada.edu"
+  },
+  "05127": {
+    "county": "Scott",
+    "agent_name": "Shaun R Rhoades",
+    "phone": "(479)\u00a0637-2173",
+    "email": "scott-waldron@uada.edu"
+  },
+  "05129": {
+    "county": "Searcy",
+    "agent_name": "Clyde D Fenton",
+    "phone": "(870)\u00a0448-3981",
+    "email": "searcy-marshall@uada.edu"
+  },
+  "05131": {
+    "county": "Sebastian",
+    "agent_name": "Brent Clark",
+    "phone": "(479)\u00a0484-7737",
+    "email": "sebastian-ftsmith@uada.edu"
+  },
+  "05133": {
+    "county": "Sevier",
+    "agent_name": "Rex Dwayne Herring",
+    "phone": "(870) 584-3013",
+    "email": "sevier-dequeen@uada.edu"
+  },
+  "05135": {
+    "county": "Sharp",
+    "agent_name": "Chelsea Elizabeth Conway",
+    "phone": "(870)\u00a0994-7363",
+    "email": "sharp-ashflat@uada.edu"
+  },
+  "05123": {
+    "county": "St. Francis",
+    "agent_name": "Marla Lane",
+    "phone": "(870)\u00a0261-1730",
+    "email": "stfrancis-forrestcity@uada.edu"
+  },
+  "05137": {
+    "county": "Stone",
+    "agent_name": "Tyler Allen Caston",
+    "phone": "(870) 269-3336",
+    "email": "stone-mtview@uada.edu"
+  },
+  "05139": {
+    "county": "Union",
+    "agent_name": "Jason Hillman",
+    "phone": "(870) 864-1916",
+    "email": "union-eldorado@uada.edu"
+  },
+  "05141": {
+    "county": "Van Buren",
+    "agent_name": "Danny Griffin",
+    "phone": "(501)\u00a0745-7117",
+    "email": "vanburen-clinton@uada.edu"
+  },
+  "05143": {
+    "county": "Washington",
+    "agent_name": "Katie Teague",
+    "phone": "(479)\u00a0444-1755",
+    "email": "washington-fayetteville@uada.edu"
+  },
+  "05145": {
+    "county": "White",
+    "agent_name": "Brian Haller",
+    "phone": "(501)\u00a0268-5394",
+    "email": "white-searcy@uada.edu"
+  },
+  "05147": {
+    "county": "Woodruff",
+    "agent_name": "Jerrod Haynes",
+    "phone": "(870)\u00a0347-2556",
+    "email": "woodruff-augusta@uada.edu"
+  },
+  "05149": {
+    "county": "Yell",
+    "agent_name": "Bobby Lee Powell",
+    "phone": "(479) 495-2216",
+    "email": "yell-danville@uada.edu"
+  }
+}
