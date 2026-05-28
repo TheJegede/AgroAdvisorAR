@@ -44,6 +44,28 @@ EVAL_FAIL_CI_ON_STATUS = {
 }
 
 
+def _fetch_confidence_mean() -> float | None:
+    """Query recent chat_messages for mean confidence_score. Returns None if unavailable."""
+    if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
+        return None
+    try:
+        from supabase import create_client
+        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        rows = (
+            client.table("chat_messages")
+            .select("confidence_score")
+            .not_.is_("confidence_score", "null")
+            .order("created_at", desc=True)
+            .limit(100)
+            .execute()
+        )
+        scores = [r["confidence_score"] for r in (rows.data or []) if r.get("confidence_score") is not None]
+        return round(sum(scores) / len(scores), 4) if scores else None
+    except Exception as e:
+        print(f"Confidence mean fetch failed: {e}")
+        return None
+
+
 def _maybe_run_answer_eval(eval_set_path: Path) -> tuple[float | None, str, str | None]:
     """Optionally run LLM-as-judge answer correctness eval."""
     if not RUN_ANSWER_EVAL:
@@ -82,6 +104,7 @@ def _write_to_supabase(summary: dict, answer_pct: float | None) -> None:
             "answer_status": summary["answer_status"],
             "run_status": summary["run_status"],
             "error_message": summary.get("error_message"),
+            "answer_confidence_mean": summary.get("answer_confidence_mean"),
         }).execute()
         print("Wrote eval_runs row to Supabase")
     except Exception as e:
@@ -153,6 +176,12 @@ def run_eval(eval_set_path: Path = DEFAULT_EVAL_SET) -> dict:
         summary["answer_correct_pct"] = answer_pct
     if answer_error:
         summary["error_message"] = answer_error
+
+    # Fetch answer confidence mean from recent chat_messages
+    conf_mean = _fetch_confidence_mean()
+    if conf_mean is not None:
+        summary["answer_confidence_mean"] = conf_mean
+
     if summary["retrieval_status"] == "failed":
         summary["run_status"] = "failed"
     elif answer_status == "failed":
