@@ -71,3 +71,55 @@ def test_list_alerts_returns_empty_when_no_alerts(monkeypatch):
     user = {"sub": "farmer-uuid-1"}
     result = asyncio.run(mod.list_alerts(user))
     assert result == []
+
+
+def test_dismiss_alert_sets_dismissed_at(monkeypatch):
+    mod = importlib.import_module("routers.alerts")
+    updated = []
+
+    class FakeResult:
+        data = {"id": "alert-uuid-1", "farmer_id": "farmer-uuid-1"}
+
+    class FakeChain:
+        def select(self, *a): return self
+        def eq(self, *a): return self
+        def maybe_single(self): return self
+        def update(self, patch):
+            updated.append(patch)
+            return self
+        def execute(self): return FakeResult()
+
+    class FakeClient:
+        def table(self, _): return FakeChain()
+
+    monkeypatch.setattr(mod, "_get_service_client", lambda: FakeClient())
+
+    user = {"sub": "farmer-uuid-1"}
+    # Should complete without raising (204 = None return)
+    asyncio.run(mod.dismiss_alert("alert-uuid-1", user))
+    assert len(updated) == 1
+    assert "dismissed_at" in updated[0]
+
+
+def test_dismiss_alert_raises_404_for_wrong_farmer(monkeypatch):
+    mod = importlib.import_module("routers.alerts")
+
+    class FakeResult:
+        data = {"id": "alert-uuid-1", "farmer_id": "other-farmer"}
+
+    class FakeChain:
+        def select(self, *a): return self
+        def eq(self, *a): return self
+        def maybe_single(self): return self
+        def execute(self): return FakeResult()
+
+    class FakeClient:
+        def table(self, _): return FakeChain()
+
+    monkeypatch.setattr(mod, "_get_service_client", lambda: FakeClient())
+
+    import pytest
+    user = {"sub": "farmer-uuid-1"}
+    with pytest.raises(Exception) as exc_info:
+        asyncio.run(mod.dismiss_alert("alert-uuid-1", user))
+    assert "404" in str(exc_info.value) or "not found" in str(exc_info.value).lower()
