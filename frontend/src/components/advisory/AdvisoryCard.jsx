@@ -1,6 +1,8 @@
 import { Component } from 'react'
 import { useLang } from '../../contexts/LangContext'
 import ConfidenceBadge from './ConfidenceBadge'
+import NLIConfidenceBadge from './NLIConfidenceBadge'
+import EscalationCard from './EscalationCard'
 import ContextMetaBar from './ContextMetaBar'
 import LowConfidenceBanner from './LowConfidenceBanner'
 import WarningsBanner from './WarningsBanner'
@@ -51,11 +53,13 @@ function AdvisoryCardInner({ response, messageId, category }) {
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <ConfidenceBadge confidence={response.confidence} />
+          <NLIConfidenceBadge confidence_score={response.confidence_score} />
           <CropChip category={category} />
         </div>
         <ContextMetaBar meta={response.context_meta} />
       </div>
       <ConfidenceExplainer explanation={response.confidence_explanation} />
+      <EscalationCard escalation={response.escalation} />
 
       {response.confidence === 'Low' && <LowConfidenceBanner />}
       <WarningsBanner warnings={response.warnings} />
