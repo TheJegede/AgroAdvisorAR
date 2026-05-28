@@ -35,6 +35,7 @@ def build_system_prompt(
     language: str,
     is_safety_critical: bool,
     county_name: str,
+    awd_context: str | None = None,
 ) -> str:
     parts = [ROLE_BLOCK, ""]
 
@@ -45,6 +46,11 @@ def build_system_prompt(
             parts.append("SOIL: " + json.dumps(soil_context, indent=None))
         if weather_context.get("available"):
             parts.append("WEATHER: " + json.dumps(weather_context, indent=None))
+        parts.append("")
+
+    # AWD irrigation context (rice queries only)
+    if awd_context:
+        parts.append(awd_context)
         parts.append("")
 
     # Retrieved document context

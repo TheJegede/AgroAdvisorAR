@@ -68,6 +68,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
 
     profile = get_profile(user["sub"])
     county_fips = (profile or {}).get("county_fips") or "05055"
+    rice_fields = (profile or {}).get("rice_fields") or []
     language = req.language
 
     category = await classify_query(req.message, last_category=req.last_category)
@@ -98,6 +99,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 language=language,
                 category=category,
                 session_history=req.session_history,
+                rice_fields=rice_fields,
             )
 
             assistant_message_id: str | None = None

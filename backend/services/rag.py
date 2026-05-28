@@ -1,5 +1,6 @@
 """Core RAG chain: retrieve → inject context → Gemini structured output."""
 import asyncio
+from datetime import date as _date
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_pinecone import PineconeVectorStore
@@ -131,6 +132,7 @@ async def run_rag_query(
     language: str,
     category: str,
     session_history: list[dict],
+    rice_fields: list[dict] | None = None,
 ) -> tuple[AdvisoryResponse, list[dict]]:
     """Returns (advisory, retrieved_chunks)."""
     context_task = asyncio.create_task(get_context(county_fips))
@@ -152,6 +154,30 @@ async def run_rag_query(
     soil = ctx["soil"]
     weather = ctx["weather"]
 
+    # AWD context injection for rice queries with registered fields
+    awd_context: str | None = None
+    if rice_fields and category == "IN_SCOPE_RICE":
+        from services import awd_scheduler
+        from services.context import fetch_usgs_well
+        usgs = await fetch_usgs_well(county_fips)
+        stress = (usgs or {}).get("stress_level", "normal")
+        well_m = (usgs or {}).get("current_depth_m")
+        drainage = soil.get("drainage_class") or "default"
+
+        awd_results = [
+            awd_scheduler.compute_awd_stage(
+                field_name=f["field_name"],
+                last_flood_date=_date.fromisoformat(f["last_flood_date"]),
+                drainage_class=drainage,
+                current_well_m=well_m,
+                aquifer_stress_level=stress,
+            )
+            for f in rice_fields[:3]
+            if f.get("field_name") and f.get("last_flood_date")
+        ]
+        if awd_results:
+            awd_context = awd_scheduler.format_awd_context(awd_results)
+
     county_info = get_county_info(county_fips)
     county_name = county_info["county_name"] if county_info else county_fips
 
@@ -163,6 +189,7 @@ async def run_rag_query(
         language=language,
         is_safety_critical=(category == "SAFETY_CRITICAL"),
         county_name=county_name,
+        awd_context=awd_context,
     )
 
     messages = [
