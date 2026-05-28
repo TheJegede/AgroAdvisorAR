@@ -43,14 +43,22 @@ EVAL_FAIL_CI_ON_STATUS = {
     if s.strip()
 }
 
+_supabase_client = None
+
+def _get_supabase_client():
+    global _supabase_client
+    if _supabase_client is None:
+        from supabase import create_client
+        _supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    return _supabase_client
+
 
 def _fetch_confidence_mean() -> float | None:
     """Query recent chat_messages for mean confidence_score. Returns None if unavailable."""
     if not (SUPABASE_URL and SUPABASE_SERVICE_KEY):
         return None
     try:
-        from supabase import create_client
-        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        client = _get_supabase_client()
         rows = (
             client.table("chat_messages")
             .select("confidence_score")
@@ -92,8 +100,7 @@ def _write_to_supabase(summary: dict, answer_pct: float | None) -> None:
         print("Skipping Supabase write — SUPABASE_URL / SUPABASE_SERVICE_KEY not set")
         return
     try:
-        from supabase import create_client
-        client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        client = _get_supabase_client()
         client.table("eval_runs").insert({
             "mrr_at_5": summary["mrr_at_5"],
             "ndcg_at_5": summary["ndcg_at_5"],
