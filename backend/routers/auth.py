@@ -50,6 +50,7 @@ async def register(body: RegisterRequest):
         county_fips=body.county_fips,
         primary_crops=body.primary_crops,
         language=body.language,
+        rice_fields=[f.model_dump() for f in body.rice_fields],
     )
 
     if auth_resp.session is None:

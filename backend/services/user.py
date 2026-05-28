@@ -20,6 +20,7 @@ def create_profile(
     county_fips: str,
     primary_crops: list[str],
     language: str,
+    rice_fields: list[dict] | None = None,
 ) -> dict:
     county_name = AR_COUNTIES[county_fips][0]
     client = _get_service_client()
@@ -30,6 +31,7 @@ def create_profile(
         "county_name": county_name,
         "primary_crops": primary_crops,
         "language": language,
+        "rice_fields": rice_fields or [],
     }).execute()
     if not result.data:
         raise RuntimeError(f"Profile insert returned no data for user {user_id}")
@@ -46,6 +48,11 @@ def update_profile(user_id: str, updates: dict) -> dict:
     """updates dict contains only non-None fields from UpdateProfileRequest."""
     if "county_fips" in updates and updates["county_fips"]:
         updates["county_name"] = AR_COUNTIES[updates["county_fips"]][0]
+    if "rice_fields" in updates and updates["rice_fields"] is not None:
+        updates["rice_fields"] = [
+            f.model_dump() if hasattr(f, "model_dump") else f
+            for f in updates["rice_fields"]
+        ]
     client = _get_service_client()
     result = (
         client.table("farmer_profiles")
