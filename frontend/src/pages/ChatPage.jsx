@@ -8,6 +8,7 @@ import ChatHistory from '../components/chat/ChatHistory'
 import ChatInput from '../components/chat/ChatInput'
 import Alert from '../components/ui/Alert'
 import Spinner from '../components/ui/Spinner'
+import AlertBanner from '../components/AlertBanner'
 
 export default function ChatPage() {
   const { lang, t } = useLang()
@@ -22,6 +23,7 @@ export default function ChatPage() {
   const [lastAdvisory, setLastAdvisory] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [loadingSession, setLoadingSession] = useState(false)
+  const [prefill, setPrefill] = useState('')
 
   const sessionParam = searchParams.get('session')
 
@@ -134,6 +136,8 @@ export default function ChatPage() {
         </div>
       )}
 
+      <AlertBanner onPrefill={setPrefill} />
+
       {messages.length === 0 ? (
         /* Empty state — centered welcome */
         <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6 text-center">
@@ -186,7 +190,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      <ChatInput onSubmit={handleSubmit} disabled={streaming} />
+      <ChatInput onSubmit={handleSubmit} disabled={streaming} prefill={prefill} />
     </div>
   )
 }
