@@ -17,7 +17,10 @@ export default function NLIConfidenceBadge({ confidence_score }) {
   if (confidence_score == null) return null
   const color = scoreColor(confidence_score)
   return (
-    <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${STYLES[color]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${STYLES[color]}`}
+      aria-label={`${t.nliScore}: ${confidence_score.toFixed(2)}`}
+    >
       {t.nliScore}: {confidence_score.toFixed(2)}
     </span>
   )
