@@ -1,0 +1,7 @@
+{
+  "poorly drained":           {"dry_rate_cm_per_day": 0.5, "threshold_cm": 15},
+  "somewhat poorly drained":  {"dry_rate_cm_per_day": 0.8, "threshold_cm": 15},
+  "moderately well drained":  {"dry_rate_cm_per_day": 1.2, "threshold_cm": 15},
+  "well drained":             {"dry_rate_cm_per_day": 1.5, "threshold_cm": 15},
+  "default":                  {"dry_rate_cm_per_day": 0.8, "threshold_cm": 15}
+}
