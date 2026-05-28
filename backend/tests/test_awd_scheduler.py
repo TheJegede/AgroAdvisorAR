@@ -132,3 +132,27 @@ def test_format_awd_context_contains_field_and_recommendation():
         assert "[AWD IRRIGATION STATUS]" in ctx
     finally:
         os.unlink(path)
+
+
+def test_rice_field_model_validates():
+    import importlib
+    mod = importlib.import_module("models.user")
+    from datetime import date as d
+    rf = mod.RiceField(field_name="South 20", last_flood_date=d(2026, 5, 1))
+    assert rf.irrigation_method == "continuous flood"
+    assert rf.acres is None
+
+
+def test_register_request_accepts_rice_fields():
+    import importlib
+    mod = importlib.import_module("models.user")
+    from datetime import date as d
+    req = mod.RegisterRequest(
+        email="t@test.com",
+        password="testpass1",
+        full_name="Test",
+        county_fips="05001",
+        rice_fields=[{"field_name": "f1", "last_flood_date": "2026-05-01", "acres": None, "irrigation_method": "awd"}],
+    )
+    assert len(req.rice_fields) == 1
+    assert req.rice_fields[0].field_name == "f1"

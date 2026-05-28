@@ -1,7 +1,15 @@
 """Pydantic schemas for auth and farmer profile endpoints."""
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Literal
+from typing import Literal, Optional
+from datetime import date
 from utils.counties import AR_COUNTIES
+
+
+class RiceField(BaseModel):
+    field_name: str
+    acres: Optional[float] = None
+    last_flood_date: date
+    irrigation_method: Literal["continuous flood", "intermittent", "awd"] = "continuous flood"
 
 
 class RegisterRequest(BaseModel):
@@ -11,6 +19,7 @@ class RegisterRequest(BaseModel):
     county_fips: str
     primary_crops: list[Literal["rice", "soybeans", "poultry"]] = Field(default_factory=list)
     language: Literal["en", "es"] = "en"
+    rice_fields: list[RiceField] = Field(default_factory=list)
 
     @field_validator("county_fips")
     @classmethod
@@ -65,6 +74,7 @@ class FarmerProfile(BaseModel):
     created_at: str
     last_active: str
     is_admin: bool = False
+    rice_fields: list[dict] = Field(default_factory=list)
 
 
 class UpdateProfileRequest(BaseModel):
@@ -72,6 +82,7 @@ class UpdateProfileRequest(BaseModel):
     county_fips: str | None = None
     primary_crops: list[Literal["rice", "soybeans", "poultry"]] | None = None
     language: Literal["en", "es"] | None = None
+    rice_fields: Optional[list[RiceField]] = None
 
     @field_validator("county_fips")
     @classmethod
