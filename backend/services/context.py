@@ -3,11 +3,15 @@ import asyncio
 import json
 import logging
 import httpx
+from datetime import date as _date
 from utils.counties import get_county_info, fips_to_areasymbol
 from services.cache import cache_get, cache_set
 import config
 
 logger = logging.getLogger(__name__)
+
+USGS_IV_URL = "https://waterservices.usgs.gov/nwis/iv/"
+USGS_STAT_URL = "https://waterservices.usgs.gov/nwis/stat/"
 
 SSURGO_QUERY = """
 SELECT TOP 1
@@ -142,3 +146,117 @@ async def get_context(fips: str) -> dict:
         fetch_noaa(fips),
     )
     return {"soil": soil, "weather": weather}
+
+
+async def fetch_usgs_well(fips: str) -> dict | None:
+    """Return {site_no, current_depth_m, stress_level} for nearest USGS groundwater well.
+
+    Uses USGS Instantaneous Values API (parameterCd=72019 = depth to water, ft below surface).
+    Stress level derived from daily percentiles: >p90 = critical, >p75 = stressed.
+    Returns None on any failure — callers must treat None as 'data unavailable'.
+    Results cached 24 h in Redis.
+    """
+    cache_key = f"usgs_well:{fips}"
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+
+    county = get_county_info(fips)
+    if not county:
+        return None
+
+    lat, lon = county["lat"], county["lon"]
+
+    # Step 1: fetch nearest active groundwater well within 0.5-degree bbox
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            iv_resp = await client.get(
+                USGS_IV_URL,
+                params={
+                    "format": "json",
+                    "stateCd": "AR",
+                    "parameterCd": "72019",
+                    "siteType": "GW",
+                    "siteStatus": "active",
+                    "bBox": f"{lon - 0.5},{lat - 0.5},{lon + 0.5},{lat + 0.5}",
+                },
+            )
+            iv_resp.raise_for_status()
+            iv_data = iv_resp.json()
+    except Exception:
+        logger.warning("USGS IV fetch failed fips=%s", fips)
+        return None
+
+    series = (iv_data.get("value") or {}).get("timeSeries") or []
+    if not series:
+        return None
+
+    # Pick site nearest to county centroid (Euclidean distance on lat/lon)
+    def _dist(ts):
+        geo = ((ts.get("sourceInfo") or {}).get("geoLocation") or {}).get("geogLocation") or {}
+        return (float(geo.get("latitude", 0)) - lat) ** 2 + (float(geo.get("longitude", 0)) - lon) ** 2
+
+    ts = min(series, key=_dist)
+    site_no = (((ts.get("sourceInfo") or {}).get("siteCode") or [{}])[0]).get("value", "")
+    raw_values = (((ts.get("values") or [{}])[0]).get("value") or [])
+    if not raw_values:
+        return None
+
+    try:
+        current_depth_ft = float(raw_values[-1]["value"])
+    except (ValueError, KeyError):
+        return None
+
+    current_depth_m = round(current_depth_ft * 0.3048, 3)
+
+    # Step 2: get today's day-of-year percentile baseline from USGS stats API
+    stress_level = "normal"
+    try:
+        today_mmdd = _date.today().strftime("%m-%d")  # e.g. "05-28"
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            stat_resp = await client.get(
+                USGS_STAT_URL,
+                params={
+                    "format": "json",
+                    "sites": site_no,
+                    "parameterCd": "72019",
+                    "statReportType": "daily",
+                    "statType": "p75_va,p90_va",
+                },
+            )
+            stat_resp.raise_for_status()
+            stat_data = stat_resp.json()
+
+        p75: float | None = None
+        p90: float | None = None
+        for s in ((stat_data.get("value") or {}).get("timeSeries") or []):
+            name = s.get("name", "")
+            vals = (((s.get("values") or [{}])[0]).get("value") or [])
+            # Find today's entry (dateTime format from USGS stats API: "1900-MM-DD")
+            for entry in vals:
+                dt = entry.get("dateTime", "")
+                if dt.endswith(today_mmdd):
+                    try:
+                        v = float(entry["value"])
+                    except (ValueError, KeyError):
+                        continue
+                    if "p75_va" in name:
+                        p75 = v
+                    elif "p90_va" in name:
+                        p90 = v
+                    break
+
+        if p90 is not None and current_depth_ft > p90:
+            stress_level = "critical"
+        elif p75 is not None and current_depth_ft > p75:
+            stress_level = "stressed"
+    except Exception:
+        logger.warning("USGS stats fetch failed site=%s", site_no)
+
+    result: dict = {
+        "site_no": site_no,
+        "current_depth_m": current_depth_m,
+        "stress_level": stress_level,
+    }
+    cache_set(cache_key, result, ttl=86400)
+    return result
