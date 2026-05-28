@@ -1,7 +1,7 @@
 -- backend/supabase/migrations/005_alerts.sql
-CREATE TABLE alerts (
+CREATE TABLE IF NOT EXISTS public.alerts (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  farmer_id    uuid REFERENCES farmer_profiles(id) ON DELETE CASCADE,
+  farmer_id    uuid REFERENCES public.farmer_profiles(id) ON DELETE CASCADE,
   pest         text NOT NULL,
   county_fips  text NOT NULL,
   gdd_value    float,
@@ -11,7 +11,14 @@ CREATE TABLE alerts (
   dismissed_at timestamptz
 );
 
-ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.alerts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "farmer sees own alerts" ON alerts
+CREATE POLICY "farmer sees own alerts" ON public.alerts
   FOR SELECT USING (farmer_id = auth.uid());
+
+CREATE POLICY "farmer dismisses own alerts" ON public.alerts
+  FOR UPDATE USING (farmer_id = auth.uid())
+  WITH CHECK (farmer_id = auth.uid());
+
+CREATE INDEX IF NOT EXISTS alerts_farmer_active
+  ON public.alerts (farmer_id, dismissed_at, fired_at DESC);
