@@ -1,11 +1,27 @@
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 import json
 import tempfile
 import os
 from datetime import date, timedelta
+
+import pytest
+import services.awd_scheduler as _awd_mod
+
+_REAL_THRESHOLDS_PATH = _awd_mod._THRESHOLDS_PATH
+
+
+@pytest.fixture(autouse=True)
+def _restore_scheduler():
+    """Restore module state after each test."""
+    yield
+    _awd_mod._THRESHOLDS_PATH = _REAL_THRESHOLDS_PATH
+    _awd_mod._thresholds = None
 
 
 def _write_thresholds():
@@ -23,7 +39,6 @@ def _write_thresholds():
 
 
 def _make_scheduler(path):
-    import importlib
     import services.awd_scheduler as mod
     mod._thresholds = None  # reset cache
     mod._THRESHOLDS_PATH = Path(path)

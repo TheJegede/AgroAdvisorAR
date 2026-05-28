@@ -35,8 +35,14 @@ def compute_awd_stage(
 ) -> AWDStageResult:
     thresholds = _get_thresholds()
     key = (drainage_class or "").lower()
-    cfg = thresholds.get(key) or thresholds["default"]
+    cfg = thresholds.get(key) or thresholds.get("default")
+    if cfg is None:
+        raise KeyError(f"No config for drainage_class '{key}' and no 'default' key in thresholds JSON")
+
     dry_rate: float = cfg["dry_rate_cm_per_day"]
+    if dry_rate <= 0:
+        raise ValueError(f"dry_rate_cm_per_day must be positive for '{key}', got {dry_rate}")
+
     threshold_cm: float = cfg["threshold_cm"]
 
     days_elapsed = max(0, (date.today() - last_flood_date).days)
@@ -47,8 +53,9 @@ def compute_awd_stage(
     else:
         days_left = math.ceil((threshold_cm - estimated_depth_cm) / dry_rate)
 
+    rec: Literal["maintain flood", "prepare to re-flood", "re-flood now"]
     if days_left <= 0:
-        rec: Literal["maintain flood", "prepare to re-flood", "re-flood now"] = "re-flood now"
+        rec = "re-flood now"
     elif days_left <= 2:
         rec = "prepare to re-flood"
     else:
