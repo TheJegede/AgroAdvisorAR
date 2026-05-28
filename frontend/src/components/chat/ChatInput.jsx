@@ -5,7 +5,7 @@ const MAX_CHARS = 800
 const WARN_AT = 600
 const EMPTY_ERROR_MS = 2500
 
-export default function ChatInput({ onSubmit, disabled }) {
+export default function ChatInput({ onSubmit, disabled, prefill = '' }) {
   const { t } = useLang()
   const [text, setText] = useState('')
   const [emptyError, setEmptyError] = useState(false)
@@ -20,6 +20,10 @@ export default function ChatInput({ onSubmit, disabled }) {
   }, [text])
 
   useEffect(() => () => clearTimeout(emptyTimerRef.current), [])
+
+  useEffect(() => {
+    if (prefill) setText(prefill)
+  }, [prefill])
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
