@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Optional
@@ -14,9 +15,13 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 import config
 from models.advisory import ClaimResult
 
+logger = logging.getLogger(__name__)
+
 # Thresholds (tune during eval)
 ESCALATION_THRESHOLD = 0.4
 SUPPRESSION_THRESHOLD = 0.2
+
+_NLI_LABELS = ["CONTRADICTED", "ENTAILED", "NEUTRAL"]
 
 _AGENTS_PATH = str(Path(__file__).parent.parent / "data" / "county_agents.json")
 _agents_cache: Optional[dict] = None
@@ -49,7 +54,8 @@ def _load_agents() -> dict:
     if _agents_cache is None:
         try:
             _agents_cache = json.loads(Path(_AGENTS_PATH).read_text())
-        except Exception:
+        except Exception as e:
+            logger.warning("Failed to load county_agents.json: %s", e)
             _agents_cache = {}
     return _agents_cache
 
@@ -76,8 +82,8 @@ async def decompose_claims(answer: str) -> list[str]:
         claims = json.loads(raw)
         if isinstance(claims, list):
             return [str(c) for c in claims[:8] if c]
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Gemini claim decomposition failed, using sentence fallback: %s", e)
     # Fallback: sentence split
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", answer) if len(s.strip()) > 10]
     return sentences[:8]
@@ -93,8 +99,8 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
 
     model = _get_nli_model()
     pairs = [(claim, chunk) for chunk in chunks[:3]]
-    # scores shape: (n_pairs, 3) — raw logits, label order: [contradiction, entailment, neutral]
-    scores = np.array(model.predict(pairs))
+    # scores shape: (n_pairs, 3) — apply_softmax=True ensures scores are valid probabilities in [0, 1]
+    scores = np.array(model.predict(pairs, apply_softmax=True))
     if scores.ndim == 1:
         scores = scores.reshape(1, -1)
 
@@ -104,8 +110,7 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
     best_scores = scores[best_chunk_idx]
 
     label_idx = int(best_scores.argmax())
-    _LABELS = ["CONTRADICTED", "ENTAILED", "NEUTRAL"]
-    label = _LABELS[label_idx]
+    label = _NLI_LABELS[label_idx]
 
     # Use entailment probability directly (CrossEncoder returns softmax probabilities)
     score = float(best_scores[1])
