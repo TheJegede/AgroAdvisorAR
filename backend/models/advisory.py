@@ -26,6 +26,12 @@ class ContextMeta(BaseModel):
     county_fips: str
 
 
+class ClaimResult(BaseModel):
+    claim: str
+    label: Literal['ENTAILED', 'NEUTRAL', 'CONTRADICTED']
+    score: float
+
+
 class AdvisoryResponse(BaseModel):
     problem_summary: str
     likely_causes: List[Cause]
@@ -37,4 +43,8 @@ class AdvisoryResponse(BaseModel):
     confidence_explanation: str
     language: Literal["en", "es"]
     context_meta: ContextMeta
+    # F2 fields — Optional for backwards compat with stored messages
+    confidence_score: Optional[float] = None
+    claim_verification: Optional[List[ClaimResult]] = None
+    escalation: Optional[str] = None
 
