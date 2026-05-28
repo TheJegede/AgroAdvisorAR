@@ -56,6 +56,7 @@ export default function ChatPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(message) {
+    setPrefill('')
     const userMsg = { id: Date.now(), role: 'user', type: 'text', content: message }
     setMessages((prev) => [...prev, userMsg])
 
