@@ -109,6 +109,8 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                         json.dumps(result.model_dump(), ensure_ascii=False),
                         "advisory",
                         retrieved_chunks=retrieved_chunks,
+                        confidence_score=result.confidence_score,
+                        escalated=result.escalation is not None,
                     )
                     assistant_message_id = assistant_row["id"]
                 except Exception:

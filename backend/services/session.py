@@ -34,6 +34,8 @@ def add_message(
     content: str,
     content_type: str,
     retrieved_chunks: list[dict] | None = None,
+    confidence_score: float | None = None,
+    escalated: bool | None = None,
 ) -> dict:
     client = _get_service_client()
     row = {
@@ -45,6 +47,10 @@ def add_message(
     }
     if retrieved_chunks is not None:
         row["retrieved_chunks"] = retrieved_chunks
+    if confidence_score is not None:
+        row["confidence_score"] = confidence_score
+    if escalated is not None:
+        row["escalated"] = escalated
     result = client.table("chat_messages").insert(row).execute()
     if not result.data:
         raise RuntimeError(f"Message insert returned no data for session {session_id}")
