@@ -184,7 +184,7 @@ async def fetch_usgs_well(fips: str) -> dict | None:
             iv_resp.raise_for_status()
             iv_data = iv_resp.json()
     except Exception:
-        logger.warning("USGS IV fetch failed fips=%s", fips)
+        logger.warning("USGS IV fetch failed fips=%s", fips, exc_info=True)
         return None
 
     series = (iv_data.get("value") or {}).get("timeSeries") or []
@@ -198,6 +198,8 @@ async def fetch_usgs_well(fips: str) -> dict | None:
 
     ts = min(series, key=_dist)
     site_no = (((ts.get("sourceInfo") or {}).get("siteCode") or [{}])[0]).get("value", "")
+    if not site_no:
+        return None
     raw_values = (((ts.get("values") or [{}])[0]).get("value") or [])
     if not raw_values:
         return None
@@ -221,7 +223,7 @@ async def fetch_usgs_well(fips: str) -> dict | None:
                     "sites": site_no,
                     "parameterCd": "72019",
                     "statReportType": "daily",
-                    "statType": "p75_va,p90_va",
+                    "statType": "p75,p90",
                 },
             )
             stat_resp.raise_for_status()
@@ -251,7 +253,7 @@ async def fetch_usgs_well(fips: str) -> dict | None:
         elif p75 is not None and current_depth_ft > p75:
             stress_level = "stressed"
     except Exception:
-        logger.warning("USGS stats fetch failed site=%s", site_no)
+        logger.warning("USGS stats fetch failed site=%s", site_no, exc_info=True)
 
     result: dict = {
         "site_no": site_no,
