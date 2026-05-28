@@ -146,3 +146,70 @@ def test_verify_claim_contradicted(monkeypatch):
 
     result = mod.verify_claim("Do not irrigate.", ["Irrigation is required in dry spells."])
     assert result.label == "CONTRADICTED"
+
+
+def test_postprocess_stamps_confidence_score(monkeypatch):
+    import asyncio
+    rag = importlib.import_module("services.rag")
+    guard = importlib.import_module("services.citation_guard_v2")
+
+    async def fake_verify_answer(answer, chunks):
+        return {
+            "confidence_score": 0.82,
+            "claim_verification": [],
+            "escalation": None,
+        }
+
+    monkeypatch.setattr(guard, "verify_answer", fake_verify_answer)
+    monkeypatch.setattr(guard, "escalation_cue", lambda fips: None)
+
+    from models.advisory import AdvisoryResponse, ContextMeta
+    ctx = ContextMeta(soil_data_available=False, weather_data_available=False, county_fips="05001")
+    resp = AdvisoryResponse(
+        problem_summary="Palmer amaranth detected.",
+        likely_causes=[],
+        recommended_actions=["Apply herbicide at V3."],
+        products_rates=[],
+        warnings=[],
+        citations=[],
+        confidence="Medium",
+        confidence_explanation="Two sources.",
+        language="en",
+        context_meta=ctx,
+    )
+
+    result = asyncio.run(rag._postprocess_async(resp, [], {}, {}, "05001"))
+    assert result.confidence_score == 0.82
+
+
+def test_postprocess_suppresses_body_below_threshold(monkeypatch):
+    import asyncio
+    rag = importlib.import_module("services.rag")
+    guard = importlib.import_module("services.citation_guard_v2")
+
+    async def fake_verify_low(answer, chunks):
+        return {"confidence_score": 0.10, "claim_verification": [], "escalation": None}
+
+    monkeypatch.setattr(guard, "verify_answer", fake_verify_low)
+    monkeypatch.setattr(guard, "escalation_cue", lambda fips: "Contact: Jane Smith — 870-555-0100")
+
+    from models.advisory import AdvisoryResponse, ContextMeta
+    ctx = ContextMeta(soil_data_available=False, weather_data_available=False, county_fips="05001")
+    resp = AdvisoryResponse(
+        problem_summary="Some advice.",
+        likely_causes=[],
+        recommended_actions=["Do something."],
+        products_rates=[],
+        warnings=[],
+        citations=[],
+        confidence="Low",
+        confidence_explanation="Weak.",
+        language="en",
+        context_meta=ctx,
+    )
+
+    result = asyncio.run(rag._postprocess_async(resp, [], {}, {}, "05001"))
+    assert result.problem_summary == ""
+    assert result.recommended_actions == []
+    assert len(result.warnings) == 1
+    assert "Contact" in result.warnings[0]

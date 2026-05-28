@@ -8,6 +8,7 @@ from models.advisory import AdvisoryResponse
 from services.embedding import MiniLMEmbeddings
 from services.context import get_context
 from services.classifier import CATEGORY_TO_NAMESPACE
+from services import citation_guard_v2
 from utils.prompt import build_system_prompt
 from utils.counties import get_county_info
 import config
@@ -37,7 +38,7 @@ def _get_vectorstore() -> PineconeVectorStore:
         _vectorstore = PineconeVectorStore(
             index=index,
             embedding=MiniLMEmbeddings(),
-            text_key="text",  # must match embedder.py metadata key
+            text_key="text",
         )
     return _vectorstore
 
@@ -53,14 +54,15 @@ def _get_llm() -> ChatGoogleGenerativeAI:
     return _llm
 
 
-def _postprocess(
+async def _postprocess_async(
     result: AdvisoryResponse,
     docs: list,
     soil: dict,
     weather: dict,
     county_fips: str,
 ) -> AdvisoryResponse:
-    """Apply citation guard and stamp context_meta onto a raw LLM result."""
+    """Apply citation guard (title-match + NLI) and stamp context_meta."""
+    # Step 1: existing title-match citation guard
     retrieved_titles = {
         doc.metadata.get("document_title", "").lower() for doc in docs
     }
@@ -69,18 +71,57 @@ def _postprocess(
         if c.document_title.lower() in retrieved_titles
     ]
     if not valid_citations:
-        # Keep originals but downgrade confidence — no retrieved doc supports them
         result = result.model_copy(update={"confidence": "Low"})
     else:
         result = result.model_copy(update={"citations": valid_citations})
 
-    return result.model_copy(update={
+    # Step 2: stamp context_meta
+    result = result.model_copy(update={
         "context_meta": result.context_meta.model_copy(update={
             "soil_data_available": soil.get("available", False),
             "weather_data_available": weather.get("available", False),
             "county_fips": county_fips,
         })
     })
+
+    # Step 3: NLI claim verification
+    answer_prose = " ".join(filter(None, [
+        result.problem_summary,
+        " ".join(result.recommended_actions),
+    ]))
+    retrieved_chunks = [
+        {
+            "snippet": (doc.page_content or "")[:500] if hasattr(doc, "page_content")
+                       else doc.get("snippet", ""),
+        }
+        for doc in docs
+    ]
+
+    nli_result = await citation_guard_v2.verify_answer(answer_prose, retrieved_chunks)
+    confidence_score: float = nli_result["confidence_score"]
+    claim_verification = nli_result["claim_verification"]
+
+    escalation = None
+    if confidence_score < citation_guard_v2.ESCALATION_THRESHOLD:
+        escalation = citation_guard_v2.escalation_cue(county_fips)
+
+    update: dict = {
+        "confidence_score": confidence_score,
+        "claim_verification": claim_verification,
+        "escalation": escalation,
+    }
+
+    if confidence_score < citation_guard_v2.SUPPRESSION_THRESHOLD:
+        escalation_msg = escalation or "Please contact your local UA Extension office."
+        update.update({
+            "problem_summary": "",
+            "likely_causes": [],
+            "recommended_actions": [],
+            "products_rates": [],
+            "warnings": [escalation_msg],
+        })
+
+    return result.model_copy(update=update)
 
 
 async def run_rag_query(
@@ -91,9 +132,7 @@ async def run_rag_query(
     category: str,
     session_history: list[dict],
 ) -> tuple[AdvisoryResponse, list[dict]]:
-    """Returns (advisory, retrieved_chunks). Chunks shape:
-    [{document_title, section_heading, snippet (≤500 chars)}, ...]"""
-    # Fetch context and retrieve docs concurrently
+    """Returns (advisory, retrieved_chunks)."""
     context_task = asyncio.create_task(get_context(county_fips))
 
     namespace = CATEGORY_TO_NAMESPACE.get(category)
@@ -142,7 +181,6 @@ async def run_rag_query(
         except Exception as e:
             last_err = e
             if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
-                # Gemini quota exhausted — try Groq immediately (skip second Gemini attempt)
                 try:
                     groq = _get_groq_llm()
                     if groq:
@@ -150,14 +188,14 @@ async def run_rag_query(
                         break
                 except Exception as groq_err:
                     last_err = groq_err
-                break  # don't retry Gemini if quota is gone
+                break
             if attempt == 1:
                 raise RuntimeError(f"Structured output failed after 2 attempts: {e}") from e
 
     if result is None:
         raise RuntimeError(f"RAG generation failed: {last_err}") from last_err
 
-    advisory = _postprocess(result, docs, soil, weather, county_fips)
+    advisory = await _postprocess_async(result, docs, soil, weather, county_fips)
     retrieved_chunks = [
         {
             "document_title": d.metadata.get("document_title", ""),
