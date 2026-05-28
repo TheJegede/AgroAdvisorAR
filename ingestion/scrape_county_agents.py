@@ -100,9 +100,14 @@ def _scrape_county_page(county_name: str, url: str) -> dict:
             text,
             re.IGNORECASE,
         )
+        # Normalize whitespace: replace non-breaking spaces with regular spaces
+        phone = phone_match.group(0).strip() if phone_match else ""
+        phone = phone.replace('\xa0', ' ').strip()
+        email = office_email.group(0).strip() if office_email else ""
+        email = email.replace('\xa0', ' ').strip()
         return {
-            "phone": phone_match.group(0).strip() if phone_match else "",
-            "email": office_email.group(0).strip() if office_email else "",
+            "phone": phone,
+            "email": email,
         }
     except Exception as exc:
         print(f"  ERR county page {county_name}: {exc}", file=sys.stderr)
@@ -201,6 +206,8 @@ def scrape() -> dict:
 
         # 2. Get agent name from personnel directory
         agent_name = _fetch_staff_chair(county_name)
+        # Normalize whitespace: replace non-breaking spaces with regular spaces
+        agent_name = agent_name.replace('\xa0', ' ').strip() if agent_name else ""
 
         result[fips] = {
             "county": county_name,
