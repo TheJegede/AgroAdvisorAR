@@ -14,17 +14,16 @@ MODEL_NAME = os.environ.get("EMBEDDING_MODEL_PATH", "sentence-transformers/all-M
 BATCH_SIZE = 64
 
 
-def get_pinecone_index(api_key: str, index_name: str):
+def get_pinecone_index(api_key: str, index_name: str, dimension: int = 384):
     pc = Pinecone(api_key=api_key)
     existing = [i.name for i in pc.list_indexes()]
     if index_name not in existing:
         pc.create_index(
             name=index_name,
-            dimension=384,
+            dimension=dimension,
             metric="cosine",
             spec=ServerlessSpec(cloud="aws", region="us-east-1"),
         )
-        # Wait for index to be ready
         while not pc.describe_index(index_name).status["ready"]:
             time.sleep(1)
     return pc.Index(index_name)
@@ -44,7 +43,8 @@ def embed_and_upsert(
     if model is None:
         model = SentenceTransformer(MODEL_NAME)
 
-    index = get_pinecone_index(api_key, index_name)
+    dimension = model.get_sentence_embedding_dimension()
+    index = get_pinecone_index(api_key, index_name, dimension=dimension)
     total_upserted = 0
 
     for i in range(0, len(documents), BATCH_SIZE):

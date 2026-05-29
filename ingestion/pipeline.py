@@ -52,7 +52,12 @@ def save_manifest(manifest: dict) -> None:
         json.dump(manifest, f, indent=2)
 
 
-def run_pipeline(force_reindex: bool = False) -> dict:
+def run_pipeline(
+    force_reindex: bool = False,
+    source_lang: str = "en",
+    index_override: str | None = None,
+) -> dict:
+    index_name = index_override or PINECONE_INDEX_NAME
     manifest = load_manifest()
     model = SentenceTransformer(MODEL_NAME)
 
@@ -78,7 +83,6 @@ def run_pipeline(force_reindex: bool = False) -> dict:
                 log["skipped"].append(name)
                 continue
 
-            # Also extract tables and append as text
             tables = extract_tables_as_text(str(pdf_path))
             if tables:
                 text += "\n\n" + "\n\n".join(tables)
@@ -90,17 +94,19 @@ def run_pipeline(force_reindex: bool = False) -> dict:
                 source_url=f"file://{pdf_path.resolve()}",
                 crop_type=crop_type,
             )
+            for doc in docs:
+                doc.metadata["source_lang"] = source_lang
 
             n = embed_and_upsert(
                 docs,
                 api_key=PINECONE_API_KEY,
-                index_name=PINECONE_INDEX_NAME,
+                index_name=index_name,
                 namespace=crop_type,
                 model=model,
             )
             total_vectors += n
             manifest[name] = {"hash": text_hash, "vectors": n, "crop_type": crop_type}
-            print(f"  Upserted {n} vectors (namespace: {crop_type})")
+            print(f"  Upserted {n} vectors (namespace: {crop_type}, lang: {source_lang})")
             log["processed"].append({"file": name, "vectors": n, "crop_type": crop_type})
 
         except Exception as e:
@@ -121,8 +127,10 @@ def run_pipeline(force_reindex: bool = False) -> dict:
     with open(log_path, "w") as f:
         json.dump(summary, f, indent=2)
 
-    print(f"\nDone. Processed: {summary['processed']}, Skipped: {summary['skipped']}, "
-          f"Failed: {summary['failed']}, Total vectors: {total_vectors}")
+    print(
+        f"\nDone. Processed: {summary['processed']}, Skipped: {summary['skipped']}, "
+        f"Failed: {summary['failed']}, Total vectors: {total_vectors}"
+    )
     print(f"Log: {log_path}")
     return summary
 
@@ -131,5 +139,13 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--force", action="store_true", help="Re-index all docs even if unchanged")
+    parser.add_argument(
+        "--lang", default="en", choices=["en", "es"],
+        help="Source language tag written to chunk metadata (default: en)",
+    )
+    parser.add_argument(
+        "--index", default=None,
+        help="Override PINECONE_INDEX_NAME env var (e.g. agroar-prod-multilingual)",
+    )
     args = parser.parse_args()
-    run_pipeline(force_reindex=args.force)
+    run_pipeline(force_reindex=args.force, source_lang=args.lang, index_override=args.index)
