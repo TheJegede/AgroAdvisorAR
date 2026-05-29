@@ -21,6 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 AWD_DEDUP_TTL = 5 * 24 * 60 * 60  # 5 days
+ACTIVE_FARMER_WINDOW_DAYS = 90
 
 
 async def run_awd_alerts(farmers: list[dict], supabase) -> int:
@@ -112,7 +113,7 @@ async def run_awd_alerts(farmers: list[dict], supabase) -> int:
 
 async def main() -> None:
     supabase = _get_service_client()
-    cutoff = (date.today() - timedelta(days=30)).isoformat()
+    cutoff = (date.today() - timedelta(days=ACTIVE_FARMER_WINDOW_DAYS)).isoformat()
 
     result = (
         supabase.table("farmer_profiles")
@@ -137,6 +138,7 @@ async def main() -> None:
                 county_fips=county,
                 primary_crops=crops,
                 language=farmer.get("language", "en"),
+                rice_fields=farmer.get("rice_fields") or [],
             )
             total_gdd_fired += len(fired)
         except Exception:

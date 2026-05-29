@@ -4,11 +4,12 @@
     "pest": "rice_water_weevil",
     "gdd_lower": 150,
     "gdd_upper": null,
+    "requires_recent_flood_days": 14,
     "message_en": "Rice water weevil adult emergence likely. Apply insecticide within 5–7 days of flood. See UA Extension MP144.",
     "message_es": "Emergencia probable de gorgojo acuático del arroz. Aplique insecticida dentro de 5–7 días del riego. Ver MP144."
   },
   {
-    "crop": "soybean",
+    "crop": "soybeans",
     "pest": "palmer_amaranth",
     "gdd_lower": 200,
     "gdd_upper": 450,

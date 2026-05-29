@@ -2,6 +2,7 @@
 .env.*
 !.env.example
 .claude/
+.codex_tmp/
 __pycache__/
 *.pyc
 *.pyo
@@ -12,6 +13,9 @@ env/
 dist/
 build/
 .pytest_cache/
+.pytest_cache_local/
+.pytest_tmp/
+pytest-cache-files-*/
 ingestion/raw_pdfs/
 ingestion/logs/
 ingestion/corpus_manifest.json
@@ -34,6 +38,8 @@ docs/*
 !docs/status-bar.md
 !docs/superpowers/
 !docs/superpowers/**
+docs/todos/
+docs/todos/**
 AGENTS.md
 logs.md
 test-results/*

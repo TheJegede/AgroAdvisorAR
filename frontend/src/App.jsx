@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { LangProvider } from './contexts/LangContext'
@@ -5,17 +6,18 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import AppShell from './components/layout/AppShell'
 import ProtectedRoute from './components/ui/ProtectedRoute'
 import AdminRoute from './components/ui/AdminRoute'
-import LoginPage from './pages/LoginPage'
-import AuthCallbackPage from './pages/AuthCallbackPage'
-import RegisterPage from './pages/RegisterPage'
-import ForgotPasswordPage from './pages/ForgotPasswordPage'
-import ResetPasswordPage from './pages/ResetPasswordPage'
-import ChatPage from './pages/ChatPage'
-import ProfilePage from './pages/ProfilePage'
-import SessionsPage from './pages/SessionsPage'
-import AdminDashboardPage from './pages/AdminDashboardPage'
-import EvalQueuePage from './pages/EvalQueuePage'
-import DriftReportPage from './pages/DriftReportPage'
+
+const LoginPage = lazy(() => import('./pages/LoginPage'))
+const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
+const RegisterPage = lazy(() => import('./pages/RegisterPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const ChatPage = lazy(() => import('./pages/ChatPage'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const SessionsPage = lazy(() => import('./pages/SessionsPage'))
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
+const EvalQueuePage = lazy(() => import('./pages/EvalQueuePage'))
+const DriftReportPage = lazy(() => import('./pages/DriftReportPage'))
 
 // Remounts ChatPage when ?session param changes OR when navigating to / fresh.
 // sessionParam stabilises the key while viewing a saved session.
@@ -32,34 +34,36 @@ export default function App() {
       <LangProvider>
         <ThemeProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/auth/callback" element={<AuthCallbackPage />} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<ChatPageWrapper />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/sessions" element={<SessionsPage />} />
-              <Route path="/drift-report" element={<DriftReportPage />} />
+          <Suspense fallback={<div className="min-h-screen bg-cream dark:bg-hc-bg" />}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route
-                path="/admin"
-                element={<AdminRoute><AdminDashboardPage /></AdminRoute>}
-              />
-              <Route
-                path="/admin/queue"
-                element={<AdminRoute><EvalQueuePage /></AdminRoute>}
-              />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/" element={<ChatPageWrapper />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/sessions" element={<SessionsPage />} />
+                <Route path="/drift-report" element={<DriftReportPage />} />
+                <Route
+                  path="/admin"
+                  element={<AdminRoute><AdminDashboardPage /></AdminRoute>}
+                />
+                <Route
+                  path="/admin/queue"
+                  element={<AdminRoute><EvalQueuePage /></AdminRoute>}
+                />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
         </ThemeProvider>
       </LangProvider>

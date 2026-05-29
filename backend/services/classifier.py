@@ -5,6 +5,7 @@ from langdetect import detect, LangDetectException
 from langdetect import DetectorFactory as _DF
 _DF.seed = 0  # deterministic detection across all calls
 import config
+from utils.crops import CROP_NAMESPACES, CROP_POULTRY, CROP_RICE, CROP_SOYBEANS
 
 _groq_llm = None
 
@@ -78,9 +79,9 @@ def _get_llm() -> ChatGoogleGenerativeAI:
 
 # Maps classifier output → Pinecone namespace
 CATEGORY_TO_NAMESPACE = {
-    "IN_SCOPE_RICE": "rice",
-    "IN_SCOPE_SOYBEANS": "soybeans",
-    "IN_SCOPE_POULTRY": "poultry",
+    "IN_SCOPE_RICE": CROP_NAMESPACES[CROP_RICE],
+    "IN_SCOPE_SOYBEANS": CROP_NAMESPACES[CROP_SOYBEANS],
+    "IN_SCOPE_POULTRY": CROP_NAMESPACES[CROP_POULTRY],
     "IN_SCOPE_GENERAL_AG": None,  # None = search all namespaces
 }
 

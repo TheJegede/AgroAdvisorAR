@@ -95,6 +95,10 @@ python pipeline.py         # chunk, embed, upsert to Pinecone
 python pipeline.py --force # re-index unchanged docs
 ```
 
+Spanish corpus ops also use the ingestion requirements. `translate_corpus.py`
+loads Hugging Face MarianMT via `transformers`/`sentencepiece`; these packages
+are intentionally kept out of `backend/requirements.txt`.
+
 ### Evals
 
 ```bash
@@ -106,6 +110,9 @@ python generate_eval_set_v2.py
 python generate_triplets_v2.py
 python finetune_v2.py
 ```
+
+Spanish eval generation uses `evals/build_es_eval.py`, which also depends on
+the eval requirements rather than the backend runtime requirements.
 
 ## Environment
 
@@ -123,6 +130,9 @@ Copy `.env.example` to `.env` in the project root and fill in:
 | `SUPABASE_JWT_SECRET` | Legacy HS256 fallback; ES256 path uses JWKS automatically |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | Optional context cache |
 | `EMBEDDING_MODEL_PATH` | Defaults to `sentence-transformers/all-MiniLM-L6-v2`; set to `./models/agroar-embeddings-v2` for the fine-tuned model |
+| `MULTILINGUAL_EMBEDDING_MODEL_PATH` | Defaults to `BAAI/bge-m3` for Spanish/multilingual retrieval |
+| `PINECONE_MULTILINGUAL_INDEX_NAME` | Defaults to `agroar-prod-multilingual` for Spanish/multilingual retrieval |
+| `NLI_CITATION_GUARD_ENABLED` | Defaults to `1`; set to `0` to disable claim-level NLI verification in constrained runtimes |
 | `SENTRY_DSN` | Optional; enables tracing at sample rate 0.1 |
 
 ## Key design decisions

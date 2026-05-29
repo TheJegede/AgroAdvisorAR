@@ -97,7 +97,7 @@ def test_score_answer_no_entailed_returns_zero():
     assert mod.score_answer(claims) == 0.0
 
 
-def test_escalation_cue_found(monkeypatch, tmp_path):
+def test_escalation_cue_found(monkeypatch):
     mod = importlib.import_module("services.citation_guard_v2")
     agents = {"05001": {"county": "Arkansas", "agent_name": "Jane Smith", "phone": "870-555-0100", "email": "jsmith@uada.edu"}}
     agents_file = _make_county_agents_file(agents)
@@ -180,6 +180,64 @@ def test_postprocess_stamps_confidence_score(monkeypatch):
 
     result = asyncio.run(rag._postprocess_async(resp, [], {}, {}, "05001"))
     assert result.confidence_score == 0.82
+
+
+def test_verifiable_text_includes_all_advisory_fields():
+    rag = importlib.import_module("services.rag")
+    from models.advisory import AdvisoryResponse, Cause, ContextMeta, Product
+
+    ctx = ContextMeta(soil_data_available=False, weather_data_available=False, county_fips="05001")
+    resp = AdvisoryResponse(
+        problem_summary="Summary claim.",
+        likely_causes=[Cause(cause="Nitrogen", explanation="Yellowing may indicate deficiency.")],
+        recommended_actions=["Scout the field."],
+        products_rates=[Product(product="Product A", rate="1 qt/ac", application_method="foliar")],
+        warnings=["Follow label restrictions."],
+        citations=[],
+        confidence="Medium",
+        confidence_explanation="Test.",
+        language="en",
+        context_meta=ctx,
+    )
+
+    text = rag._advisory_to_verifiable_text(resp)
+
+    assert "Summary claim." in text
+    assert "Nitrogen" in text
+    assert "Scout the field." in text
+    assert "Product A" in text
+    assert "1 qt/ac" in text
+    assert "Follow label restrictions." in text
+
+
+def test_postprocess_skips_nli_when_disabled(monkeypatch):
+    import asyncio
+    rag = importlib.import_module("services.rag")
+    guard = importlib.import_module("services.citation_guard_v2")
+
+    async def fail_verify(*_args, **_kwargs):
+        raise AssertionError("NLI should not run when disabled")
+
+    monkeypatch.setattr(guard, "verify_answer", fail_verify)
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", False)
+
+    from models.advisory import AdvisoryResponse, ContextMeta
+    ctx = ContextMeta(soil_data_available=False, weather_data_available=False, county_fips="05001")
+    resp = AdvisoryResponse(
+        problem_summary="Some advice.",
+        likely_causes=[],
+        recommended_actions=[],
+        products_rates=[],
+        warnings=[],
+        citations=[],
+        confidence="Low",
+        confidence_explanation="Weak.",
+        language="en",
+        context_meta=ctx,
+    )
+
+    result = asyncio.run(rag._postprocess_async(resp, [], {}, {}, "05001"))
+    assert result.confidence_score is None
 
 
 def test_postprocess_suppresses_body_below_threshold(monkeypatch):

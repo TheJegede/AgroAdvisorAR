@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Literal, Optional
 from datetime import date
 from utils.counties import AR_COUNTIES
+from utils.crops import CropKey
 
 
 class RiceField(BaseModel):
@@ -17,7 +18,7 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: str
     county_fips: str
-    primary_crops: list[Literal["rice", "soybeans", "poultry"]] = Field(default_factory=list)
+    primary_crops: list[CropKey] = Field(default_factory=list)
     language: Literal["en", "es"] = "en"
     rice_fields: list[RiceField] = Field(default_factory=list)
 
@@ -80,7 +81,7 @@ class FarmerProfile(BaseModel):
 class UpdateProfileRequest(BaseModel):
     full_name: str | None = None
     county_fips: str | None = None
-    primary_crops: list[Literal["rice", "soybeans", "poultry"]] | None = None
+    primary_crops: list[CropKey] | None = None
     language: Literal["en", "es"] | None = None
     rice_fields: Optional[list[RiceField]] = None
 

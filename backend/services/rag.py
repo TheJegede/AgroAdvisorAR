@@ -84,6 +84,25 @@ def _get_llm() -> ChatGoogleGenerativeAI:
     return _llm
 
 
+def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
+    parts: list[str] = [result.problem_summary]
+    parts.extend(
+        f"{cause.cause}: {cause.explanation}" for cause in result.likely_causes
+    )
+    parts.extend(result.recommended_actions)
+    parts.extend(
+        " ".join(filter(None, [
+            product.product,
+            product.rate,
+            product.application_method,
+            product.pre_harvest_interval,
+        ]))
+        for product in result.products_rates
+    )
+    parts.extend(result.warnings)
+    return " ".join(p for p in parts if p)
+
+
 async def _postprocess_async(
     result: AdvisoryResponse,
     docs: list,
@@ -114,11 +133,12 @@ async def _postprocess_async(
         })
     })
 
-    # Step 3: NLI claim verification
-    answer_prose = " ".join(filter(None, [
-        result.problem_summary,
-        " ".join(result.recommended_actions),
-    ]))
+    # Step 3: NLI claim verification. This can be disabled for constrained
+    # runtimes, but defaults on so confidence scoring remains active.
+    if not config.NLI_CITATION_GUARD_ENABLED:
+        return result
+
+    answer_prose = _advisory_to_verifiable_text(result)
     retrieved_chunks = [
         {
             "snippet": (doc.page_content or "")[:500] if hasattr(doc, "page_content")

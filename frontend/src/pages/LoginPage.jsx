@@ -1,7 +1,7 @@
 import { useLang } from '../contexts/LangContext'
 import LoginForm from '../components/auth/LoginForm'
 import AuthLanguageSwitcher from '../components/auth/AuthLanguageSwitcher'
-import farmBg from '../assets/farm-bg.png'
+import farmBg from '../assets/farm-bg.webp'
 
 export default function LoginPage() {
   const { t } = useLang()

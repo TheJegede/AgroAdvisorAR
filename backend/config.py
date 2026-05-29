@@ -53,3 +53,8 @@ REDIS_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 RATE_LIMIT_PER_HOUR = 20
 TOP_K_RETRIEVAL = 5
 MAX_HISTORY_EXCHANGES = 10
+NLI_CITATION_GUARD_ENABLED = os.environ.get("NLI_CITATION_GUARD_ENABLED", "1") not in {
+    "0",
+    "false",
+    "False",
+}

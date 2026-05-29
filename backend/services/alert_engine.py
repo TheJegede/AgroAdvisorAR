@@ -1,15 +1,33 @@
 """Alert rule evaluation + Redis dedup + Supabase insert."""
 import json
 import logging
+from datetime import date
 from pathlib import Path
 
 from services.cache import _get_client as _get_redis
 from services.gdd_calculator import compute_gdd_since_jan1
 from services.user import _get_service_client
+from utils.crops import canonical_crop
 
 logger = logging.getLogger(__name__)
 
 DEDUP_TTL_SECONDS = 5 * 24 * 60 * 60  # 5 days
+
+
+def _has_recent_flood(rice_fields: list[dict], window_days: int) -> bool:
+    today = date.today()
+    for field in rice_fields:
+        raw_date = field.get("last_flood_date")
+        if not raw_date:
+            continue
+        try:
+            flood_date = date.fromisoformat(raw_date)
+        except (TypeError, ValueError):
+            continue
+        days_since_flood = (today - flood_date).days
+        if 0 <= days_since_flood <= window_days:
+            return True
+    return False
 
 
 class AlertEngine:
@@ -25,15 +43,24 @@ class AlertEngine:
         county_fips: str,
         primary_crops: list[str],
         language: str,
+        rice_fields: list[dict] | None = None,
     ) -> list[str]:
         """Evaluate alert rules for one farmer. Returns list of pest keys that fired."""
         gdd = await compute_gdd_since_jan1(county_fips)
         redis = _get_redis()
         supabase = _get_service_client()
         fired: list[str] = []
+        crop_set = {canonical_crop(c) for c in primary_crops}
+        rice_fields = rice_fields or []
 
         for rule in self._rules:
-            if rule["crop"] not in primary_crops:
+            if canonical_crop(rule["crop"]) not in crop_set:
+                continue
+
+            recent_flood_days = rule.get("requires_recent_flood_days")
+            if recent_flood_days is not None and not _has_recent_flood(
+                rice_fields, int(recent_flood_days)
+            ):
                 continue
 
             lower: float = rule["gdd_lower"]

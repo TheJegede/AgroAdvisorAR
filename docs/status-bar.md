@@ -1,6 +1,6 @@
 # AgroAdvisor AR — Completion to Production
 
-**Last updated:** 2026-05-20  
+**Last updated:** 2026-05-29  
 **MVP target:** September 2026  
 **Production readiness:** 71%  
 **PRD phase progress:** 80%
@@ -42,7 +42,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 
 | # | Item | Dimension affected | Delta | Done? |
 |---|---|---|---|---|
-| 1 | Deploy to Vercel + Railway (prod URL live) | Deployment | +7% | ☐ |
+| 1 | Deploy to Vercel + Koyeb (prod URL live) | Deployment | +7% | ☐ |
 | 2 | OWASP Top 10 review + Playwright E2E suite | Security/testing | +5% | ☑ |
 | 3 | 20 pilot farmers recruited + 500 real queries | Real users / data | +12% | ☐ |
 | 4 | arXiv preprint submitted | NIW evidence | +6% | ☐ |
@@ -52,11 +52,11 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | 8 | Public GitHub README (arch diagram + eval results) | NIW evidence | +2% | ☐ |
 | 9 | Locust load test (50 concurrent users) | Security/testing | +1% | ☐ |
 | **Tier 1 Features (planned — Tier1_Implementation_Plan Addition.md)** | | | | |
-| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☐ (code done 2026-05-20; pending Railway deploy) |
-| T2 | F3 · First RWW/Palmer alert fired to pilot farmer | Real users / data | +3% | ☐ |
-| T3 | F2 · Citation guard v2 live (confidence scores in prod) | Security / testing | +2% | ☐ |
-| T4 | F5 · AWD scheduler live + first re-flood alert fired | Core RAG system | +2% | ☐ |
-| T5 | F1 · Spanish RAG live + AR-AgQA-ES eval baseline logged | Core RAG system | +3% | ☐ |
+| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☐ (code done 2026-05-20; pending Koyeb deploy) |
+| T2 | F3 · First RWW/Palmer alert fired to pilot farmer | Real users / data | +3% | ☐ (code implemented; pending prod deploy + pilot alert) |
+| T3 | F2 · Citation guard v2 live (confidence scores in prod) | Security / testing | +2% | ☐ (code implemented; pending prod deploy) |
+| T4 | F5 · AWD scheduler live + first re-flood alert fired | Core RAG system | +2% | ☐ (code implemented; pending prod deploy + pilot alert) |
+| T5 | F1 · Spanish RAG live + AR-AgQA-ES eval baseline logged | Core RAG system | +3% | ☐ (code implemented; pending multilingual Pinecone ops + prod eval) |
 | T6 | F1 · arXiv preprint submitted with F1+F2 contributions | NIW evidence | +6% | ☐ |
 
 **Check off items above → update bars + production-readiness % → update PRD phase rollup when `docs/prd-progress-audit-2026-05-16.md` changes → update "Last updated" date.**
@@ -105,6 +105,10 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | i18n cleanup — 5 hardcoded LoginForm strings moved to `i18n.js` EN+ES (`enterApp`, `rememberMe`, `quickAccessVia`, `continueWithGoogle`, `createAccount`) | Frontend UI | 2026-05-19 |
 | `isNewChat` lint fix — `npm run lint` now passes 0 errors | Frontend UI | 2026-05-19 |
 | F4 Dicamba drift tool — wizard (3-step, EN+ES), Open-Meteo weather auto-fill, reportlab PDF, migration 006, admin drift tab + amber choropleth layer, 3 Playwright E2E tests | Frontend UI + Core RAG | 2026-05-20 |
+| F3 alerts code — GDD calculator, alert engine, alert rules, migration 005, nightly alert workflow, frontend alert banner | Core RAG + Real users/data | 2026-05-28 |
+| F2 citation guard v2 code — claim-level NLI service, confidence-score fields, escalation UI, migration 008 | Security/testing | 2026-05-28 |
+| F5 AWD scheduler code — AWD scheduler, USGS well context, rice fields migration 007, AWD alert integration | Core RAG | 2026-05-28 |
+| F1 Spanish bilingual RAG code — BGE-M3 embedding path, language detection/routing, Spanish eval set, multilingual ingestion scripts | Core RAG | 2026-05-28 |
 
 ---
 

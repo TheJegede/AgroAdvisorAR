@@ -4,7 +4,7 @@ import { useLang } from '../contexts/LangContext'
 import api from '../lib/api'
 import Alert from '../components/ui/Alert'
 import AuthLanguageSwitcher from '../components/auth/AuthLanguageSwitcher'
-import farmBg from '../assets/farm-bg.png'
+import farmBg from '../assets/farm-bg.webp'
 
 function parseHashParams(hash) {
   const out = {}

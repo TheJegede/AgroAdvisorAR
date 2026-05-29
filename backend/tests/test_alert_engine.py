@@ -4,6 +4,7 @@ import json
 import asyncio
 import tempfile
 import os
+from datetime import date, timedelta
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -13,11 +14,11 @@ if str(BACKEND_DIR) not in sys.path:
 RULES = [
     {
         "crop": "rice", "pest": "rice_water_weevil",
-        "gdd_lower": 150, "gdd_upper": None,
+        "gdd_lower": 150, "gdd_upper": None, "requires_recent_flood_days": 14,
         "message_en": "RWW alert EN", "message_es": "RWW alert ES"
     },
     {
-        "crop": "soybean", "pest": "palmer_amaranth",
+        "crop": "soybeans", "pest": "palmer_amaranth",
         "gdd_lower": 200, "gdd_upper": 450,
         "message_en": "Palmer EN", "message_es": "Palmer ES"
     },
@@ -68,6 +69,13 @@ async def _fake_gdd_100(fips): return 100.0
 async def _fake_gdd_500(fips): return 500.0
 
 
+def _rice_fields(days_since_flood: int) -> list[dict]:
+    return [{
+        "field_name": "North 40",
+        "last_flood_date": (date.today() - timedelta(days=days_since_flood)).isoformat(),
+    }]
+
+
 def test_alert_fires_when_gdd_in_range(monkeypatch):
     mod = importlib.import_module("services.alert_engine")
     supabase, inserted = _fake_supabase()
@@ -84,6 +92,7 @@ def test_alert_fires_when_gdd_in_range(monkeypatch):
             county_fips="05001",
             primary_crops=["rice"],
             language="en",
+            rice_fields=_rice_fields(7),
         ))
     finally:
         os.unlink(rules_path)
@@ -110,6 +119,7 @@ def test_alert_deduped_when_redis_key_exists(monkeypatch):
             county_fips="05001",
             primary_crops=["rice"],
             language="en",
+            rice_fields=_rice_fields(7),
         ))
     finally:
         os.unlink(rules_path)
@@ -134,6 +144,7 @@ def test_alert_skipped_when_gdd_below_lower(monkeypatch):
             county_fips="05001",
             primary_crops=["rice"],
             language="en",
+            rice_fields=_rice_fields(7),
         ))
     finally:
         os.unlink(rules_path)
@@ -156,10 +167,115 @@ def test_palmer_skipped_when_gdd_above_upper(monkeypatch):
         fired = asyncio.run(engine.run_for_farmer(
             farmer_id="farmer-1",
             county_fips="05001",
-            primary_crops=["soybean"],
+            primary_crops=["soybeans"],
             language="en",
         ))
     finally:
         os.unlink(rules_path)
 
     assert fired == []
+
+
+def test_palmer_fires_for_canonical_soybeans(monkeypatch):
+    mod = importlib.import_module("services.alert_engine")
+    supabase, inserted = _fake_supabase()
+    redis, _ = _fake_redis()
+    monkeypatch.setattr(mod, "_get_service_client", lambda: supabase)
+    monkeypatch.setattr(mod, "_get_redis", lambda: redis)
+    monkeypatch.setattr(mod, "compute_gdd_since_jan1", _fake_gdd_200)
+
+    rules_path = _write_rules()
+    try:
+        engine = mod.AlertEngine(rules_path=rules_path)
+        fired = asyncio.run(engine.run_for_farmer(
+            farmer_id="farmer-1",
+            county_fips="05001",
+            primary_crops=["soybeans"],
+            language="en",
+        ))
+    finally:
+        os.unlink(rules_path)
+
+    assert fired == ["palmer_amaranth"]
+    assert inserted[0]["pest"] == "palmer_amaranth"
+
+
+def test_palmer_fires_for_legacy_soybean_alias(monkeypatch):
+    mod = importlib.import_module("services.alert_engine")
+    supabase, inserted = _fake_supabase()
+    redis, _ = _fake_redis()
+    monkeypatch.setattr(mod, "_get_service_client", lambda: supabase)
+    monkeypatch.setattr(mod, "_get_redis", lambda: redis)
+    monkeypatch.setattr(mod, "compute_gdd_since_jan1", _fake_gdd_200)
+
+    rules_path = _write_rules()
+    try:
+        engine = mod.AlertEngine(rules_path=rules_path)
+        fired = asyncio.run(engine.run_for_farmer(
+            farmer_id="farmer-1",
+            county_fips="05001",
+            primary_crops=["soybean"],
+            language="en",
+        ))
+    finally:
+        os.unlink(rules_path)
+
+    assert fired == ["palmer_amaranth"]
+    assert inserted[0]["pest"] == "palmer_amaranth"
+
+
+def test_rww_skipped_without_recent_flood(monkeypatch):
+    mod = importlib.import_module("services.alert_engine")
+    supabase, inserted = _fake_supabase()
+    redis, _ = _fake_redis()
+    monkeypatch.setattr(mod, "_get_service_client", lambda: supabase)
+    monkeypatch.setattr(mod, "_get_redis", lambda: redis)
+    monkeypatch.setattr(mod, "compute_gdd_since_jan1", _fake_gdd_200)
+
+    rules_path = _write_rules()
+    try:
+        engine = mod.AlertEngine(rules_path=rules_path)
+        fired = asyncio.run(engine.run_for_farmer(
+            farmer_id="farmer-1",
+            county_fips="05001",
+            primary_crops=["rice"],
+            language="en",
+            rice_fields=[],
+        ))
+    finally:
+        os.unlink(rules_path)
+
+    assert fired == []
+    assert inserted == []
+
+
+def test_rww_skipped_when_flood_window_is_old(monkeypatch):
+    mod = importlib.import_module("services.alert_engine")
+    supabase, inserted = _fake_supabase()
+    redis, _ = _fake_redis()
+    monkeypatch.setattr(mod, "_get_service_client", lambda: supabase)
+    monkeypatch.setattr(mod, "_get_redis", lambda: redis)
+    monkeypatch.setattr(mod, "compute_gdd_since_jan1", _fake_gdd_200)
+
+    rules_path = _write_rules()
+    try:
+        engine = mod.AlertEngine(rules_path=rules_path)
+        fired = asyncio.run(engine.run_for_farmer(
+            farmer_id="farmer-1",
+            county_fips="05001",
+            primary_crops=["rice"],
+            language="en",
+            rice_fields=_rice_fields(21),
+        ))
+    finally:
+        os.unlink(rules_path)
+
+    assert fired == []
+    assert inserted == []
+
+
+def test_real_alert_rules_use_profile_crop_keys():
+    rules_path = BACKEND_DIR / "data" / "alert_rules.json"
+    rules = json.loads(rules_path.read_text())
+    profile_crop_keys = {"rice", "soybeans", "poultry"}
+    assert all(rule["crop"] in profile_crop_keys for rule in rules)

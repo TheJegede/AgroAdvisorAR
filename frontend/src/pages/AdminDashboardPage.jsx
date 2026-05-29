@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend,
@@ -8,12 +8,16 @@ import { useLang } from '../contexts/LangContext'
 import { useAdminMetrics, useDriftReportAdmin } from '../hooks/useAdmin'
 import Spinner from '../components/ui/Spinner'
 import Alert from '../components/ui/Alert'
-import ARCountyMap from '../components/admin/ARCountyMap'
 import api from '../lib/api'
 import { AR_COUNTIES } from '../constants/counties'
 
 const LANG_COLORS = { en: '#2D6A4F', es: '#E9A228' }
 const FEEDBACK_COLORS = { positive: '#2D6A4F', negative: '#CC2936' }
+const ARCountyMap = lazy(() => import('../components/admin/ARCountyMap'))
+
+function MapFallback() {
+  return <div className="min-h-[220px] rounded-md bg-gray-50 dark:bg-hc-bg" />
+}
 
 function KpiCard({ label, value }) {
   return (
@@ -170,12 +174,14 @@ export default function AdminDashboardPage() {
                 </button>
               ))}
             </div>
-            <ARCountyMap
-              countyData={metrics?.county_query_volume ?? []}
-              dataLayer={mapLayer}
-              driftData={driftCountMap}
-              aquiferData={aquiferData}
-            />
+            <Suspense fallback={<MapFallback />}>
+              <ARCountyMap
+                countyData={metrics?.county_query_volume ?? []}
+                dataLayer={mapLayer}
+                driftData={driftCountMap}
+                aquiferData={aquiferData}
+              />
+            </Suspense>
           </SectionCard>
 
           {/* Date filter */}
@@ -339,7 +345,9 @@ export default function AdminDashboardPage() {
         </SectionCard>
 
         <SectionCard title={t.metricsCountyMap}>
-          <ARCountyMap countyData={metrics.county_query_volume} />
+          <Suspense fallback={<MapFallback />}>
+            <ARCountyMap countyData={metrics.county_query_volume} />
+          </Suspense>
         </SectionCard>
       </div>
 
