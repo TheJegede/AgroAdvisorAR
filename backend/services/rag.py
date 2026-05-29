@@ -100,6 +100,13 @@ def _get_llm() -> ChatGoogleGenerativeAI:
 
 
 def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
+    """Concatenate the SUBSTANTIVE factual claims for NLI grounding.
+
+    Excludes `warnings` on purpose: they are generic safety boilerplate ("consult
+    a professional", "follow label directions") that rarely entails from an
+    extension passage. Including them (added during F1) tanked the grounding
+    score and caused good answers to be suppressed.
+    """
     parts: list[str] = [result.problem_summary]
     parts.extend(
         f"{cause.cause}: {cause.explanation}" for cause in result.likely_causes
@@ -114,7 +121,6 @@ def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
         ]))
         for product in result.products_rates
     )
-    parts.extend(result.warnings)
     return " ".join(p for p in parts if p)
 
 
