@@ -317,9 +317,12 @@ export default function RegisterForm() {
                 label={t.fieldName}
                 value={field.field_name}
                 onChange={(e) => {
-                  const updated = [...form.rice_fields]
-                  updated[i] = { ...updated[i], field_name: e.target.value }
-                  setForm((f) => ({ ...f, rice_fields: updated }))
+                  const val = e.target.value
+                  setForm((f) => {
+                    const updated = [...f.rice_fields]
+                    updated[i] = { ...updated[i], field_name: val }
+                    return { ...f, rice_fields: updated }
+                  })
                 }}
                 error={fieldErrors[`rice_field_${i}_name`]}
               />
@@ -329,9 +332,12 @@ export default function RegisterForm() {
                 type="date"
                 value={field.last_flood_date}
                 onChange={(e) => {
-                  const updated = [...form.rice_fields]
-                  updated[i] = { ...updated[i], last_flood_date: e.target.value }
-                  setForm((f) => ({ ...f, rice_fields: updated }))
+                  const val = e.target.value
+                  setForm((f) => {
+                    const updated = [...f.rice_fields]
+                    updated[i] = { ...updated[i], last_flood_date: val }
+                    return { ...f, rice_fields: updated }
+                  })
                 }}
                 error={fieldErrors[`rice_field_${i}_date`]}
               />
@@ -341,9 +347,12 @@ export default function RegisterForm() {
                 type="number"
                 value={field.acres}
                 onChange={(e) => {
-                  const updated = [...form.rice_fields]
-                  updated[i] = { ...updated[i], acres: e.target.value }
-                  setForm((f) => ({ ...f, rice_fields: updated }))
+                  const val = e.target.value
+                  setForm((f) => {
+                    const updated = [...f.rice_fields]
+                    updated[i] = { ...updated[i], acres: val }
+                    return { ...f, rice_fields: updated }
+                  })
                 }}
               />
               <div className="flex flex-col gap-1">
@@ -354,9 +363,12 @@ export default function RegisterForm() {
                   id={`irrigation_method_${i}`}
                   value={field.irrigation_method}
                   onChange={(e) => {
-                    const updated = [...form.rice_fields]
-                    updated[i] = { ...updated[i], irrigation_method: e.target.value }
-                    setForm((f) => ({ ...f, rice_fields: updated }))
+                    const val = e.target.value
+                    setForm((f) => {
+                      const updated = [...f.rice_fields]
+                      updated[i] = { ...updated[i], irrigation_method: val }
+                      return { ...f, rice_fields: updated }
+                    })
                   }}
                   className={`${INPUT_CLS} [&>option]:bg-slate-900 [&>option]:text-white`}
                 >
