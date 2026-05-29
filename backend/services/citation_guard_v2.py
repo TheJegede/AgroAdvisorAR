@@ -145,13 +145,17 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
 
 
 def score_answer(results: list[ClaimResult]) -> float:
-    """Mean entailment score across all claims. Empty list → 1.0."""
+    """Mean entailment probability across all claims (groundedness).
+
+    Uses each claim's entailment probability, not only claims the NLI model
+    hard-labels ENTAILED. The old logic averaged ENTAILED claims and returned
+    0.0 when none were — so generic-but-correct advice (labeled NEUTRAL) scored
+    0.0 and was suppressed even when grounded. Contradicted claims have low
+    entailment probability and naturally pull the score down. Empty list → 1.0.
+    """
     if not results:
         return 1.0
-    entailed = [r.score for r in results if r.label == "ENTAILED"]
-    if not entailed:
-        return 0.0
-    return float(sum(entailed) / len(entailed))
+    return float(sum(r.score for r in results) / len(results))
 
 
 def escalation_cue(county_fips: str) -> Optional[str]:

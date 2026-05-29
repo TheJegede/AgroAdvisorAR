@@ -70,7 +70,8 @@ def _make_county_agents_file(data: dict) -> str:
     return tmp.name
 
 
-def test_score_answer_mean_of_entailed():
+def test_score_answer_mean_entailment_prob_all_claims():
+    # Mean entailment probability across ALL claims (not only ENTAILED-labeled).
     mod = importlib.import_module("services.citation_guard_v2")
     from models.advisory import ClaimResult
     claims = [
@@ -79,7 +80,7 @@ def test_score_answer_mean_of_entailed():
         ClaimResult(claim="C", label="ENTAILED", score=0.7),
     ]
     score = mod.score_answer(claims)
-    assert abs(score - 0.8) < 0.001
+    assert abs(score - (0.9 + 0.4 + 0.7) / 3) < 0.001  # 0.6667
 
 
 def test_score_answer_empty_returns_one():
@@ -87,14 +88,17 @@ def test_score_answer_empty_returns_one():
     assert mod.score_answer([]) == 1.0
 
 
-def test_score_answer_no_entailed_returns_zero():
+def test_score_answer_partial_grounding_nonzero():
+    # Previously returned 0.0 when no claim was hard-labeled ENTAILED; now reflects
+    # partial groundedness via mean entailment probability so good-but-generic
+    # answers are not over-suppressed.
     mod = importlib.import_module("services.citation_guard_v2")
     from models.advisory import ClaimResult
     claims = [
         ClaimResult(claim="A", label="CONTRADICTED", score=0.1),
         ClaimResult(claim="B", label="NEUTRAL", score=0.5),
     ]
-    assert mod.score_answer(claims) == 0.0
+    assert abs(mod.score_answer(claims) - 0.3) < 0.001
 
 
 def test_escalation_cue_found(monkeypatch):
