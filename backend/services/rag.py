@@ -194,7 +194,9 @@ async def run_rag_query(
     else:
         vectorstore = _get_vectorstore()
 
-    retriever_kwargs = {"k": config.TOP_K_RETRIEVAL}
+    # When reranking, pull a wider candidate set then trim to TOP_K_RETRIEVAL.
+    fetch_k = config.RERANK_CANDIDATES if config.RERANK_ENABLED else config.TOP_K_RETRIEVAL
+    retriever_kwargs = {"k": fetch_k}
     if namespace:
         retriever_kwargs["namespace"] = namespace
 
@@ -203,6 +205,12 @@ async def run_rag_query(
         message,
         **retriever_kwargs,
     )
+
+    if config.RERANK_ENABLED and docs:
+        from services import reranker
+        docs = await asyncio.to_thread(
+            reranker.rerank, message, docs, config.TOP_K_RETRIEVAL
+        )
 
     ctx = await context_task
     soil = ctx["soil"]

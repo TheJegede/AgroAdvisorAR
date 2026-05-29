@@ -53,6 +53,14 @@ REDIS_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 RATE_LIMIT_PER_HOUR = 20
 TOP_K_RETRIEVAL = 5
 MAX_HISTORY_EXCHANGES = 10
+
+# Cross-encoder reranking over dense top-N. OFF by default: bge-reranker-v2-m3 is
+# ~568M params (~2.3GB RAM) and adds latency, too heavy for a free-tier CPU host.
+# Enable where resources allow (GPU box / paid backend). Lifts held-out EN MRR@5
+# from ~0.14 (dense) to ~0.24 in offline eval.
+RERANK_ENABLED = os.environ.get("RERANK_ENABLED", "0") not in {"0", "false", "False"}
+RERANK_MODEL = os.environ.get("RERANK_MODEL", "BAAI/bge-reranker-v2-m3")
+RERANK_CANDIDATES = int(os.environ.get("RERANK_CANDIDATES", "30"))
 NLI_CITATION_GUARD_ENABLED = os.environ.get("NLI_CITATION_GUARD_ENABLED", "1") not in {
     "0",
     "false",
