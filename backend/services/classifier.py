@@ -15,7 +15,7 @@ def _get_groq_llm():
     if _groq_llm is None and config.GROQ_API_KEY:
         from langchain_groq import ChatGroq
         _groq_llm = ChatGroq(
-            model=config.GROQ_CLASSIFIER_MODEL,
+            model=config.GROQ_FAST_MODEL,  # classification is light — use the fast 8b
             api_key=config.GROQ_API_KEY,
             temperature=0,
         )
@@ -88,28 +88,21 @@ CATEGORY_TO_NAMESPACE = {
 
 async def classify_query(message: str, last_category: str | None = None) -> str:
     prompt = CLASSIFIER_PROMPT.format(message=message)
-    llm = _get_llm()
-    try:
-        response = await llm.ainvoke([HumanMessage(content=prompt)])
-        category = response.content.strip().upper()
-        if category not in CATEGORIES:
-            category = "IN_SCOPE_GENERAL_AG"
-    except Exception as e:
-        err = str(e)
-        if "RESOURCE_EXHAUSTED" in err or "429" in err:
-            try:
-                groq = _get_groq_llm()
-                if groq:
-                    response = await groq.ainvoke([HumanMessage(content=prompt)])
-                    category = response.content.strip().upper()
-                    if category not in CATEGORIES:
-                        category = "IN_SCOPE_GENERAL_AG"
-                else:
-                    category = "IN_SCOPE_GENERAL_AG"
-            except Exception:
+    # Provider order from config (default Groq primary — Gemini free is 20/day).
+    ordered = ([_get_groq_llm(), _get_llm()] if config.LLM_PRIMARY == "groq"
+               else [_get_llm(), _get_groq_llm()])
+    category = "IN_SCOPE_GENERAL_AG"
+    for llm in ordered:
+        if llm is None:
+            continue
+        try:
+            response = await llm.ainvoke([HumanMessage(content=prompt)])
+            category = response.content.strip().upper()
+            if category not in CATEGORIES:
                 category = "IN_SCOPE_GENERAL_AG"
-        else:
-            raise
+            break
+        except Exception:
+            continue  # try next provider; stays IN_SCOPE_GENERAL_AG if all fail
 
     # Inherit last crop context for short, ambiguous follow-ups
     if (

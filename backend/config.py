@@ -38,6 +38,11 @@ GEMINI_PRIMARY_MODEL = "gemini-2.5-flash"
 GEMINI_CLASSIFIER_MODEL = "gemini-2.5-flash-lite"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_CLASSIFIER_MODEL = "llama-3.3-70b-versatile"
+# Provider order for all LLM calls. Default groq: Gemini free tier is 20 req/day,
+# Groq free is far more generous and covers a pilot. Gemini stays as fallback.
+LLM_PRIMARY = os.environ.get("LLM_PRIMARY", "groq")  # "groq" | "gemini"
+GROQ_PRIMARY_MODEL = os.environ.get("GROQ_PRIMARY_MODEL", "llama-3.3-70b-versatile")
+GROQ_FAST_MODEL = os.environ.get("GROQ_FAST_MODEL", "llama-3.1-8b-instant")
 
 ADMIN_USER_IDS: set[str] = {
     uid.strip()

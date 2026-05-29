@@ -49,6 +49,26 @@ def _get_gemini():
     return _gemini_llm
 
 
+_groq_llm = None
+
+
+def _get_groq():
+    global _groq_llm
+    if _groq_llm is None and config.GROQ_API_KEY:
+        from langchain_groq import ChatGroq
+        _groq_llm = ChatGroq(
+            model=config.GROQ_FAST_MODEL,  # claim extraction is light
+            api_key=config.GROQ_API_KEY,
+            temperature=0,
+        )
+    return _groq_llm
+
+
+def _decompose_providers():
+    return ([_get_groq(), _get_gemini()] if config.LLM_PRIMARY == "groq"
+            else [_get_gemini(), _get_groq()])
+
+
 def _load_agents() -> dict:
     global _agents_cache
     if _agents_cache is None:
@@ -71,19 +91,22 @@ Return ONLY a JSON array, e.g. ["Claim one.", "Claim two."]"""
 
 
 async def decompose_claims(answer: str) -> list[str]:
-    """Break answer prose into atomic factual claims via Gemini Flash Lite."""
+    """Break answer prose into atomic factual claims (Groq primary, Gemini
+    fallback, then sentence-split)."""
     prompt = _DECOMPOSE_PROMPT.format(text=answer[:2000])
-    try:
-        llm = _get_gemini()
-        response = await llm.ainvoke([HumanMessage(content=prompt)])
-        raw = response.content.strip()
-        # Strip markdown code fences if present
-        raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
-        claims = json.loads(raw)
-        if isinstance(claims, list):
-            return [str(c) for c in claims[:8] if c]
-    except Exception as e:
-        logger.warning("Gemini claim decomposition failed, using sentence fallback: %s", e)
+    for llm in _decompose_providers():
+        if llm is None:
+            continue
+        try:
+            response = await llm.ainvoke([HumanMessage(content=prompt)])
+            raw = response.content.strip()
+            # Strip markdown code fences if present
+            raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
+            claims = json.loads(raw)
+            if isinstance(claims, list):
+                return [str(c) for c in claims[:8] if c]
+        except Exception as e:
+            logger.warning("Claim decomposition provider failed, trying next: %s", str(e)[:150])
     # Fallback: sentence split
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", answer) if len(s.strip()) > 10]
     return sentences[:8]

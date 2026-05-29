@@ -22,6 +22,7 @@ _vectorstore_es: PineconeVectorStore | None = None
 _VECTORSTORE_ES_UNAVAILABLE = object()  # sentinel: init failed, don't retry
 _llm: ChatGoogleGenerativeAI | None = None
 _groq_llm = None
+_groq_fast_llm = None
 
 
 def _get_groq_llm():
@@ -29,11 +30,25 @@ def _get_groq_llm():
     if _groq_llm is None and config.GROQ_API_KEY:
         from langchain_groq import ChatGroq
         _groq_llm = ChatGroq(
-            model=config.GROQ_CLASSIFIER_MODEL,
+            model=config.GROQ_PRIMARY_MODEL,
             api_key=config.GROQ_API_KEY,
             temperature=0.1,
         )
     return _groq_llm
+
+
+def _get_groq_fast_llm():
+    """8b-instant — far higher free tokens-per-day than 70b. Generation fallback
+    when 70b hits its TPD cap, so the free tier survives pilot load."""
+    global _groq_fast_llm
+    if _groq_fast_llm is None and config.GROQ_API_KEY:
+        from langchain_groq import ChatGroq
+        _groq_fast_llm = ChatGroq(
+            model=config.GROQ_FAST_MODEL,
+            api_key=config.GROQ_API_KEY,
+            temperature=0.1,
+        )
+    return _groq_fast_llm
 
 
 def _get_vectorstore() -> PineconeVectorStore:
@@ -268,30 +283,29 @@ async def run_rag_query(
         HumanMessage(content=message),
     ]
 
-    structured_llm = _get_llm().with_structured_output(AdvisoryResponse)
+    # Provider order from config (default Groq primary — Gemini free is 20/day).
+    # Chain 70b -> 8b-instant -> Gemini: when 70b hits its free tokens-per-day cap,
+    # 8b (far higher TPD) keeps the pilot serving instead of failing.
+    groq = _get_groq_llm()
+    groq_fast = _get_groq_fast_llm()
+    gemini = _get_llm()
+    ordered = ([groq, groq_fast, gemini] if config.LLM_PRIMARY == "groq"
+               else [gemini, groq, groq_fast])
 
     result = None
     last_err = None
-    for attempt in range(2):
+    for llm in ordered:
+        if llm is None:
+            continue
         try:
-            result = await structured_llm.ainvoke(messages)
+            result = await llm.with_structured_output(AdvisoryResponse).ainvoke(messages)
             break
         except Exception as e:
             last_err = e
-            if "RESOURCE_EXHAUSTED" in str(e) or "429" in str(e):
-                try:
-                    groq = _get_groq_llm()
-                    if groq:
-                        result = await groq.with_structured_output(AdvisoryResponse).ainvoke(messages)
-                        break
-                except Exception as groq_err:
-                    last_err = groq_err
-                break
-            if attempt == 1:
-                raise RuntimeError(f"Structured output failed after 2 attempts: {e}") from e
+            logger.warning("Generation provider failed, trying next: %s", str(e)[:200])
 
     if result is None:
-        raise RuntimeError(f"RAG generation failed: {last_err}") from last_err
+        raise RuntimeError(f"RAG generation failed (all providers): {last_err}") from last_err
 
     advisory = await _postprocess_async(result, docs, soil, weather, county_fips)
     retrieved_chunks = [
