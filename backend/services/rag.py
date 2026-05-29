@@ -7,7 +7,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 from models.advisory import AdvisoryResponse
-from services.embedding import MiniLMEmbeddings
+from services.embedding import MiniLMEmbeddings, BGEEmbeddings
 from services.context import get_context
 from services.classifier import CATEGORY_TO_NAMESPACE
 from services import citation_guard_v2
@@ -18,6 +18,7 @@ import config
 logger = logging.getLogger(__name__)
 
 _vectorstore: PineconeVectorStore | None = None
+_vectorstore_es: PineconeVectorStore | None = None
 _llm: ChatGoogleGenerativeAI | None = None
 _groq_llm = None
 
@@ -45,6 +46,27 @@ def _get_vectorstore() -> PineconeVectorStore:
             text_key="text",
         )
     return _vectorstore
+
+
+def _get_vectorstore_es() -> PineconeVectorStore | None:
+    """Multilingual vectorstore (BGE-M3, agroar-prod-multilingual). Returns None if unavailable."""
+    global _vectorstore_es
+    if _vectorstore_es is None:
+        try:
+            pc = Pinecone(api_key=config.PINECONE_API_KEY)
+            index = pc.Index(config.PINECONE_MULTILINGUAL_INDEX_NAME)
+            _vectorstore_es = PineconeVectorStore(
+                index=index,
+                embedding=BGEEmbeddings(),
+                text_key="text",
+            )
+        except Exception:
+            logger.warning(
+                "Multilingual vectorstore unavailable — falling back to EN index",
+                exc_info=True,
+            )
+            return None
+    return _vectorstore_es
 
 
 def _get_llm() -> ChatGoogleGenerativeAI:
@@ -136,12 +158,17 @@ async def run_rag_query(
     category: str,
     session_history: list[dict],
     rice_fields: list[dict] | None = None,
+    detected_lang: str = "en",
 ) -> tuple[AdvisoryResponse, list[dict]]:
     """Returns (advisory, retrieved_chunks)."""
     context_task = asyncio.create_task(get_context(county_fips))
 
     namespace = CATEGORY_TO_NAMESPACE.get(category)
-    vectorstore = _get_vectorstore()
+    # Route to multilingual index for Spanish queries; fall back to EN if unavailable
+    if detected_lang == "es":
+        vectorstore = _get_vectorstore_es() or _get_vectorstore()
+    else:
+        vectorstore = _get_vectorstore()
 
     retriever_kwargs = {"k": config.TOP_K_RETRIEVAL}
     if namespace:
