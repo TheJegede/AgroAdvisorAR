@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis,
   Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend,
@@ -9,6 +9,7 @@ import { useAdminMetrics, useDriftReportAdmin } from '../hooks/useAdmin'
 import Spinner from '../components/ui/Spinner'
 import Alert from '../components/ui/Alert'
 import ARCountyMap from '../components/admin/ARCountyMap'
+import api from '../lib/api'
 import { AR_COUNTIES } from '../constants/counties'
 
 const LANG_COLORS = { en: '#2D6A4F', es: '#E9A228' }
@@ -49,6 +50,14 @@ export default function AdminDashboardPage() {
   const { reports: driftReports, loading: driftLoading, error: driftError } = useDriftReportAdmin()
   const [activeTab, setActiveTab] = useState('overview')
   const [mapLayer, setMapLayer] = useState('queries')
+  const [aquiferData, setAquiferData] = useState({})
+  useEffect(() => {
+    if (mapLayer !== 'aquifer' || Object.keys(aquiferData).length > 0) return
+    api.get('/admin/aquifer-stress')
+      .then(res => setAquiferData(res.data.data || {}))
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapLayer])
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [page, setPage] = useState(0)
@@ -142,7 +151,7 @@ export default function AdminDashboardPage() {
           {/* Choropleth toggle + map */}
           <SectionCard title="Drift incident map">
             <div className="flex gap-2 mb-3">
-              {[['queries', 'Query Volume'], ['drift', 'Drift Reports']].map(([layer, label]) => (
+              {[['queries', 'Query Volume'], ['drift', 'Drift Reports'], ['aquifer', 'Aquifer Stress']].map(([layer, label]) => (
                 <button
                   key={layer}
                   onClick={() => setMapLayer(layer)}
@@ -151,7 +160,9 @@ export default function AdminDashboardPage() {
                     mapLayer === layer
                       ? layer === 'drift'
                         ? 'bg-harvest text-white border-harvest'
-                        : 'bg-field text-white border-field'
+                        : layer === 'aquifer'
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-field text-white border-field'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-hc-bg dark:text-hc-fg dark:border-hc-border',
                   ].join(' ')}
                 >
@@ -163,6 +174,7 @@ export default function AdminDashboardPage() {
               countyData={metrics?.county_query_volume ?? []}
               dataLayer={mapLayer}
               driftData={driftCountMap}
+              aquiferData={aquiferData}
             />
           </SectionCard>
 

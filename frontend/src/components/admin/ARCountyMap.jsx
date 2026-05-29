@@ -23,10 +23,17 @@ function driftColor(count, maxCount) {
   return `rgb(${r},${g},${b})`
 }
 
-export default function ARCountyMap({ countyData = [], dataLayer = 'queries', driftData = {} }) {
+function aquiferColor(stress) {
+  if (stress === 'critical') return '#EF4444'  // red-500
+  if (stress === 'stressed') return '#F59E0B'  // amber-500
+  return '#10B981'                             // emerald-500
+}
+
+export default function ARCountyMap({ countyData = [], dataLayer = 'queries', driftData = {}, aquiferData = {} }) {
   const [tooltip, setTooltip] = useState(null)
 
   const isDrift = dataLayer === 'drift'
+  const isAquifer = dataLayer === 'aquifer'
 
   const countByFips = {}
   let maxCount = 1
@@ -35,7 +42,7 @@ export default function ARCountyMap({ countyData = [], dataLayer = 'queries', dr
       countByFips[fips] = count
       if (count > maxCount) maxCount = count
     })
-  } else {
+  } else if (!isAquifer) {
     countyData.forEach(({ county_fips, count }) => {
       countByFips[county_fips] = count
       if (count > maxCount) maxCount = count
@@ -64,12 +71,18 @@ export default function ARCountyMap({ countyData = [], dataLayer = 'queries', dr
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    fill={isDrift ? driftColor(count, maxCount) : countyColor(count, maxCount)}
+                    fill={
+                      isAquifer
+                        ? aquiferColor(aquiferData[fips] || 'normal')
+                        : isDrift
+                          ? driftColor(count, maxCount)
+                          : countyColor(count, maxCount)
+                    }
                     stroke="#ffffff"
                     strokeWidth={0.8}
                     onMouseEnter={() => {
                       const name = geo.properties?.name || fips
-                      setTooltip({ name, count })
+                      setTooltip({ name, count, fips })
                     }}
                     onMouseLeave={() => setTooltip(null)}
                     style={{
@@ -87,21 +100,35 @@ export default function ARCountyMap({ countyData = [], dataLayer = 'queries', dr
       {tooltip && (
         <div className="absolute top-2 right-2 bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs shadow-sm pointer-events-none dark:bg-hc-surface dark:border-hc-border dark:text-hc-fg">
           <span className="font-semibold">{tooltip.name} County</span>
-          <span className="text-gray-500 dark:text-hc-fg ml-2">{tooltip.count} {isDrift ? 'reports' : 'queries'}</span>
+          <span className="text-gray-500 dark:text-hc-fg ml-2">
+            {isAquifer
+              ? (aquiferData[tooltip?.fips] || 'normal')
+              : `${tooltip.count} ${isDrift ? 'reports' : 'queries'}`}
+          </span>
         </div>
       )}
 
       {/* Legend */}
       <div className="flex items-center gap-2 mt-2 text-xs text-gray-500 dark:text-hc-fg px-1">
-        <span>0</span>
-        <div
-          className="flex-1 h-2 rounded"
-          style={{ background: isDrift
-            ? 'linear-gradient(to right, #FEF9EE, #E9A228)'
-            : 'linear-gradient(to right, #EEF2EF, #2D6A4F)' }}
-        />
-        <span>{maxCount}</span>
-        <span className="ml-1">{isDrift ? 'reports' : 'queries'}</span>
+        {isAquifer ? (
+          <>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full inline-block" style={{background:'#10B981'}} /> Normal</span>
+            <span className="flex items-center gap-1 ml-2"><span className="w-3 h-3 rounded-full inline-block" style={{background:'#F59E0B'}} /> Stressed</span>
+            <span className="flex items-center gap-1 ml-2"><span className="w-3 h-3 rounded-full inline-block" style={{background:'#EF4444'}} /> Critical</span>
+          </>
+        ) : (
+          <>
+            <span>0</span>
+            <div
+              className="flex-1 h-2 rounded"
+              style={{ background: isDrift
+                ? 'linear-gradient(to right, #FEF9EE, #E9A228)'
+                : 'linear-gradient(to right, #EEF2EF, #2D6A4F)' }}
+            />
+            <span>{maxCount}</span>
+            <span className="ml-1">{isDrift ? 'reports' : 'queries'}</span>
+          </>
+        )}
       </div>
     </div>
   )
