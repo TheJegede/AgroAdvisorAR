@@ -71,6 +71,7 @@ def update_profile(user_id: str, updates: dict) -> dict:
         "county_name": AR_COUNTIES[default_fips][0],
         "primary_crops": updates.get("primary_crops", []),
         "language": updates.get("language", "en"),
+        "rice_fields": updates.get("rice_fields", []),
     }
     result2 = client.table("farmer_profiles").insert(row).execute()
     if not result2.data:

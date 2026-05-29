@@ -66,7 +66,7 @@ async def run_awd_alerts(farmers: list[dict], supabase) -> int:
                 continue
 
             slug = field_name.lower().replace(" ", "_")[:20]
-            redis_key = f"alert:{farmer['id']}:awd_refood:{slug}"
+            redis_key = f"alert:{farmer['id']}:awd_reflood:{slug}"
             if redis is not None:
                 try:
                     if redis.exists(redis_key):
@@ -77,7 +77,7 @@ async def run_awd_alerts(farmers: list[dict], supabase) -> int:
             days = result.days_to_threshold
             row = {
                 "farmer_id": farmer["id"],
-                "pest": "awd_refood",
+                "pest": "awd_reflood",
                 "county_fips": fips,
                 "message_en": (
                     f"Rice field '{field_name}': AWD re-flood threshold in {days} day(s). "
