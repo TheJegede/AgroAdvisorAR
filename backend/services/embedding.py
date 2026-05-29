@@ -1,12 +1,12 @@
 """Singleton sentence-transformer embedders: MiniLM (EN) and BGE-M3 (multilingual)."""
-import os
 from sentence_transformers import SentenceTransformer
 from langchain_core.embeddings import Embeddings
+import config
 
 _model: SentenceTransformer | None = None
 _multilingual_model: SentenceTransformer | None = None
-MODEL_NAME = os.environ.get("EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2")
-MULTILINGUAL_MODEL_NAME = os.environ.get("MULTILINGUAL_EMBEDDING_MODEL_PATH", "BAAI/bge-m3")
+MODEL_NAME = config.EMBEDDING_MODEL_PATH
+MULTILINGUAL_MODEL_NAME = config.MULTILINGUAL_EMBEDDING_MODEL_PATH
 
 
 def get_model() -> SentenceTransformer:
