@@ -103,7 +103,7 @@ def test_login_rate_limit_returns_429_after_10_attempts(monkeypatch):
 def test_query_stream_emits_error_payload_and_logs_persistence(monkeypatch, caplog):
     query_router = importlib.import_module("routers.query")
 
-    async def classify(_message):
+    async def classify(_message, **_kwargs):
         return "IN_SCOPE"
 
     class Result:
