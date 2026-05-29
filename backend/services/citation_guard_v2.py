@@ -65,6 +65,9 @@ def _get_groq():
 
 
 def _decompose_providers():
+    if config.LLM_PRIMARY == "local":
+        from services.local_llm import get_local_chat
+        return [get_local_chat()]
     return ([_get_groq(), _get_gemini()] if config.LLM_PRIMARY == "groq"
             else [_get_gemini(), _get_groq()])
 

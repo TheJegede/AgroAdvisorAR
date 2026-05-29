@@ -89,8 +89,12 @@ CATEGORY_TO_NAMESPACE = {
 async def classify_query(message: str, last_category: str | None = None) -> str:
     prompt = CLASSIFIER_PROMPT.format(message=message)
     # Provider order from config (default Groq primary — Gemini free is 20/day).
-    ordered = ([_get_groq_llm(), _get_llm()] if config.LLM_PRIMARY == "groq"
-               else [_get_llm(), _get_groq_llm()])
+    if config.LLM_PRIMARY == "local":
+        from services.local_llm import get_local_chat
+        ordered = [get_local_chat()]
+    else:
+        ordered = ([_get_groq_llm(), _get_llm()] if config.LLM_PRIMARY == "groq"
+                   else [_get_llm(), _get_groq_llm()])
     category = "IN_SCOPE_GENERAL_AG"
     for llm in ordered:
         if llm is None:

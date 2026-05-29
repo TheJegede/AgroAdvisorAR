@@ -286,11 +286,15 @@ async def run_rag_query(
     # Provider order from config (default Groq primary — Gemini free is 20/day).
     # Chain 70b -> 8b-instant -> Gemini: when 70b hits its free tokens-per-day cap,
     # 8b (far higher TPD) keeps the pilot serving instead of failing.
-    groq = _get_groq_llm()
-    groq_fast = _get_groq_fast_llm()
-    gemini = _get_llm()
-    ordered = ([groq, groq_fast, gemini] if config.LLM_PRIMARY == "groq"
-               else [gemini, groq, groq_fast])
+    if config.LLM_PRIMARY == "local":
+        from services.local_llm import get_local_chat
+        ordered = [get_local_chat()]
+    else:
+        groq = _get_groq_llm()
+        groq_fast = _get_groq_fast_llm()
+        gemini = _get_llm()
+        ordered = ([groq, groq_fast, gemini] if config.LLM_PRIMARY == "groq"
+                   else [gemini, groq, groq_fast])
 
     result = None
     last_err = None
