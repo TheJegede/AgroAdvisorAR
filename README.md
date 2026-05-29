@@ -2,7 +2,6 @@
 
 [![Nightly retrieval eval](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/nightly-eval.yml/badge.svg)](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/nightly-eval.yml)
 [![Playwright E2E Tests](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/playwright.yml/badge.svg)](https://github.com/TheJegede/AgroAdvisorAR/actions/workflows/playwright.yml)
-![MRR@5](https://img.shields.io/badge/MRR%405-0.6565-2D6A4F)
 ![WCAG 2.1 AA](https://img.shields.io/badge/WCAG_2.1-AA_0_violations-2D6A4F)
 
 Bilingual (EN/ES) RAG-powered agricultural advisory system for Arkansas farmers. Targets rice, soybean, and poultry producers, with county-level soil and weather context injected into every response.
@@ -25,8 +24,8 @@ The bilingual interface (EN/ES) extends access to Spanish-speaking agricultural 
 │  Vite + TW   │◄──►│                                           │
 │  (frontend)  │SSE │  classifier → context → retriever → LLM   │
 └──────────────┘    │                                           │
-                    │  • Gemini 2.5 Flash (primary)             │
-                    │  • Groq llama-3.3-70b (fallback on 429)   │
+                    │  • Groq llama-3.3-70b (primary)           │
+                    │  • Gemini 2.5 Flash (fallback)            │
                     └─────────┬───────────┬───────────┬─────────┘
                               │           │           │
                        ┌──────▼─────┐ ┌───▼────┐ ┌────▼──────┐
@@ -44,14 +43,15 @@ The bilingual interface (EN/ES) extends access to Spanish-speaking agricultural 
 
 ```
 POST /api/v1/query
-  → classify message (one of 6 categories; Gemini Flash Lite → Groq fallback)
+  → classify message (one of 6 categories; Groq llama-3.1-8b-instant → Gemini fallback)
   → OUT_OF_SCOPE? return static message, no LLM call
   → SAFETY_CRITICAL? proceed with injected safety warning
   → parallel: embed + retrieve (Pinecone, k=5) AND fetch SSURGO + NOAA
   → assemble system prompt (role + conditions + docs + history + instructions)
-  → Gemini 2.5 Flash with_structured_output(AdvisoryResponse)
-       → Groq llama-3.3-70b fallback on RESOURCE_EXHAUSTED
-  → citation guard (strip any citation not matching retrieved doc titles)
+  → Groq llama-3.3-70b with_structured_output(AdvisoryResponse)
+       → fallback chain: 70b → llama-3.1-8b-instant → Gemini 2.5 Flash
+  → citation guard: title-match + NLI claim verification; low confidence is
+    downgraded or the advisory is suppressed (Extension referral)
   → persist user + assistant turn to chat_messages (if session_id)
   → SSE stream AdvisoryResponse JSON + [DONE]
 ```
@@ -103,12 +103,16 @@ are intentionally kept out of `backend/requirements.txt`.
 
 ```bash
 cd evals
-python eval_runner.py --eval-set eval_set_v2.jsonl
+python eval_runner.py --eval-set eval_set_v2.jsonl       # retrieval metrics
+python answer_eval_full.py --provider local --sample 20  # end-to-end (local GPU)
 
-# Round 2 pipeline (already in production)
-python generate_eval_set_v2.py
-python generate_triplets_v2.py
-python finetune_v2.py
+# Honest, disjoint fine-tuning pipeline (training set excludes eval gold chunks):
+python generate_synthetic_queries.py --lang en --sample-chunks 2000
+python finetune_synth.py --lang en
+
+# NOTE: generate_triplets_v2.py / finetune_v2.py are the legacy round-2 recipe.
+# They train on eval_set_v2.jsonl, so metrics from them are train-on-test — do
+# not report them. Kept only for historical reference.
 ```
 
 Spanish eval generation uses `evals/build_es_eval.py`, which also depends on
@@ -120,8 +124,10 @@ Copy `.env.example` to `.env` in the project root and fill in:
 
 | Variable | Purpose |
 |----------|---------|
-| `GOOGLE_API_KEY` | Gemini API key (Google AI Studio) |
-| `GROQ_API_KEY` | Groq fallback for classifier + RAG when Gemini quota is exhausted |
+| `GROQ_API_KEY` | **Primary** LLM provider (generation, classifier, claim decomposition) |
+| `GOOGLE_API_KEY` | Gemini — optional fallback only (free tier is 20 req/day) |
+| `LLM_PRIMARY` | Provider order; defaults to `groq` (`gemini` to flip) |
+| `RERANK_ENABLED` | Optional cross-encoder reranking; off by default (heavy for free-tier CPU) |
 | `PINECONE_API_KEY` | Pinecone serverless |
 | `PINECONE_INDEX_NAME` | Defaults to `agroar-prod` (384-dim, cosine, us-east-1) |
 | `SUPABASE_URL` | Project URL |
@@ -137,30 +143,42 @@ Copy `.env.example` to `.env` in the project root and fill in:
 
 ## Key design decisions
 
-- **Structured output.** `with_structured_output(AdvisoryResponse)` uses Gemini's native `response_schema`. No regex or JSON post-parsing. Same pattern on Groq via tool calling.
-- **Groq fallback.** Both `services/classifier.py` and `services/rag.py` catch `RESOURCE_EXHAUSTED` from Gemini and transparently retry on Groq `llama-3.3-70b-versatile`. Free tier: 14,400 Groq req/day vs 20 Gemini req/day.
+- **Structured output.** `with_structured_output(AdvisoryResponse)` via Groq tool calling (primary), Gemini `response_schema` as fallback. No regex or JSON post-parsing.
+- **Groq-primary, provider chain.** `classifier.py`, `rag.py`, and `citation_guard_v2.py` try providers in order (default Groq first, Gemini fallback) and degrade gracefully. Gemini's free tier is 20 req/day, so Groq is primary. Note: Groq's free tier has per-day **token** caps too — generation falls back 70b → 8b-instant to stretch them; a second free provider may be needed for sustained load.
 - **County context.** Every query injects county-level soil (SSURGO SDA API) and weather (NOAA NWS API) for the user's `county_fips`. Cached 6h in Upstash Redis. Both APIs must complete in 3s or the response degrades gracefully via `soil_data_available` / `weather_data_available` flags.
 - **Citation guard.** After generation, citations are cross-checked against retrieved chunk titles. Unmatched citations are stripped; if none remain, confidence is downgraded to `Low`.
 - **Pinecone namespaces.** Documents are upserted by crop (`rice`, `soybeans`, `poultry`, `general`). The classifier output selects the namespace at retrieval time.
 - **JWT.** Tokens validated locally — no DB round-trip per request. New Supabase `sb_*` keys use ES256 via JWKS (cached in-process); legacy `eyJ…` keys use HS256.
 
-## Embedding fine-tuning
+## Retrieval evaluation
 
-Two rounds of fine-tuning on `all-MiniLM-L6-v2`. Current production model is `models/agroar-embeddings-v2`, indexed across all 20,546 vectors.
+> **Correction:** an earlier version of this README reported `MRR@5 0.6565` for
+> the fine-tuned `agroar-embeddings-v2` model. That number was **invalid** — the
+> model was fine-tuned on the same 200 items it was evaluated on (train-on-test).
+> Verified honest held-out (5-fold) exact-match MRR@5 for that model is ~0.18,
+> essentially the un-fine-tuned base. The `generate_triplets_v2.py` →
+> `finetune_v2.py` recipe builds its training triplets from `eval_set_v2.jsonl`,
+> so any metric it produces against that set is contaminated. Do not cite it.
 
-| Metric | v1 (on v2 eval) | v2 mismatched index | v2 matched index | Target |
-|--------|-----------------|---------------------|------------------|--------|
-| MRR@5  | 0.1666 | 0.2898 | **0.6565** | >0.60 ✓ |
-| NDCG@5 | 0.1958 | 0.3197 | **0.6993** | — |
-| Hit@1  | 0.105  | 0.225  | **0.530**  | — |
-| Hit@5  | 0.285  | 0.410  | **0.825**  | — |
+Honest measurement is ongoing in `evals/`:
 
-Retrieval metrics are evaluated nightly in CI against the 200-item `eval_set_v2.jsonl`. Each run also samples 20 queries through the full RAG chain and scores the generated advisory against the gold chunk using an LLM-as-judge (Groq `llama-3.3-70b`), reported as `answer_correct_pct`.
+- **Exact single-id metrics undercount badly** on this corpus — ~79% of labeled
+  gold chunks have near-duplicates, so the retriever often returns an
+  equally-valid chunk that is scored as a miss.
+- Under **relevance-based judging** (LLM-as-judge over what was retrieved), the
+  best offline pipeline — `gte-base` embeddings + `bge-reranker-v2-m3` reranking —
+  reaches roughly **MRR@5 ≈ 0.6, hit@5 ≈ 0.8** on the 200-item held-out set.
+  This uses a small local judge (noisy) and is not yet human-validated.
+- A **disjoint** synthetic-query fine-tuning pipeline (`generate_synthetic_queries.py`
+  + `finetune_synth.py`) gives a small but *real* held-out lift, unlike the
+  contaminated recipe above.
 
-Rollback:
+The **deployed** EN index uses `all-MiniLM-L6-v2` without reranking and scores
+lower than the gte-base + reranker pipeline, which is not yet in production.
+
+Rollback / model selection via `EMBEDDING_MODEL_PATH`:
 
 ```bash
-EMBEDDING_MODEL_PATH=./models/agroar-embeddings-v1 python ingestion/pipeline.py --force
 EMBEDDING_MODEL_PATH=sentence-transformers/all-MiniLM-L6-v2 python ingestion/pipeline.py --force
 ```
 
@@ -196,8 +214,8 @@ See `CLAUDE.md` for `curl` examples.
 ## Tech stack
 
 - **Backend:** FastAPI, LangChain, Pinecone, Supabase, Pydantic v2, Sentry
-- **LLMs:** Gemini 2.5 Flash (primary), Groq `llama-3.3-70b-versatile` (fallback)
-- **Embeddings:** `sentence-transformers` fine-tuned on agronomy triplets
+- **LLMs:** Groq `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` (primary), Gemini 2.5 Flash (fallback)
+- **Embeddings:** `all-MiniLM-L6-v2` (EN, deployed), `BAAI/bge-m3` (ES); `gte-base` + `bge-reranker-v2-m3` evaluated offline
 - **Frontend:** React 19, Vite, TailwindCSS, React Router 7, Axios
 - **Storage:** Pinecone (vectors), Supabase Postgres (users + chat history), Upstash Redis (context cache)
 - **Data sources:** UA Extension PDFs, USDA SSURGO SDA, NOAA NWS
