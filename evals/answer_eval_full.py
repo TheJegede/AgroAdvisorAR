@@ -95,6 +95,11 @@ def faithfulness(advisory: dict, chunks: list[dict]) -> tuple[float, str]:
     return _parse_score(resp.content)
 
 
+# Pluggable judges (Groq by default; swapped to local Qwen for --provider local).
+JUDGE_CORR = score_item
+JUDGE_FAITH = faithfulness
+
+
 async def evaluate(item):
     cat = _NS_TO_CAT.get(item["namespace"], "IN_SCOPE_GENERAL_AG")
     advisory, chunks = await run_rag_query(
@@ -103,8 +108,8 @@ async def evaluate(item):
     )
     adv = advisory.model_dump() if hasattr(advisory, "model_dump") else advisory
     suppressed = _is_suppressed(adv)
-    corr, c_r = score_item(item["query"], adv, item["chunk_text"])
-    faith, f_r = faithfulness(adv, chunks)
+    corr, c_r = JUDGE_CORR(item["query"], adv, item["chunk_text"])
+    faith, f_r = JUDGE_FAITH(adv, chunks)
     return corr, faith, suppressed, c_r, f_r
 
 
@@ -112,14 +117,21 @@ async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sample", type=int, default=15)
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--provider", choices=["gemini", "groq"], default="gemini",
-                    help="groq routes generation through Groq (avoids Gemini quota)")
+    ap.add_argument("--provider", choices=["gemini", "groq", "local"], default="gemini",
+                    help="groq=Groq generation; local=Qwen-7B on GPU (free, no quota; also judges locally)")
     ap.add_argument("--no-guard", action="store_true",
                     help="disable NLI suppression to measure raw answer quality")
     args = ap.parse_args()
 
+    global JUDGE_CORR, JUDGE_FAITH
     if args.provider == "groq":
         _force_groq_generation()
+    elif args.provider == "local":
+        import local_llm
+        rag._get_groq_llm = lambda: local_llm.LocalChat()  # generation -> local Qwen
+        config.LLM_PRIMARY = "groq"                         # so local is tried first
+        JUDGE_CORR = local_llm.judge_correctness            # judge locally too (Groq drained)
+        JUDGE_FAITH = local_llm.judge_faithfulness
     if args.no_guard:
         config.NLI_CITATION_GUARD_ENABLED = False
     print(f"provider={args.provider}  guard={'off' if args.no_guard else 'on'}")
