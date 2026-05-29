@@ -26,7 +26,10 @@ EMBEDDING_MODEL_PATH = os.environ.get(
     "EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2"
 )
 PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
-PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod")
+# `or` (not get-default): a present-but-empty env var (e.g. an unset GitHub
+# secret injected as "") must still fall back, otherwise Pinecone .Index("")
+# fails with the opaque "Either name or host must be specified".
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME") or "agroar-prod"
 
 DEFAULT_EVAL_SET = Path(__file__).parent / "eval_set.jsonl"
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -136,6 +139,7 @@ def run_eval(eval_set_path: Path = DEFAULT_EVAL_SET) -> dict:
     items = [json.loads(l) for l in open(eval_set_path)]
     print(f"Eval items:      {len(items)}")
     print(f"Embedding model: {EMBEDDING_MODEL_PATH}")
+    print(f"Pinecone index:  {PINECONE_INDEX_NAME}")
 
     model = SentenceTransformer(EMBEDDING_MODEL_PATH)
     index = Pinecone(api_key=PINECONE_API_KEY).Index(PINECONE_INDEX_NAME)
