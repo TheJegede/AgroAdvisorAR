@@ -1,5 +1,6 @@
 """Core RAG chain: retrieve → inject context → Gemini structured output."""
 import asyncio
+import logging
 from datetime import date as _date
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -13,6 +14,8 @@ from services import citation_guard_v2
 from utils.prompt import build_system_prompt
 from utils.counties import get_county_info
 import config
+
+logger = logging.getLogger(__name__)
 
 _vectorstore: PineconeVectorStore | None = None
 _llm: ChatGoogleGenerativeAI | None = None
@@ -185,8 +188,7 @@ async def run_rag_query(
             if awd_results:
                 awd_context = awd_scheduler.format_awd_context(awd_results)
         except Exception:
-            import logging as _log
-            _log.getLogger(__name__).warning("AWD context injection failed", exc_info=True)
+            logger.warning("AWD context injection failed", exc_info=True)
 
     county_info = get_county_info(county_fips)
     county_name = county_info["county_name"] if county_info else county_fips
