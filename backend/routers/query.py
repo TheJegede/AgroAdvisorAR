@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from services.auth import get_current_user
-from services.classifier import classify_query
+from services.classifier import classify_query, detect_language
 from services.rag import run_rag_query
 from services.session import add_message as save_message
 from services.user import get_profile
@@ -72,6 +72,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     language = req.language
 
     category = await classify_query(req.message, last_category=req.last_category)
+    detected_lang = detect_language(req.message)
 
     if category == "OUT_OF_SCOPE":
         oos_message_id: str | None = None
@@ -100,6 +101,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 category=category,
                 session_history=req.session_history,
                 rice_fields=rice_fields,
+                detected_lang=detected_lang,
             )
 
             assistant_message_id: str | None = None

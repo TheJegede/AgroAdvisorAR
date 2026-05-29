@@ -116,3 +116,47 @@ def test_run_rag_query_es_uses_multilingual_vectorstore(monkeypatch):
     ))
 
     assert "es" in calls, f"Expected multilingual vectorstore, got calls={calls}"
+
+
+def test_query_router_passes_detected_lang_to_rag(monkeypatch):
+    """Spanish message → detected_lang='es' forwarded to run_rag_query even if UI lang is 'en'."""
+    import asyncio
+    import importlib
+
+    query_router = importlib.import_module("routers.query")
+    detected_langs_seen = []
+
+    async def fake_classify(_message, **_kwargs):
+        return "IN_SCOPE_RICE"
+
+    class FakeResult:
+        confidence_score = 0.9
+        escalation = None
+
+        def model_dump(self):
+            return {"problem_summary": "test"}
+
+    async def fake_run_rag(**kwargs):
+        detected_langs_seen.append(kwargs.get("detected_lang"))
+        return FakeResult(), []
+
+    monkeypatch.setattr(query_router, "classify_query", fake_classify)
+    monkeypatch.setattr(query_router, "run_rag_query", fake_run_rag)
+    monkeypatch.setattr(query_router, "save_message", lambda *a, **k: {"id": "x"})
+    monkeypatch.setattr(query_router, "get_profile", lambda _: {"county_fips": "05001"})
+    monkeypatch.setattr(query_router, "rate_limit_hit", lambda *_: (True, 1))
+
+    req = query_router.QueryRequest(
+        message="¿Cómo controlo el acaro del arroz?",
+        language="en",  # UI toggle is EN, but message is Spanish
+        session_id="s1",
+    )
+    response = asyncio.run(query_router.query(req, {"sub": "user-id"}))
+
+    async def drain():
+        async for _ in response.body_iterator:
+            pass
+
+    asyncio.run(drain())
+
+    assert detected_langs_seen == ["es"], f"Expected ['es'], got {detected_langs_seen}"
