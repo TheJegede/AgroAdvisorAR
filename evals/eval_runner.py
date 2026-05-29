@@ -136,7 +136,7 @@ def _ndcg(retrieved: list[str], relevant: str, k: int = 5) -> float:
 
 
 def run_eval(eval_set_path: Path = DEFAULT_EVAL_SET) -> dict:
-    items = [json.loads(l) for l in open(eval_set_path)]
+    items = [json.loads(l) for l in open(eval_set_path, encoding="utf-8")]
     print(f"Eval items:      {len(items)}")
     print(f"Embedding model: {EMBEDDING_MODEL_PATH}")
     print(f"Pinecone index:  {PINECONE_INDEX_NAME}")

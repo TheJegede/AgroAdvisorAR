@@ -12,6 +12,7 @@ After translation, ingest with:
 """
 import argparse
 import json
+import os
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -35,15 +36,57 @@ def _infer_crop_type(filename: str) -> str:
 
 
 def translate_corpus(batch_size: int = 16) -> int:
-    from transformers import pipeline as hf_pipeline
+    import torch
+    from transformers import MarianMTModel, MarianTokenizer
+
+    # transformers v5 dropped the "translation" pipeline task, so drive the
+    # Marian model directly. GPU when available, else CPU. Override with
+    # TRANSLATE_DEVICE (e.g. "cpu", "cuda:1").
+    device = os.environ.get("TRANSLATE_DEVICE") or (
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
+    print(f"Translation device: {device}")
 
     ES_CHUNKS_DIR.mkdir(exist_ok=True)
-    translator = hf_pipeline(
-        "translation",
-        model="Helsinki-NLP/opus-mt-en-es",
-        batch_size=batch_size,
-        device=-1,  # CPU; set to 0 for GPU
-    )
+    model_name = "Helsinki-NLP/opus-mt-en-es"
+    tokenizer = MarianTokenizer.from_pretrained(model_name)
+    model = MarianMTModel.from_pretrained(model_name).to(device)
+    model.eval()
+
+    def _gen(batch: list[str]) -> list[str]:
+        inputs = tokenizer(
+            batch, return_tensors="pt", padding=True, truncation=True, max_length=512
+        ).to(device)
+        with torch.no_grad():
+            # Greedy (num_beams=1): Marian defaults to beam search (~6x memory),
+            # which OOMs an 8GB GPU on large batches. Quality loss negligible for MT bootstrap.
+            generated = model.generate(**inputs, max_length=512, num_beams=1)
+        return tokenizer.batch_decode(generated, skip_special_tokens=True)
+
+    def _translate(batch: list[str]) -> list[str]:
+        try:
+            return _gen(batch)
+        except torch.cuda.OutOfMemoryError:
+            # Free fragmented memory, then fall back to one item at a time.
+            torch.cuda.empty_cache()
+            print(f"  OOM on batch of {len(batch)} — retrying per-item")
+            out = []
+            for text in batch:
+                try:
+                    out.extend(_gen([text]))
+                except torch.cuda.OutOfMemoryError:
+                    torch.cuda.empty_cache()
+                    out.extend(_gen_cpu([text]))
+            return out
+
+    def _gen_cpu(batch: list[str]) -> list[str]:
+        inputs = tokenizer(
+            batch, return_tensors="pt", padding=True, truncation=True, max_length=512
+        )
+        with torch.no_grad():
+            generated = model.cpu().generate(**inputs, max_length=512, num_beams=1)
+        model.to(device)
+        return tokenizer.batch_decode(generated, skip_special_tokens=True)
 
     pdf_files = sorted(RAW_PDFS_DIR.glob("*.pdf"))
     if not pdf_files:
@@ -73,8 +116,7 @@ def translate_corpus(batch_size: int = 16) -> int:
                 translated_texts = []
                 for i in range(0, len(texts), batch_size):
                     batch = texts[i : i + batch_size]
-                    results = translator(batch, max_length=512)
-                    translated_texts.extend(r["translation_text"] for r in results)
+                    translated_texts.extend(_translate(batch))
 
                 for doc, es_text in zip(docs, translated_texts):
                     record = {
@@ -90,6 +132,9 @@ def translate_corpus(batch_size: int = 16) -> int:
                 print(f"  -> {len(docs)} chunks translated")
             except Exception as e:
                 print(f"  FAILED: {e}")
+            finally:
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
     print(f"\nWrote {total} Spanish chunks to {OUTPUT_PATH}")
     return total

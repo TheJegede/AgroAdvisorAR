@@ -56,8 +56,12 @@ def ingest_es_chunks() -> int:
         print("No chunks in input file.")
         return 0
 
-    print(f"Loading BGE-M3 model: {BGE_MODEL_NAME}")
-    model = SentenceTransformer(BGE_MODEL_NAME)
+    import torch
+
+    # GPU when available, else CPU. Override with EMBED_DEVICE (e.g. "cpu", "cuda:1").
+    device = os.environ.get("EMBED_DEVICE") or ("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Loading BGE-M3 model: {BGE_MODEL_NAME} (device={device})")
+    model = SentenceTransformer(BGE_MODEL_NAME, device=device)
     pc = Pinecone(api_key=PINECONE_API_KEY)
     index = _get_or_create_index(pc)
 
