@@ -157,26 +157,36 @@ async def run_rag_query(
     # AWD context injection for rice queries with registered fields
     awd_context: str | None = None
     if rice_fields and category == "IN_SCOPE_RICE":
-        from services import awd_scheduler
-        from services.context import fetch_usgs_well
-        usgs = await fetch_usgs_well(county_fips)
-        stress = (usgs or {}).get("stress_level", "normal")
-        well_m = (usgs or {}).get("current_depth_m")
-        drainage = soil.get("drainage_class") or "default"
+        try:
+            from services import awd_scheduler
+            from services.context import fetch_usgs_well
+            usgs = await fetch_usgs_well(county_fips)
+            stress = (usgs or {}).get("stress_level", "normal")
+            well_m = (usgs or {}).get("current_depth_m")
+            drainage = soil.get("drainage_class") or "default"
 
-        awd_results = [
-            awd_scheduler.compute_awd_stage(
-                field_name=f["field_name"],
-                last_flood_date=_date.fromisoformat(f["last_flood_date"]),
-                drainage_class=drainage,
-                current_well_m=well_m,
-                aquifer_stress_level=stress,
-            )
-            for f in rice_fields[:3]
-            if f.get("field_name") and f.get("last_flood_date")
-        ]
-        if awd_results:
-            awd_context = awd_scheduler.format_awd_context(awd_results)
+            awd_results = []
+            for f in rice_fields[:3]:
+                if not f.get("field_name") or not f.get("last_flood_date"):
+                    continue
+                try:
+                    flood_date = _date.fromisoformat(f["last_flood_date"])
+                except ValueError:
+                    continue
+                awd_results.append(
+                    awd_scheduler.compute_awd_stage(
+                        field_name=f["field_name"],
+                        last_flood_date=flood_date,
+                        drainage_class=drainage,
+                        current_well_m=well_m,
+                        aquifer_stress_level=stress,
+                    )
+                )
+            if awd_results:
+                awd_context = awd_scheduler.format_awd_context(awd_results)
+        except Exception:
+            import logging as _log
+            _log.getLogger(__name__).warning("AWD context injection failed", exc_info=True)
 
     county_info = get_county_info(county_fips)
     county_name = county_info["county_name"] if county_info else county_fips
