@@ -27,3 +27,24 @@ def test_bge_embeddings_produces_1024_dim(monkeypatch):
     result = bge.embed_query("¿Cómo controlo el acaro del arroz?")
     assert len(result) == 1024
     assert all(isinstance(v, float) for v in result)
+
+
+def test_detect_language_spanish():
+    from services.classifier import detect_language
+    assert detect_language("¿Cómo controlo el acaro del arroz en Arkansas?") == "es"
+
+
+def test_detect_language_english():
+    from services.classifier import detect_language
+    assert detect_language("How do I control blast disease in rice?") == "en"
+
+
+def test_detect_language_empty_defaults_en():
+    from services.classifier import detect_language
+    assert detect_language("") == "en"
+
+
+def test_detect_language_short_text_defaults_en():
+    from services.classifier import detect_language
+    # Very short text raises LangDetectException — must default to 'en'
+    assert detect_language("ok") == "en"
