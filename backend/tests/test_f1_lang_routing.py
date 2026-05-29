@@ -160,3 +160,140 @@ def test_query_router_passes_detected_lang_to_rag(monkeypatch):
     asyncio.run(drain())
 
     assert detected_langs_seen == ["es"], f"Expected ['es'], got {detected_langs_seen}"
+
+
+def test_run_rag_query_en_uses_default_vectorstore(monkeypatch):
+    """detected_lang='en' → similarity_search called on default (MiniLM) vectorstore, not multilingual."""
+    import asyncio
+    import importlib
+    from langchain_core.documents import Document
+
+    rag = importlib.import_module("services.rag")
+    calls = []
+
+    class FakeVS:
+        def __init__(self, name):
+            self._name = name
+
+        def similarity_search(self, query, **kwargs):
+            calls.append(self._name)
+            return [Document(page_content="test chunk", metadata={"document_title": "T"})]
+
+    class FakeLLM:
+        def with_structured_output(self, schema):
+            return self
+
+        async def ainvoke(self, messages):
+            from models.advisory import AdvisoryResponse, ContextMeta
+            return AdvisoryResponse(
+                problem_summary="test",
+                likely_causes=[],
+                recommended_actions=[],
+                products_rates=[],
+                warnings=[],
+                confidence="High",
+                confidence_explanation="test",
+                language="en",
+                citations=[],
+                context_meta=ContextMeta(
+                    soil_data_available=False,
+                    weather_data_available=False,
+                    county_fips="05001",
+                ),
+            )
+
+    monkeypatch.setattr(rag, "_vectorstore", FakeVS("en"))
+    monkeypatch.setattr(rag, "_vectorstore_es", FakeVS("es"))
+    monkeypatch.setattr(rag, "_get_llm", lambda: FakeLLM())
+
+    async def fake_get_context(_fips):
+        return {"soil": {}, "weather": {}}
+
+    monkeypatch.setattr(rag, "get_context", fake_get_context)
+
+    import services.citation_guard_v2 as cgv2
+
+    async def fake_verify(answer, chunks):
+        return {"confidence_score": 0.9, "claim_verification": []}
+
+    monkeypatch.setattr(cgv2, "verify_answer", fake_verify)
+
+    asyncio.run(rag.run_rag_query(
+        message="How do I control blast disease in rice?",
+        county_fips="05001",
+        language="en",
+        category="IN_SCOPE_RICE",
+        session_history=[],
+        detected_lang="en",
+    ))
+
+    assert calls == ["en"], f"Expected EN vectorstore only, got calls={calls}"
+
+
+def test_run_rag_query_es_falls_back_to_en_when_multilingual_unavailable(monkeypatch):
+    """When _get_vectorstore_es() returns None, ES queries fall back to EN vectorstore."""
+    import asyncio
+    import importlib
+    from langchain_core.documents import Document
+
+    rag = importlib.import_module("services.rag")
+    calls = []
+
+    class FakeVS:
+        def __init__(self, name):
+            self._name = name
+
+        def similarity_search(self, query, **kwargs):
+            calls.append(self._name)
+            return [Document(page_content="test chunk", metadata={"document_title": "T"})]
+
+    class FakeLLM:
+        def with_structured_output(self, schema):
+            return self
+
+        async def ainvoke(self, messages):
+            from models.advisory import AdvisoryResponse, ContextMeta
+            return AdvisoryResponse(
+                problem_summary="test",
+                likely_causes=[],
+                recommended_actions=[],
+                products_rates=[],
+                warnings=[],
+                confidence="High",
+                confidence_explanation="test",
+                language="es",
+                citations=[],
+                context_meta=ContextMeta(
+                    soil_data_available=False,
+                    weather_data_available=False,
+                    county_fips="05001",
+                ),
+            )
+
+    monkeypatch.setattr(rag, "_vectorstore", FakeVS("en"))
+    # Simulate unavailable multilingual index by patching _get_vectorstore_es to return None
+    monkeypatch.setattr(rag, "_get_vectorstore_es", lambda: None)
+    monkeypatch.setattr(rag, "_get_llm", lambda: FakeLLM())
+
+    async def fake_get_context(_fips):
+        return {"soil": {}, "weather": {}}
+
+    monkeypatch.setattr(rag, "get_context", fake_get_context)
+
+    import services.citation_guard_v2 as cgv2
+
+    async def fake_verify(answer, chunks):
+        return {"confidence_score": 0.9, "claim_verification": []}
+
+    monkeypatch.setattr(cgv2, "verify_answer", fake_verify)
+
+    asyncio.run(rag.run_rag_query(
+        message="¿Cómo controlo el acaro en arroz?",
+        county_fips="05001",
+        language="es",
+        category="IN_SCOPE_RICE",
+        session_history=[],
+        detected_lang="es",
+    ))
+
+    assert calls == ["en"], f"Expected fallback to EN vectorstore, got calls={calls}"

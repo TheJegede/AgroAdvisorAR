@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 _vectorstore: PineconeVectorStore | None = None
 _vectorstore_es: PineconeVectorStore | None = None
+_VECTORSTORE_ES_UNAVAILABLE = object()  # sentinel: init failed, don't retry
 _llm: ChatGoogleGenerativeAI | None = None
 _groq_llm = None
 
@@ -51,6 +52,8 @@ def _get_vectorstore() -> PineconeVectorStore:
 def _get_vectorstore_es() -> PineconeVectorStore | None:
     """Multilingual vectorstore (BGE-M3, agroar-prod-multilingual). Returns None if unavailable."""
     global _vectorstore_es
+    if _vectorstore_es is _VECTORSTORE_ES_UNAVAILABLE:
+        return None
     if _vectorstore_es is None:
         try:
             pc = Pinecone(api_key=config.PINECONE_API_KEY)
@@ -65,6 +68,7 @@ def _get_vectorstore_es() -> PineconeVectorStore | None:
                 "Multilingual vectorstore unavailable — falling back to EN index",
                 exc_info=True,
             )
+            _vectorstore_es = _VECTORSTORE_ES_UNAVAILABLE
             return None
     return _vectorstore_es
 
