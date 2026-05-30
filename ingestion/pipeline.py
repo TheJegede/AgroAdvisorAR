@@ -145,7 +145,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--index", default=None,
-        help="Override PINECONE_INDEX_NAME env var (e.g. agroar-prod-multilingual)",
+        help="Override PINECONE_INDEX_NAME env var (e.g. agroar-prod-gte)",
     )
     args = parser.parse_args()
     run_pipeline(force_reindex=args.force, source_lang=args.lang, index_override=args.index)

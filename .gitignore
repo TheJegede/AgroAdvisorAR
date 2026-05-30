@@ -17,7 +17,6 @@ build/
 .pytest_tmp/
 pytest-cache-files-*/
 ingestion/raw_pdfs/
-ingestion/es_chunks/
 ingestion/en_chunks/
 evals/synth_queries_*.jsonl
 ingestion/logs/

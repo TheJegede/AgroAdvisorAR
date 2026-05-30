@@ -7,7 +7,6 @@ base vs fine-tuned is a fair comparison without touching Pinecone.
 
 Usage:
     python evals/finetune_synth.py --lang en
-    python evals/finetune_synth.py --lang es
 """
 import argparse, json, tempfile
 from pathlib import Path
@@ -20,10 +19,6 @@ CFG = {
                corpus=ROOT / "ingestion" / "en_chunks" / "corpus_en.jsonl",
                synth=Path(__file__).parent / "synth_queries_en.jsonl",
                evalset=Path(__file__).parent / "eval_set_v2.jsonl"),
-    "es": dict(base="BAAI/bge-m3",
-               corpus=ROOT / "ingestion" / "es_chunks" / "corpus_es.jsonl",
-               synth=Path(__file__).parent / "synth_queries_es.jsonl",
-               evalset=Path(__file__).parent / "ar_agqa_es.jsonl"),
 }
 EPOCHS, BATCH, NEG_PER_Q = 3, 64, 3
 
@@ -96,7 +91,7 @@ def evaluate(model, rows, evalset):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--lang", choices=["en", "es"], default="en")
+    ap.add_argument("--lang", choices=["en"], default="en")
     ap.add_argument("--save", type=Path, default=None)
     args = ap.parse_args()
     cfg = CFG[args.lang]

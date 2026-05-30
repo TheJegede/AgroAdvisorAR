@@ -8,7 +8,6 @@ ar_agqa_es measures real generalization.
 
 Usage:
     python evals/generate_synthetic_queries.py --lang en --sample-chunks 2000 --queries-per-chunk 2
-    python evals/generate_synthetic_queries.py --lang es --sample-chunks 2000 --queries-per-chunk 2
 
 Output: evals/synth_queries_<lang>.jsonl  {query, chunk_id, namespace, lang}
 Corpus cached to ingestion/en_chunks/corpus_en.jsonl on first run.
@@ -30,7 +29,6 @@ CORPUS_CACHE = ROOT / "ingestion" / "en_chunks" / "corpus_en.jsonl"
 CROP = {"rice", "soybeans", "soybean", "poultry", "general"}
 EVAL_SETS = {
     "en": Path(__file__).parent / "eval_set_v2.jsonl",
-    "es": Path(__file__).parent / "ar_agqa_es.jsonl",
 }
 MIN_CHUNK_CHARS = 200
 SEED = 7
@@ -44,15 +42,6 @@ PROMPT = {
         "name the crop/topic, and NEVER refer to 'this list', 'this passage', "
         "'these', 'it', or table codes. Colloquial, no jargon labels. Vary phrasing. "
         "Return ONLY a JSON array of {n} strings, nothing else.\n\nPASSAGE:\n{chunk}"
-    ),
-    "es": (
-        "Eres un agricultor hispanohablante en Arkansas (arroz, soya, aves). Lee el "
-        "siguiente pasaje de extension agricola y escribe {n} preguntas cortas y "
-        "naturales en ESPANOL que un agricultor real escribiria y que ESTE pasaje "
-        "responde. Cada pregunta DEBE ser autonoma y especifica — menciona el "
-        "cultivo/tema y NUNCA te refieras a 'esta lista', 'este pasaje', 'estos', "
-        "'esto' ni a codigos de tabla. Coloquial, sin etiquetas tecnicas. Varia la "
-        "redaccion. Devuelve SOLO un arreglo JSON de {n} cadenas, nada mas.\n\nPASAJE:\n{chunk}"
     ),
 }
 
@@ -142,7 +131,7 @@ def parse_questions(raw, n):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--lang", choices=["en", "es"], default="en")
+    ap.add_argument("--lang", choices=["en"], default="en")
     ap.add_argument("--sample-chunks", type=int, default=2000)
     ap.add_argument("--queries-per-chunk", type=int, default=2)
     ap.add_argument("--batch-size", type=int, default=16)
