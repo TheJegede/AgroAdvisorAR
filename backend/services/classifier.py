@@ -71,12 +71,16 @@ def _get_llm() -> ChatGoogleGenerativeAI:
     return _llm
 
 
-# Maps classifier output → Pinecone namespace
+# Maps classifier output → Pinecone namespace.
+# IN_SCOPE_GENERAL_AG → None is resolved by rag._namespaces_for() into a fan-out
+# across every crop namespace (the corpus has no `general` namespace). Do NOT read
+# None as "no namespace" at the retriever — that searches Pinecone's empty default
+# namespace and returns zero docs.
 CATEGORY_TO_NAMESPACE = {
     "IN_SCOPE_RICE": CROP_NAMESPACES[CROP_RICE],
     "IN_SCOPE_SOYBEANS": CROP_NAMESPACES[CROP_SOYBEANS],
     "IN_SCOPE_POULTRY": CROP_NAMESPACES[CROP_POULTRY],
-    "IN_SCOPE_GENERAL_AG": None,  # None = search all namespaces
+    "IN_SCOPE_GENERAL_AG": None,
 }
 
 

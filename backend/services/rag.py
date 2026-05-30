@@ -10,6 +10,7 @@ from models.advisory import AdvisoryResponse
 from services.embedding import MiniLMEmbeddings
 from services.context import get_context
 from services.classifier import CATEGORY_TO_NAMESPACE
+from utils.crops import CROP_NAMESPACES
 from services import citation_guard_v2
 from utils.prompt import build_system_prompt
 from utils.counties import get_county_info
@@ -83,6 +84,33 @@ def _get_llm() -> ChatGoogleGenerativeAI:
             temperature=0.1,
         )
     return _llm
+
+
+def _namespaces_for(category: str) -> list[str]:
+    """Pinecone namespaces to search for a classifier category.
+
+    A specific crop → its single namespace. IN_SCOPE_GENERAL_AG maps to None in
+    CATEGORY_TO_NAMESPACE; the corpus has no `general`/default namespace (all
+    20k vectors live under rice/soybeans/poultry), so a general-ag query must
+    fan out across every crop namespace. Previously None meant "pass no namespace",
+    which made Pinecone search the empty default namespace → zero docs → every
+    general-ag answer suppressed.
+    """
+    ns = CATEGORY_TO_NAMESPACE.get(category)
+    return [ns] if ns else list(CROP_NAMESPACES.values())
+
+
+def _fanout_search(vectorstore, query: str, k: int, namespaces: list[str]) -> list:
+    """Retrieve top-k across one or more namespaces, merged by similarity score.
+
+    Pinecone queries a single namespace per call, so multi-namespace retrieval
+    means querying each, then merging by descending cosine score and trimming to k.
+    """
+    scored: list = []
+    for ns in namespaces:
+        scored.extend(vectorstore.similarity_search_with_score(query, k=k, namespace=ns))
+    scored.sort(key=lambda doc_score: doc_score[1], reverse=True)
+    return [doc for doc, _ in scored[:k]]
 
 
 def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
@@ -193,19 +221,14 @@ async def run_rag_query(
     """Returns (advisory, retrieved_chunks)."""
     context_task = asyncio.create_task(get_context(county_fips))
 
-    namespace = CATEGORY_TO_NAMESPACE.get(category)
     vectorstore = _get_vectorstore()
+    namespaces = _namespaces_for(category)
 
     # When reranking, pull a wider candidate set then trim to TOP_K_RETRIEVAL.
     fetch_k = config.RERANK_CANDIDATES if config.RERANK_ENABLED else config.TOP_K_RETRIEVAL
-    retriever_kwargs = {"k": fetch_k}
-    if namespace:
-        retriever_kwargs["namespace"] = namespace
 
     docs = await asyncio.to_thread(
-        vectorstore.similarity_search,
-        message,
-        **retriever_kwargs,
+        _fanout_search, vectorstore, message, fetch_k, namespaces,
     )
 
     if config.RERANK_ENABLED and docs:
