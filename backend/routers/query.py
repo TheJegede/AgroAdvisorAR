@@ -5,8 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from services.auth import get_current_user
-from services.classifier import classify_query, detect_language
+from services.classifier import classify_query
 from services.rag import run_rag_query
+from services.translation import translate_to_en, translate_advisory_to_es
 from services.session import add_message as save_message
 from services.user import get_profile
 from services.cache import rate_limit_hit
@@ -33,6 +34,14 @@ class OutOfScopeResponse(BaseModel):
     message: str
     category: str
     message_id: str | None = None  # populated when session_id provided
+
+
+async def maybe_translate_query(message: str, language: str) -> str:
+    """ES bridge: translate the query to English so the all-English pipeline runs.
+    EN passes through unchanged."""
+    if language == "es":
+        return await translate_to_en(message)
+    return message
 
 
 @router.post("/query")
@@ -71,8 +80,9 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     rice_fields = (profile or {}).get("rice_fields") or []
     language = req.language
 
-    category = await classify_query(req.message, last_category=req.last_category)
-    detected_lang = detect_language(req.message)
+    # Translate-bridge: ES query -> EN so the whole RAG pipeline runs in English.
+    en_message = await maybe_translate_query(req.message, language)
+    category = await classify_query(en_message, last_category=req.last_category)
 
     if category == "OUT_OF_SCOPE":
         oos_message_id: str | None = None
@@ -95,14 +105,15 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     async def event_stream():
         try:
             result, retrieved_chunks = await run_rag_query(
-                message=req.message,
+                message=en_message,
                 county_fips=county_fips,
-                language=language,
+                language="en",
                 category=category,
                 session_history=req.session_history,
                 rice_fields=rice_fields,
-                detected_lang=detected_lang,
             )
+            if language == "es":
+                result = await translate_advisory_to_es(result)
 
             assistant_message_id: str | None = None
             if req.session_id:
