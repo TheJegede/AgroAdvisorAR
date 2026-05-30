@@ -42,3 +42,84 @@ def test_fanout_search_merges_namespaces_by_score():
     assert set(vs.queried_namespaces) == {"rice", "soybeans", "poultry"}
     # Results merged and ordered by descending score, trimmed to k=3.
     assert [d.id for d in docs] == ["r1", "s1", "r2"]  # 0.9, 0.7, 0.4
+
+
+# --- Title-match citation guard (fix 1A) ---------------------------------
+
+import asyncio
+
+
+class _MetaDoc:
+    """Retrieval doc with arbitrary metadata + page_content (mimics langchain Document)."""
+
+    def __init__(self, metadata, page_content=""):
+        self.metadata = metadata
+        self.page_content = page_content
+
+
+def _make_advisory(citations_titles):
+    from models.advisory import (
+        AdvisoryResponse, Citation, ContextMeta,
+    )
+    return AdvisoryResponse(
+        problem_summary="Rice sheath blight from high humidity.",
+        likely_causes=[],
+        recommended_actions=["Apply a labeled fungicide at first sign."],
+        products_rates=[],
+        warnings=[],
+        citations=[Citation(document_title=t, section="1") for t in citations_titles],
+        confidence="High",
+        confidence_explanation="grounded",
+        language="en",
+        context_meta=ContextMeta(
+            soil_data_available=False, weather_data_available=False, county_fips="05001",
+        ),
+    )
+
+
+def _run_postprocess(rag, result, docs):
+    return asyncio.run(rag._postprocess_async(
+        result=result, docs=docs, soil={}, weather={}, county_fips="05001",
+    ))
+
+
+def test_titleless_index_does_not_force_low(monkeypatch):
+    """gte index docs carry no document_title — title guard must NOT downgrade to
+    Low. Confidence stays as the LLM set it; NLI (Step 3) governs instead."""
+    rag = importlib.import_module("services.rag")
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", False)
+
+    result = _make_advisory(["Rice Disease MP154"])
+    docs = [_MetaDoc({"namespace": "rice"}), _MetaDoc({"namespace": "rice"})]
+
+    out = _run_postprocess(rag, result, docs)
+
+    assert out.confidence == "High"            # not forced to Low
+    assert len(out.citations) == 1             # citations preserved, not stripped
+
+
+def test_titled_index_still_downgrades_on_no_match(monkeypatch):
+    """When titles ARE present and no citation matches a retrieved title, the
+    guard still forces Low (original behavior intact)."""
+    rag = importlib.import_module("services.rag")
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", False)
+
+    result = _make_advisory(["Nonexistent Doc"])
+    docs = [_MetaDoc({"document_title": "Rice Disease MP154"})]
+
+    out = _run_postprocess(rag, result, docs)
+
+    assert out.confidence == "Low"
+
+
+def test_titled_index_keeps_only_matching_citations(monkeypatch):
+    rag = importlib.import_module("services.rag")
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", False)
+
+    result = _make_advisory(["Rice Disease MP154", "Bogus Doc"])
+    docs = [_MetaDoc({"document_title": "Rice Disease MP154"})]
+
+    out = _run_postprocess(rag, result, docs)
+
+    assert out.confidence == "High"
+    assert [c.document_title for c in out.citations] == ["Rice Disease MP154"]

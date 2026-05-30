@@ -146,18 +146,27 @@ async def _postprocess_async(
     county_fips: str,
 ) -> AdvisoryResponse:
     """Apply citation guard (title-match + NLI) and stamp context_meta."""
-    # Step 1: existing title-match citation guard
-    retrieved_titles = {
-        doc.metadata.get("document_title", "").lower() for doc in docs
-    }
-    valid_citations = [
-        c for c in result.citations
-        if c.document_title.lower() in retrieved_titles
-    ]
-    if not valid_citations:
-        result = result.model_copy(update={"confidence": "Low"})
-    else:
-        result = result.model_copy(update={"citations": valid_citations})
+    # Step 1: title-match citation guard.
+    # Only meaningful when retrieval carries `document_title` metadata. The gte
+    # index (agroar-prod-gte) stores only {text, namespace} — no titles — so this
+    # guard can validate NO citation there and would force every grounded answer
+    # to Low (NLI 0.34/0.54 notwithstanding). When no retrieved doc carries a
+    # title, skip the title guard entirely and let the NLI confidence_score
+    # (Step 3) govern. Re-enable fully once gte is re-ingested with title/section
+    # metadata (fix 1B).
+    titles_present = any(doc.metadata.get("document_title") for doc in docs)
+    if titles_present:
+        retrieved_titles = {
+            doc.metadata.get("document_title", "").lower() for doc in docs
+        }
+        valid_citations = [
+            c for c in result.citations
+            if c.document_title.lower() in retrieved_titles
+        ]
+        if not valid_citations:
+            result = result.model_copy(update={"confidence": "Low"})
+        else:
+            result = result.model_copy(update={"citations": valid_citations})
 
     # Step 2: stamp context_meta
     result = result.model_copy(update={
