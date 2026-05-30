@@ -1,0 +1,11 @@
+frontend/
+ingestion/
+evals/
+models/
+docs/
+.git/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+*.md
+.env

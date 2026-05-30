@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://REPLACE-WITH-HF-SPACE-URL.hf.space/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
