@@ -2,19 +2,32 @@
 
 **Last updated:** 2026-05-30  
 **MVP target:** September 2026  
-**Production readiness:** 78%  
+**Production readiness:** 80%  
 **PRD phase progress:** 80%
 
 ```
-Production readiness  [████████████████░░░░]  78%
+Production readiness  [████████████████░░░░]  80%
 PRD phase progress    [████████████████░░░░]  80%
 ```
 
-**Live as of 2026-05-30:** frontend `https://agroadvisor-eta.vercel.app` (Vercel) →
-API proxy → backend `https://whoisluwah-agroadvisor-backend.hf.space` (HF Spaces).
-Proxy verified (FastAPI auth answers through it). Pending before pilot: set
-`FRONTEND_URL` on HF, run prod migrations 005/007/008, confirm `agroar-prod-gte`
-populated, browser smoke test.
+**LIVE + SMOKE-TESTED (2026-05-30):** frontend `https://agroadvisor-eta.vercel.app`
+(Vercel) → API proxy → backend `https://whoisluwah-agroadvisor-backend.hf.space`
+(HF Spaces). Verified in-browser: register/login, county/soil/weather context,
+persistence, an EN rice query returns a grounded cited advisory (`agroar-prod-gte`
+confirmed populated), and the **Spanish translate-bridge round-trips** (ES query →
+EN RAG → ES answer; ES and EN give identical behaviour = bridge is transparent).
+`FRONTEND_URL` set + prod migrations 005/007/008 run.
+
+**ACTIVE FOCUS — retrieval grounding / answer quality.** Some topics (e.g. "cover
+crop after rice harvest") retrieve **no Extension chunk** (only the injected SOIL
+context) → NLI 0.00 → answer suppressed + Extension escalation. EN and ES behave
+identically, so this is a corpus-coverage / retrieval / NLI-calibration gap, not a
+deploy or bridge bug. Matches the documented ~40%-correct answer-quality issue.
+Next: diagnose miss-vs-drop (HF logs: classifier namespace + Pinecone scores) and
+corpus coverage. See `docs/superpowers/plans/2026-05-29-citation-guard-remediation.md`.
+
+Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
+handling).
 
 ---
 
@@ -37,7 +50,7 @@ PRD phase progress is the average of the current phase percentages from `docs/pr
 Core RAG system        [███████████████████░]  93%
 Frontend UI            [███████████████████░]  98%
 Security / testing     [████████████████░░░░]  80%
-Deployment (prod URL)  [████████████████░░░░]  80%
+Deployment (prod URL)  [███████████████████░]  95%
 Real users / data      [░░░░░░░░░░░░░░░░░░░░]   0%
 NIW evidence package   [█░░░░░░░░░░░░░░░░░░░]   5%
 ```
@@ -58,11 +71,11 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | 8 | Public GitHub README (arch diagram + eval results) | NIW evidence | +2% | ☐ |
 | 9 | Locust load test (50 concurrent users) | Security/testing | +1% | ☐ |
 | **Tier 1 Features (planned — Tier1_Implementation_Plan Addition.md)** | | | | |
-| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☑ (deployed 2026-05-30; pending browser smoke test) |
-| T2 | F3 · First RWW/Palmer alert fired to pilot farmer | Real users / data | +3% | ☐ (deployed 2026-05-30; pending prod migration 005 + pilot alert) |
-| T3 | F2 · Citation guard v2 live (confidence scores in prod) | Security / testing | +2% | ☑ (deployed 2026-05-30; pending migration 008 verify + smoke test) |
-| T4 | F5 · AWD scheduler live + first re-flood alert fired | Core RAG system | +2% | ☐ (deployed 2026-05-30; pending prod migration 007 + pilot alert) |
-| T5 | Spanish translate-bridge live (ES query → EN RAG → ES answer) | Core RAG system | +3% | ☑ (deployed 2026-05-30; validated locally; pending ES prod smoke test) |
+| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☑ (deployed + live 2026-05-30) |
+| T2 | F3 · First RWW/Palmer alert fired to pilot farmer | Real users / data | +3% | ☐ (deployed 2026-05-30; pending pilot alert) |
+| T3 | F2 · Citation guard v2 live (confidence scores in prod) | Security / testing | +2% | ☑ (live + smoke-tested 2026-05-30; NLI scores render in prod) |
+| T4 | F5 · AWD scheduler live + first re-flood alert fired | Core RAG system | +2% | ☐ (deployed 2026-05-30; pending pilot alert) |
+| T5 | Spanish translate-bridge live (ES query → EN RAG → ES answer) | Core RAG system | +3% | ☑ (smoke-tested in prod 2026-05-30; ES round-trips, behaviour ≡ EN) |
 | T6 | F1 · arXiv preprint submitted with F1+F2 contributions | NIW evidence | +6% | ☐ |
 
 **Check off items above → update bars + production-readiness % → update PRD phase rollup when `docs/prd-progress-audit-2026-05-16.md` changes → update "Last updated" date.**
@@ -116,6 +129,8 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | F5 AWD scheduler code — AWD scheduler, USGS well context, rice fields migration 007, AWD alert integration | Core RAG | 2026-05-28 |
 | Spanish translate-bridge — `services/translation.py` (ES→EN query, EN→ES answer); replaced the F1 dedicated ES RAG (BGE-M3 index/routing/ingestion all removed) | Core RAG | 2026-05-29 |
 | **Production deploy** — backend Docker on HF Spaces (`whoisluwah-agroadvisor-backend.hf.space`, 2 CPU/16GB), frontend on Vercel (`agroadvisor-eta.vercel.app`), wired via Vercel `/api/*` rewrite proxy (same-origin, no CORS). Dockerfile + `.dockerignore` + `frontend/vercel.json` + `.npmrc` (legacy-peer-deps). API proxy verified (FastAPI 401 answers through it). | Deployment | 2026-05-30 |
+| **Prod smoke test passed** — in-browser: register/login, EN rice query → grounded cited advisory (`agroar-prod-gte` populated), county/soil/weather context, persistence, Spanish translate-bridge round-trip (ES ≡ EN). `FRONTEND_URL` + prod migrations 005/007/008 applied. | Deployment | 2026-05-30 |
+| Chat welcome chips re-localize on language toggle — `ChatPage.jsx` `useMemo` dep fixed from `[]` → `[lang]` (chips were frozen to mount-time language) | Frontend UI | 2026-05-30 |
 
 ---
 
