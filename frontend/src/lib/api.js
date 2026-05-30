@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+// Base path is relative; in prod the Vercel rewrite proxies /api/* to the HF backend.
 const api = axios.create({
   baseURL: '/api/v1',
 })
