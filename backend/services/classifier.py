@@ -1,9 +1,6 @@
 """Query classifier — routes to correct RAG namespace or short-circuits out-of-scope."""
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
-from langdetect import detect, LangDetectException
-from langdetect import DetectorFactory as _DF
-_DF.seed = 0  # deterministic detection across all calls
 import config
 from utils.crops import CROP_NAMESPACES, CROP_POULTRY, CROP_RICE, CROP_SOYBEANS
 
@@ -44,19 +41,6 @@ CATEGORIES = {
 SPECIFIC_CROP_CATEGORIES = {"IN_SCOPE_RICE", "IN_SCOPE_SOYBEANS", "IN_SCOPE_POULTRY"}
 # Ambiguous follow-up threshold (word count)
 _FOLLOWUP_WORD_LIMIT = 8
-
-
-def detect_language(text: str) -> str:
-    """Return 'es' if text is Spanish, 'en' for everything else.
-
-    Defaults to 'en' on detection failure (empty, too-short, or ambiguous text).
-    """
-    if not text or not text.strip():
-        return "en"
-    try:
-        return "es" if detect(text) == "es" else "en"
-    except LangDetectException:
-        return "en"
 
 
 CLASSIFIER_PROMPT = """Classify this farmer query into exactly one category:
