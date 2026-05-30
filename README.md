@@ -95,9 +95,11 @@ python pipeline.py         # chunk, embed, upsert to Pinecone
 python pipeline.py --force # re-index unchanged docs
 ```
 
-Spanish corpus ops also use the ingestion requirements. `translate_corpus.py`
-loads Hugging Face MarianMT via `transformers`/`sentencepiece`; these packages
-are intentionally kept out of `backend/requirements.txt`.
+**Spanish = translate-bridge.** There is no dedicated Spanish corpus or index.
+A Spanish query is translated to English (`services/translation.py`, LLM), runs
+through the English RAG pipeline unchanged, and the answer's user-facing prose is
+translated back to Spanish. Validated: ES→EN→gte retrieval recall matches the
+English-direct baseline. See `docs/superpowers/specs/2026-05-29-spanish-translate-bridge-design.md`.
 
 ### Evals
 
@@ -136,8 +138,6 @@ Copy `.env.example` to `.env` in the project root and fill in:
 | `SUPABASE_JWT_SECRET` | Legacy HS256 fallback; ES256 path uses JWKS automatically |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | Optional context cache |
 | `EMBEDDING_MODEL_PATH` | Defaults to `sentence-transformers/all-MiniLM-L6-v2`; set to `./models/agroar-embeddings-v2` for the fine-tuned model |
-| `MULTILINGUAL_EMBEDDING_MODEL_PATH` | Defaults to `BAAI/bge-m3` for Spanish/multilingual retrieval |
-| `PINECONE_MULTILINGUAL_INDEX_NAME` | Defaults to `agroar-prod-multilingual` for Spanish/multilingual retrieval |
 | `NLI_CITATION_GUARD_ENABLED` | Defaults to `1`; set to `0` to disable claim-level NLI verification in constrained runtimes |
 | `SENTRY_DSN` | Optional; enables tracing at sample rate 0.1 |
 
@@ -215,7 +215,7 @@ See `CLAUDE.md` for `curl` examples.
 
 - **Backend:** FastAPI, LangChain, Pinecone, Supabase, Pydantic v2, Sentry
 - **LLMs:** Groq `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` (primary), Gemini 2.5 Flash (fallback)
-- **Embeddings:** `all-MiniLM-L6-v2` (EN, deployed), `BAAI/bge-m3` (ES); `gte-base` + `bge-reranker-v2-m3` evaluated offline
+- **Embeddings:** `thenlper/gte-base` (EN retrieval, index `agroar-prod-gte`) + `bge-reranker-v2-m3`; Spanish via translate-bridge (no separate ES embeddings)
 - **Frontend:** React 19, Vite, TailwindCSS, React Router 7, Axios
 - **Storage:** Pinecone (vectors), Supabase Postgres (users + chat history), Upstash Redis (context cache)
 - **Data sources:** UA Extension PDFs, USDA SSURGO SDA, NOAA NWS
