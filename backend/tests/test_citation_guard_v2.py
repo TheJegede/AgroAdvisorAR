@@ -121,6 +121,18 @@ def test_verify_claim_empty_chunks_ungrounded():
     assert result.score == 0.0
 
 
+def test_lexical_support_credits_numbers_and_paraphrase():
+    # P2.1: specific rates/terms present in the chunk score high even when not
+    # verbatim-entailed; unrelated chunk scores ~0.
+    mod = importlib.import_module("services.citation_guard_v2")
+    chunk = "Nitrogen rates from the N-STaR program; apply 150 lb N per acre at green-up."
+    assert mod._lexical_support("Apply 150 lb N per acre per N-STaR.", [chunk]) > 0.4
+    assert mod._lexical_support("Apply 150 lb N per acre.", ["Soybean seeding rates for narrow rows."]) < 0.2
+    # numbers and decimals are preserved as content tokens
+    assert "150" in mod._content_tokens("apply 150 lb")
+    assert "0.038" in mod._content_tokens("rate 0.038 lb/A")
+
+
 def test_escalation_cue_found(monkeypatch):
     mod = importlib.import_module("services.citation_guard_v2")
     agents = {"05001": {"county": "Arkansas", "agent_name": "Jane Smith", "phone": "870-555-0100", "email": "jsmith@uada.edu"}}

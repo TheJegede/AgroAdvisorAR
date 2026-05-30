@@ -115,15 +115,50 @@ async def decompose_claims(answer: str) -> list[str]:
     return sentences[:8]
 
 
+# Lightweight English/Spanish stopwords — dropped from lexical-overlap so the
+# signal focuses on content words, numbers, units, product/chemical names.
+_STOPWORDS = {
+    "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with", "at",
+    "is", "are", "be", "by", "as", "it", "this", "that", "your", "you", "should",
+    "can", "may", "will", "if", "from", "per", "el", "la", "los", "las", "de",
+    "y", "o", "en", "un", "una", "es", "con", "para", "su", "que", "se", "del",
+}
+_TOKEN_RE = re.compile(r"[a-z0-9]+(?:[.\-/][0-9]+)?")
+
+
+def _content_tokens(text: str) -> set[str]:
+    toks = _TOKEN_RE.findall(text.lower())
+    return {t for t in toks if t.isdigit() or (len(t) > 2 and t not in _STOPWORDS)}
+
+
+def _lexical_support(claim: str, chunks: list[str]) -> float:
+    """Fraction of the claim's content tokens (incl. numbers/units) found in the
+    best-matching chunk. Credits paraphrase and specific rates/products that NLI
+    entailment misses because they are not stated verbatim. Range [0, 1]."""
+    ct = _content_tokens(claim)
+    if not ct:
+        return 0.0
+    best = 0.0
+    for ch in chunks:
+        cht = _content_tokens(ch)
+        if cht:
+            best = max(best, len(ct & cht) / len(ct))
+    return best
+
+
 def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
-    """Score a single claim against retrieved chunks using NLI cross-encoder.
+    """Score a single claim's groundedness against retrieved chunks.
+
+    Blends NLI entailment probability (semantic support) with lexical token-recall
+    (paraphrase / specific numbers & product names that hard NLI misses):
+    score = max(entailment_prob, lexical_support). The CONTRADICTED label is taken
+    from NLI alone, so the P0.1 contradiction override still fires on negation even
+    when lexical overlap is high (e.g. "do NOT apply X" vs "apply X").
 
     CrossEncoder nli-MiniLM2-L6-H768 label order: [contradiction, entailment, neutral]
     """
     if not chunks:
-        # No retrieved evidence → the claim is UNGROUNDED, not "neutral". Must
-        # drive suppression (0.5 previously passed the 0.2 gate, serving
-        # evidence-free answers).
+        # No retrieved evidence → UNGROUNDED, not "neutral". Drives suppression.
         return ClaimResult(claim=claim, label="NEUTRAL", score=0.0)
 
     model = _get_nli_model()
@@ -141,8 +176,10 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
     label_idx = int(best_scores.argmax())
     label = _NLI_LABELS[label_idx]
 
-    # Use entailment probability directly (CrossEncoder returns softmax probabilities)
-    score = float(best_scores[1])
+    entailment_prob = float(best_scores[1])
+    lexical = _lexical_support(claim, chunks[:3])
+    # Either semantic entailment OR lexical grounding counts as support.
+    score = max(entailment_prob, lexical)
 
     return ClaimResult(claim=claim, label=label, score=score)
 
