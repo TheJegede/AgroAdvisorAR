@@ -12,7 +12,7 @@ from services.session import add_message as save_message
 from services.user import get_profile
 from services.cache import rate_limit_hit
 from services.sanitizer import sanitize, InjectionDetected
-from utils.prompt import OUT_OF_SCOPE_MESSAGE
+from utils.prompt import out_of_scope_message
 import config
 
 router = APIRouter()
@@ -85,19 +85,20 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     category = await classify_query(en_message, last_category=req.last_category)
 
     if category == "OUT_OF_SCOPE":
+        oos_message = out_of_scope_message(language)
         oos_message_id: str | None = None
         if req.session_id:
             try:
                 save_message(req.session_id, user["sub"], "user", req.message, "text")
                 oos_row = save_message(
                     req.session_id, user["sub"], "assistant",
-                    OUT_OF_SCOPE_MESSAGE, "oos",
+                    oos_message, "oos",
                 )
                 oos_message_id = oos_row["id"]
             except Exception:
                 logger.exception("Failed to persist out-of-scope query response")
         return OutOfScopeResponse(
-            message=OUT_OF_SCOPE_MESSAGE,
+            message=oos_message,
             category=category,
             message_id=oos_message_id,
         )

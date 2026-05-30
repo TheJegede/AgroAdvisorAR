@@ -25,6 +25,17 @@ OUT_OF_SCOPE_MESSAGE = (
     "For general questions, please use a general-purpose assistant."
 )
 
+OUT_OF_SCOPE_MESSAGE_ES = (
+    "AgroAdvisor AR está especializado en preguntas sobre arroz, soya y aves de "
+    "corral en Arkansas. Para preguntas generales, utilice un asistente de "
+    "propósito general."
+)
+
+
+def out_of_scope_message(language: str) -> str:
+    """Out-of-scope reply in the user's language (static — no LLM call)."""
+    return OUT_OF_SCOPE_MESSAGE_ES if language == "es" else OUT_OF_SCOPE_MESSAGE
+
 
 def build_system_prompt(
     *,
