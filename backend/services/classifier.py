@@ -10,6 +10,16 @@ from utils.crops import CROP_NAMESPACES, CROP_POULTRY, CROP_RICE, CROP_SOYBEANS
 _groq_llm = None
 
 
+def _is_quota_error(e: Exception) -> bool:
+    """True for rate-limit / quota errors (warrant provider fallback). Other
+    errors should surface, not silently degrade routing to IN_SCOPE_GENERAL_AG."""
+    s = str(e).lower()
+    return any(t in s for t in (
+        "resource_exhausted", "429", "rate limit", "rate_limit",
+        "tokens per day", "quota",
+    ))
+
+
 def _get_groq_llm():
     global _groq_llm
     if _groq_llm is None and config.GROQ_API_KEY:
@@ -105,8 +115,13 @@ async def classify_query(message: str, last_category: str | None = None) -> str:
             if category not in CATEGORIES:
                 category = "IN_SCOPE_GENERAL_AG"
             break
-        except Exception:
-            continue  # try next provider; stays IN_SCOPE_GENERAL_AG if all fail
+        except Exception as e:
+            # Only swallow quota/rate-limit (fall back, then degrade to
+            # GENERAL_AG). Real errors must surface, not silently misroute every
+            # query to the all-namespaces path.
+            if not _is_quota_error(e):
+                raise
+            continue
 
     # Inherit last crop context for short, ambiguous follow-ups
     if (

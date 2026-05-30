@@ -17,6 +17,18 @@ import config
 
 logger = logging.getLogger(__name__)
 
+
+def _is_quota_error(e: Exception) -> bool:
+    """True for rate-limit / quota-exhaustion errors that warrant a provider
+    fallback. Other errors (auth, schema, bugs) should surface, not be masked by
+    silently trying the next provider."""
+    s = str(e).lower()
+    return any(t in s for t in (
+        "resource_exhausted", "429", "rate limit", "rate_limit",
+        "tokens per day", "quota",
+    ))
+
+
 _vectorstore: PineconeVectorStore | None = None
 _vectorstore_es: PineconeVectorStore | None = None
 _VECTORSTORE_ES_UNAVAILABLE = object()  # sentinel: init failed, don't retry
@@ -312,7 +324,11 @@ async def run_rag_query(
             break
         except Exception as e:
             last_err = e
-            logger.warning("Generation provider failed, trying next: %s", str(e)[:200])
+            # Only fall back on quota/rate-limit. Real errors (auth, schema, bug)
+            # must surface, not be masked by trying every provider in turn.
+            if not _is_quota_error(e):
+                raise
+            logger.warning("Generation provider quota-exhausted, trying next: %s", str(e)[:200])
 
     if result is None:
         raise RuntimeError(f"RAG generation failed (all providers): {last_err}") from last_err
