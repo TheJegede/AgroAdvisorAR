@@ -85,7 +85,9 @@ def _parse_str_array(raw: str | None, n: int) -> list[str] | None:
         return None
     if not isinstance(arr, list) or len(arr) != n:
         return None
-    return [str(x) for x in arr]
+    if not all(isinstance(x, str) for x in arr):
+        return None  # element-type corruption (object/number) — don't ship it
+    return arr
 
 
 async def translate_advisory_to_es(advisory: AdvisoryResponse) -> AdvisoryResponse:
@@ -100,6 +102,9 @@ async def translate_advisory_to_es(advisory: AdvisoryResponse) -> AdvisoryRespon
     strings.extend(advisory.recommended_actions)
     strings.extend(advisory.warnings)
     strings.append(advisory.confidence_explanation)
+    has_escalation = bool(advisory.escalation)
+    if has_escalation:
+        strings.append(advisory.escalation)  # contact prose; names/phones kept by the prompt
 
     prompt = (
         "Translate each string in this JSON array to Spanish for an Arkansas "
@@ -125,12 +130,14 @@ async def translate_advisory_to_es(advisory: AdvisoryResponse) -> AdvisoryRespon
     n_warn = len(advisory.warnings)
     warnings = translated[i:i + n_warn]; i += n_warn
     confidence_explanation = translated[i]; i += 1
-
-    return advisory.model_copy(update={
+    update = {
         "problem_summary": problem_summary,
         "likely_causes": new_causes,
         "recommended_actions": recommended_actions,
         "warnings": warnings,
         "confidence_explanation": confidence_explanation,
         "language": "es",
-    })
+    }
+    if has_escalation:
+        update["escalation"] = translated[i]; i += 1
+    return advisory.model_copy(update=update)
