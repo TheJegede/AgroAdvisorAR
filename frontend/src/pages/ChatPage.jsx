@@ -27,12 +27,14 @@ export default function ChatPage() {
 
   const sessionParam = searchParams.get('session')
 
-  // 3 random chips from the 15-item pool, stable per mount, re-randomizes on New Chat
+  // 3 random chips from the 15-item pool, stable per mount + re-localizes on language
+  // toggle, re-randomizes on New Chat (remount). Depends on `lang` so the chips follow
+  // the active language instead of freezing to whatever was active at mount.
   const welcomeChips = useMemo(() => {
     const pool = t.questionPool || t.exampleQuestions || []
     if (pool.length <= 3) return pool
     return [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lang]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Context-aware chips after first advisory; fall back to welcome pool otherwise
   const midChatChips = useMemo(() => {
