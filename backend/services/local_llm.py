@@ -2,7 +2,7 @@
 
 For LOCAL development/testing only (`LLM_PRIMARY=local`) — lets the full RAG
 chain run with zero API quota on a CUDA GPU. NOT for the deployed backend
-(Koyeb has no GPU). Exposes a langchain-shaped interface: `.ainvoke(messages)`
+(the deployed CPU host has no GPU). Exposes a langchain-shaped interface: `.ainvoke(messages)`
 for plain calls (classifier, claim decomposition) and `.with_structured_output()`
 for the advisory generation.
 """

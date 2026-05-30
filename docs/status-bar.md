@@ -42,7 +42,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 
 | # | Item | Dimension affected | Delta | Done? |
 |---|---|---|---|---|
-| 1 | Deploy to Vercel + Koyeb (prod URL live) | Deployment | +7% | ☐ |
+| 1 | Deploy to Vercel + Hugging Face Spaces (prod URL live) | Deployment | +7% | ☐ |
 | 2 | OWASP Top 10 review + Playwright E2E suite | Security/testing | +5% | ☑ |
 | 3 | 20 pilot farmers recruited + 500 real queries | Real users / data | +12% | ☐ |
 | 4 | arXiv preprint submitted | NIW evidence | +6% | ☐ |
@@ -52,7 +52,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | 8 | Public GitHub README (arch diagram + eval results) | NIW evidence | +2% | ☐ |
 | 9 | Locust load test (50 concurrent users) | Security/testing | +1% | ☐ |
 | **Tier 1 Features (planned — Tier1_Implementation_Plan Addition.md)** | | | | |
-| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☐ (code done 2026-05-20; pending Koyeb deploy) |
+| T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☐ (code done 2026-05-20; pending Hugging Face Spaces deploy) |
 | T2 | F3 · First RWW/Palmer alert fired to pilot farmer | Real users / data | +3% | ☐ (code implemented; pending prod deploy + pilot alert) |
 | T3 | F2 · Citation guard v2 live (confidence scores in prod) | Security / testing | +2% | ☐ (code implemented; pending prod deploy) |
 | T4 | F5 · AWD scheduler live + first re-flood alert fired | Core RAG system | +2% | ☐ (code implemented; pending prod deploy + pilot alert) |
