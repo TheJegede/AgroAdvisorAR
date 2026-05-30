@@ -89,16 +89,36 @@ def test_score_answer_empty_returns_one():
 
 
 def test_score_answer_partial_grounding_nonzero():
-    # Previously returned 0.0 when no claim was hard-labeled ENTAILED; now reflects
-    # partial groundedness via mean entailment probability so good-but-generic
-    # answers are not over-suppressed.
+    # No hard-ENTAILED claim, no contradiction → mean entailment probability so
+    # good-but-generic answers are not over-suppressed.
     mod = importlib.import_module("services.citation_guard_v2")
     from models.advisory import ClaimResult
     claims = [
-        ClaimResult(claim="A", label="CONTRADICTED", score=0.1),
+        ClaimResult(claim="A", label="NEUTRAL", score=0.1),
         ClaimResult(claim="B", label="NEUTRAL", score=0.5),
     ]
     assert abs(mod.score_answer(claims) - 0.3) < 0.001
+
+
+def test_score_answer_contradiction_forces_suppression():
+    # P0.1: any CONTRADICTED claim forces 0.0 — a contradicted fact must never be
+    # diluted by grounded/neutral claims and shipped.
+    mod = importlib.import_module("services.citation_guard_v2")
+    from models.advisory import ClaimResult
+    claims = [
+        ClaimResult(claim="A", label="ENTAILED", score=0.9),
+        ClaimResult(claim="B", label="NEUTRAL", score=0.6),
+        ClaimResult(claim="C", label="CONTRADICTED", score=0.05),
+    ]
+    # mean would be ~0.52 (would pass); contradiction override must return 0.0
+    assert mod.score_answer(claims) == 0.0
+
+
+def test_verify_claim_empty_chunks_ungrounded():
+    # P0.2: no retrieved evidence → score 0.0 (was 0.5, which passed the gate).
+    mod = importlib.import_module("services.citation_guard_v2")
+    result = mod.verify_claim("Rice needs 150 lb N per acre.", [])
+    assert result.score == 0.0
 
 
 def test_escalation_cue_found(monkeypatch):

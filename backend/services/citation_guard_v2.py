@@ -121,7 +121,10 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
     CrossEncoder nli-MiniLM2-L6-H768 label order: [contradiction, entailment, neutral]
     """
     if not chunks:
-        return ClaimResult(claim=claim, label="NEUTRAL", score=0.5)
+        # No retrieved evidence → the claim is UNGROUNDED, not "neutral". Must
+        # drive suppression (0.5 previously passed the 0.2 gate, serving
+        # evidence-free answers).
+        return ClaimResult(claim=claim, label="NEUTRAL", score=0.0)
 
     model = _get_nli_model()
     pairs = [(claim, chunk) for chunk in chunks[:3]]
@@ -145,16 +148,19 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
 
 
 def score_answer(results: list[ClaimResult]) -> float:
-    """Mean entailment probability across all claims (groundedness).
+    """Groundedness = mean entailment probability across all claims, with a hard
+    contradiction override.
 
-    Uses each claim's entailment probability, not only claims the NLI model
-    hard-labels ENTAILED. The old logic averaged ENTAILED claims and returned
-    0.0 when none were — so generic-but-correct advice (labeled NEUTRAL) scored
-    0.0 and was suppressed even when grounded. Contradicted claims have low
-    entailment probability and naturally pull the score down. Empty list → 1.0.
+    Uses each claim's entailment probability (not only claims hard-labeled
+    ENTAILED) so generic-but-correct advice is not over-suppressed. BUT if any
+    claim is labeled CONTRADICTED, return 0.0 to force suppression: a contradicted
+    fact (e.g. a wrong chemical rate) must never be diluted by grounded/neutral
+    claims in the mean and shipped to a farmer. Empty list → 1.0.
     """
     if not results:
         return 1.0
+    if any(r.label == "CONTRADICTED" for r in results):
+        return 0.0
     return float(sum(r.score for r in results) / len(results))
 
 
