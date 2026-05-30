@@ -56,7 +56,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | T2 | F3 · First RWW/Palmer alert fired to pilot farmer | Real users / data | +3% | ☐ (code implemented; pending prod deploy + pilot alert) |
 | T3 | F2 · Citation guard v2 live (confidence scores in prod) | Security / testing | +2% | ☐ (code implemented; pending prod deploy) |
 | T4 | F5 · AWD scheduler live + first re-flood alert fired | Core RAG system | +2% | ☐ (code implemented; pending prod deploy + pilot alert) |
-| T5 | F1 · Spanish RAG live + AR-AgQA-ES eval baseline logged | Core RAG system | +3% | ☐ (code implemented; pending multilingual Pinecone ops + prod eval) |
+| T5 | Spanish translate-bridge live (ES query → EN RAG → ES answer) | Core RAG system | +3% | ☐ (code done + validated locally: ES→EN→gte recall ≈ EN, end-to-end 20% supp / 77% faithful; pending prod deploy) |
 | T6 | F1 · arXiv preprint submitted with F1+F2 contributions | NIW evidence | +6% | ☐ |
 
 **Check off items above → update bars + production-readiness % → update PRD phase rollup when `docs/prd-progress-audit-2026-05-16.md` changes → update "Last updated" date.**
@@ -80,8 +80,8 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | Auth endpoints + JWT (ES256 JWKS + HS256) | Core RAG | 2026-05-16 |
 | SSURGO + NOAA context injection (6h Redis cache) | Core RAG | 2026-05-16 |
 | RAG chain (k=5, namespace filter, citation guard) | Core RAG | 2026-05-16 |
-| Query classifier (Gemini Flash Lite + Groq fallback) | Core RAG | 2026-05-16 |
-| Fine-tuned embeddings v2 (MRR@5 0.6565 — target >0.60 ✓) | Core RAG | 2026-05-16 |
+| Query classifier (Groq 8b-instant primary; Gemini fallback) | Core RAG | 2026-05-16 |
+| EN retrieval: gte-base index `agroar-prod-gte` + optional reranker (MRR 0.6565 was train-on-test/INVALID; honest held-out ~0.18; gte+reranker relevance-judged ~0.6) | Core RAG | 2026-05-29 |
 | Nightly eval CI + `eval_runs` table | Core RAG | 2026-05-16 |
 | LLM-as-judge answer eval | Core RAG | 2026-05-16 |
 | Rate limit 20q/hr (Redis) + prompt injection sanitizer | Security/testing | 2026-05-16 |
@@ -108,7 +108,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | F3 alerts code — GDD calculator, alert engine, alert rules, migration 005, nightly alert workflow, frontend alert banner | Core RAG + Real users/data | 2026-05-28 |
 | F2 citation guard v2 code — claim-level NLI service, confidence-score fields, escalation UI, migration 008 | Security/testing | 2026-05-28 |
 | F5 AWD scheduler code — AWD scheduler, USGS well context, rice fields migration 007, AWD alert integration | Core RAG | 2026-05-28 |
-| F1 Spanish bilingual RAG code — BGE-M3 embedding path, language detection/routing, Spanish eval set, multilingual ingestion scripts | Core RAG | 2026-05-28 |
+| Spanish translate-bridge — `services/translation.py` (ES→EN query, EN→ES answer); replaced the F1 dedicated ES RAG (BGE-M3 index/routing/ingestion all removed) | Core RAG | 2026-05-29 |
 
 ---
 

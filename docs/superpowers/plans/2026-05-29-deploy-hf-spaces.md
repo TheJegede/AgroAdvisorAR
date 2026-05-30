@@ -208,8 +208,16 @@ git push space main
   | `EMBEDDING_MODEL_PATH` | `thenlper/gte-base` |
   | `PINECONE_INDEX_NAME` | `agroar-prod-gte` |
   | `RERANK_ENABLED` | `0` (CPU; turn on later if latency is acceptable) |
-  | `CORS_ORIGINS` | set in Task 4 once the Vercel URL exists |
-  | `FRONTEND_URL` | set in Task 4 |
+  | `FRONTEND_URL` | set in Task 4 (password-reset link) |
+
+  > **⚠️ Dim trap — both must be set together.** `config.py` defaults
+  > `EMBEDDING_MODEL_PATH` to MiniLM (384-dim). The `agroar-prod-gte` index is
+  > 768-dim (gte-base). If you set `PINECONE_INDEX_NAME=agroar-prod-gte` but forget
+  > `EMBEDDING_MODEL_PATH=thenlper/gte-base` (or vice versa), retrieval crashes on a
+  > vector-dimension mismatch. Set both, or neither.
+  >
+  > `CORS_ORIGINS` is **not** needed — the Vercel proxy (Task 4) makes all browser
+  > calls same-origin. Leave it at its localhost default.
 
   Adding/changing secrets restarts the Space.
 
@@ -220,39 +228,53 @@ Expected: `{"status":"ok"}` / the Swagger UI. **This is your backend prod URL.**
 
 ---
 
-### Task 4: Frontend on Vercel + wire to the backend  **[YOU — browser + 2 files]**
+### Task 4: Frontend on Vercel + wire to the backend  **[YOU — browser + 1 file]**
 
 **Files:**
 - Create: `frontend/vercel.json`
-- Verify: frontend API base URL env
 
-- [ ] **Step 1: SPA routing config** — create `frontend/vercel.json`:
+**Wiring decision (2026-05-30):** the frontend talks to the backend with a
+**relative** base — `/api/v1` — in TWO places: `frontend/src/lib/api.js:4` (axios)
+and `frontend/src/hooks/useSSEQuery.js:35` (raw `fetch` for the SSE chat stream).
+In dev, Vite's proxy forwards `/api` to the backend. On Vercel there is no proxy,
+so we add a **Vercel rewrite** that proxies `/api/*` to the HF backend. This means:
+- **No JS change** — both files stay relative and keep working.
+- **No CORS** — the browser only ever talks to `agroadvisor.vercel.app`
+  (same-origin); Vercel forwards to HF server-side. `CORS_ORIGINS` is irrelevant.
+- The `useSSEQuery` raw fetch (the core chat) works without being missed.
+
+- [ ] **Step 1: Routing + API proxy config** — create `frontend/vercel.json`.
+  Order matters: the `/api/*` rule must come BEFORE the SPA catch-all, or the
+  catch-all swallows API calls into `index.html`.
 
 ```json
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://<you>-agroadvisor-backend.hf.space/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
 ```
-(React Router needs all paths to serve `index.html`.)
+(Replace `<you>-agroadvisor-backend.hf.space` with the real HF URL from Task 3
+Step 6. The SPA rule serves `index.html` for React Router paths.)
 
-- [ ] **Step 2: Point the frontend at the backend.** Find how the frontend sets its
-  API base (`frontend/src/lib/api.js`). If it uses an env var (e.g.
-  `VITE_API_BASE_URL`), you'll set it in Vercel; if the base is hardcoded to a dev
-  URL, change it to read `import.meta.env.VITE_API_BASE_URL` with a localhost
-  fallback. Commit any change.
-
-- [ ] **Step 3: Deploy on Vercel** **[YOU]** — https://vercel.com (free, GitHub login):
+- [ ] **Step 2: Deploy on Vercel** **[YOU]** — https://vercel.com (free, GitHub login):
   - New Project → import the GitHub repo.
   - **Root Directory = `frontend`**. Framework preset = Vite. Build = `npm run build`,
     Output = `dist`.
-  - Environment Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and
-    `VITE_API_BASE_URL` = `https://<you>-agroadvisor-backend.hf.space`.
+  - Environment Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` only.
+    (No `VITE_API_BASE_URL` — the proxy handles the backend base.)
   - Deploy → you get a URL like `https://agroadvisor.vercel.app`.
 
-- [ ] **Step 4: Close the CORS loop** **[YOU]** — back in the HF Space secrets/variables, set:
-  - `CORS_ORIGINS` = `https://agroadvisor.vercel.app` (the exact Vercel URL)
-  - `FRONTEND_URL` = same
-  - Space restarts. Without this, the browser blocks API calls (CORS error).
+- [ ] **Step 3: Set the password-reset redirect** **[YOU]** — in the HF Space
+  variables, set `FRONTEND_URL` = `https://agroadvisor.vercel.app` (exact Vercel
+  URL). This is the only frontend-aware backend setting still needed — it builds
+  the password-reset link in `routers/auth.py`. `CORS_ORIGINS` is NOT needed with
+  the proxy; leave it at its default. Space restarts on save.
+
+  > **SSE note:** the chat streams via Server-Sent Events through the Vercel proxy.
+  > A proxy can buffer the stream so tokens arrive in chunks (or all at once) rather
+  > than smoothly — the final advisory still renders correctly. Confirm in Task 6.
 
 ---
 
