@@ -32,7 +32,16 @@ class ClaimResult(BaseModel):
     score: float
 
 
-class AdvisoryResponse(BaseModel):
+class AdvisoryDraft(BaseModel):
+    """LLM-authored advisory — the schema passed to with_structured_output.
+
+    Deliberately EXCLUDES the F2 guard fields (confidence_score,
+    claim_verification, escalation). Those are computed by the post-hoc NLI
+    citation guard in rag._postprocess_async, not the LLM. Exposing them to
+    structured output made the model hallucinate claim verifications (wasting
+    tokens) and crash generation on enum-label typos (e.g. "ENTAILLED") or wrong
+    types ("expected null, but got array"), dropping whole advisories.
+    """
     problem_summary: str
     likely_causes: List[Cause]
     recommended_actions: List[str]
@@ -43,7 +52,11 @@ class AdvisoryResponse(BaseModel):
     confidence_explanation: str
     language: Literal["en", "es"]
     context_meta: ContextMeta
-    # F2 fields — Optional for backwards compat with stored messages
+
+
+class AdvisoryResponse(AdvisoryDraft):
+    # F2 guard-computed fields — filled by the citation guard, NOT the LLM.
+    # Optional for backwards compat with stored messages.
     confidence_score: Optional[float] = None
     claim_verification: Optional[List[ClaimResult]] = None
     escalation: Optional[str] = None

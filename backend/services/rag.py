@@ -6,7 +6,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
-from models.advisory import AdvisoryResponse
+from models.advisory import AdvisoryDraft, AdvisoryResponse
 from services.embedding import MiniLMEmbeddings
 from services.context import get_context
 from services.classifier import CATEGORY_TO_NAMESPACE
@@ -139,13 +139,18 @@ def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
 
 
 async def _postprocess_async(
-    result: AdvisoryResponse,
+    result: AdvisoryDraft | AdvisoryResponse,
     docs: list,
     soil: dict,
     weather: dict,
     county_fips: str,
 ) -> AdvisoryResponse:
-    """Apply citation guard (title-match + NLI) and stamp context_meta."""
+    """Apply citation guard (title-match + NLI) and stamp context_meta.
+
+    Accepts the LLM-authored AdvisoryDraft and promotes it to a full
+    AdvisoryResponse (guard fields default None until filled below)."""
+    if not isinstance(result, AdvisoryResponse):
+        result = AdvisoryResponse(**result.model_dump())
     # Step 1: title-match citation guard.
     # Only meaningful when retrieval carries `document_title` metadata. The gte
     # index (agroar-prod-gte) stores only {text, namespace} — no titles — so this
@@ -321,7 +326,7 @@ async def run_rag_query(
         if llm is None:
             continue
         try:
-            result = await llm.with_structured_output(AdvisoryResponse).ainvoke(messages)
+            result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages)
             break
         except Exception as e:
             last_err = e
