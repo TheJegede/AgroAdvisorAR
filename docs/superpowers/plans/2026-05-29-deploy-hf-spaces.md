@@ -5,6 +5,13 @@
 > setup) — those are marked **[YOU]**. Verify each step's expected output before
 > moving on.
 
+> **STATUS (2026-05-30): DEPLOYED.**
+> - Backend live: `https://whoisluwah-agroadvisor-backend.hf.space` (HF Space `WhoIsLuwah/agroadvisor-backend`). Pushed via orphan branch `hf-clean` (HF rejects the binaries in full repo history; orphan = backend-only, no history). Secrets + variables set (incl. gte dim pair). `Application startup complete` confirmed.
+> - Frontend live: `https://agroadvisor-eta.vercel.app` (Vercel project `agroadvisor`, root `frontend`, via `vercel` CLI). `.npmrc` `legacy-peer-deps=true` fixed the React 19 + react-simple-maps@3 install. `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` set.
+> - Proxy verified: `GET /api/v1/sessions` on the Vercel URL returns FastAPI `401` (reaches HF backend, same-origin, no CORS).
+> - **Remaining (Tasks 5–6):** set HF `FRONTEND_URL`, run prod migrations 005/007/008, confirm `agroar-prod-gte` populated, rotate the Groq key (leaked in a chat transcript), browser smoke test.
+> - Tasks 1–4 below are done; kept as the runbook of record + for redeploys.
+
 **Goal:** Get a live production URL — FastAPI backend on Hugging Face Spaces
 (free, 16 GB RAM), React frontend on Vercel (free) — wired together.
 
