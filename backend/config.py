@@ -12,12 +12,6 @@ SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 EMBEDDING_MODEL_PATH = os.environ.get(
     "EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2"
 )
-MULTILINGUAL_EMBEDDING_MODEL_PATH = os.environ.get(
-    "MULTILINGUAL_EMBEDDING_MODEL_PATH", "BAAI/bge-m3"
-)
-PINECONE_MULTILINGUAL_INDEX_NAME = os.environ.get(
-    "PINECONE_MULTILINGUAL_INDEX_NAME", "agroar-prod-multilingual"
-)
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 CORS_ORIGINS: list[str] = [

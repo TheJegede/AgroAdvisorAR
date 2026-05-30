@@ -104,7 +104,7 @@ async def evaluate(item):
     cat = _NS_TO_CAT.get(item["namespace"], "IN_SCOPE_GENERAL_AG")
     lang = item.get("lang", "en")
     advisory, chunks = await run_rag_query(
-        message=item["query"], county_fips=EVAL_COUNTY_FIPS, language=lang,
+        message=item["query"], county_fips=EVAL_COUNTY_FIPS, language="en",
         category=cat, session_history=[],
     )
     adv = advisory.model_dump() if hasattr(advisory, "model_dump") else advisory

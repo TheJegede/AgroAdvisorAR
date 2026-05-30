@@ -7,7 +7,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone
 from models.advisory import AdvisoryResponse
-from services.embedding import MiniLMEmbeddings, BGEEmbeddings
+from services.embedding import MiniLMEmbeddings
 from services.context import get_context
 from services.classifier import CATEGORY_TO_NAMESPACE
 from services import citation_guard_v2
@@ -30,8 +30,6 @@ def _is_quota_error(e: Exception) -> bool:
 
 
 _vectorstore: PineconeVectorStore | None = None
-_vectorstore_es: PineconeVectorStore | None = None
-_VECTORSTORE_ES_UNAVAILABLE = object()  # sentinel: init failed, don't retry
 _llm: ChatGoogleGenerativeAI | None = None
 _groq_llm = None
 _groq_fast_llm = None
@@ -74,30 +72,6 @@ def _get_vectorstore() -> PineconeVectorStore:
             text_key="text",
         )
     return _vectorstore
-
-
-def _get_vectorstore_es() -> PineconeVectorStore | None:
-    """Multilingual vectorstore (BGE-M3, agroar-prod-multilingual). Returns None if unavailable."""
-    global _vectorstore_es
-    if _vectorstore_es is _VECTORSTORE_ES_UNAVAILABLE:
-        return None
-    if _vectorstore_es is None:
-        try:
-            pc = Pinecone(api_key=config.PINECONE_API_KEY)
-            index = pc.Index(config.PINECONE_MULTILINGUAL_INDEX_NAME)
-            _vectorstore_es = PineconeVectorStore(
-                index=index,
-                embedding=BGEEmbeddings(),
-                text_key="text",
-            )
-        except Exception:
-            logger.warning(
-                "Multilingual vectorstore unavailable — falling back to EN index",
-                exc_info=True,
-            )
-            _vectorstore_es = _VECTORSTORE_ES_UNAVAILABLE
-            return None
-    return _vectorstore_es
 
 
 def _get_llm() -> ChatGoogleGenerativeAI:
@@ -215,17 +189,12 @@ async def run_rag_query(
     category: str,
     session_history: list[dict],
     rice_fields: list[dict] | None = None,
-    detected_lang: str = "en",
 ) -> tuple[AdvisoryResponse, list[dict]]:
     """Returns (advisory, retrieved_chunks)."""
     context_task = asyncio.create_task(get_context(county_fips))
 
     namespace = CATEGORY_TO_NAMESPACE.get(category)
-    # Route to multilingual index for Spanish queries; fall back to EN if unavailable
-    if detected_lang == "es":
-        vectorstore = _get_vectorstore_es() or _get_vectorstore()
-    else:
-        vectorstore = _get_vectorstore()
+    vectorstore = _get_vectorstore()
 
     # When reranking, pull a wider candidate set then trim to TOP_K_RETRIEVAL.
     fetch_k = config.RERANK_CANDIDATES if config.RERANK_ENABLED else config.TOP_K_RETRIEVAL
