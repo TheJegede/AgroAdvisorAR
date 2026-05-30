@@ -3,15 +3,30 @@ import hashlib
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
-CHUNK_SIZE = 512
-CHUNK_OVERLAP = 50
+# Size chunks by TOKENS, not characters. The old splitter used length_function=len
+# (characters): chunk_size=512 chars produced ~100-token chunks — ¼ of gte-base's
+# 512-token input budget — fragmenting each answer across many near-duplicate
+# vectors and starving retrieval recall (measured hit@5 0.25). tiktoken cl100k is
+# used for the length function (not the gte/BERT tokenizer) because this env
+# segfaults loading torch/transformers under pytest; tiktoken BPE counts run lower
+# than gte wordpiece, so 400 tokens stays safely under the 512 limit (gte
+# tail-truncates anyway).
+CHUNK_TOKENS = 400
+CHUNK_OVERLAP_TOKENS = 50
 
-_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=CHUNK_SIZE,
-    chunk_overlap=CHUNK_OVERLAP,
-    length_function=len,
-    separators=["\n\n", "\n", ". ", " ", ""],
-)
+_splitter = None
+
+
+def _get_splitter():
+    global _splitter
+    if _splitter is None:
+        _splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            encoding_name="cl100k_base",
+            chunk_size=CHUNK_TOKENS,
+            chunk_overlap=CHUNK_OVERLAP_TOKENS,
+            separators=["\n\n", "\n", ". ", " ", ""],
+        )
+    return _splitter
 
 
 def chunk_document(
@@ -23,7 +38,7 @@ def chunk_document(
     pub_year: int | None = None,
     section_heading: str = "",
 ) -> list[Document]:
-    chunks = _splitter.split_text(text)
+    chunks = _get_splitter().split_text(text)
     documents = []
     for i, chunk in enumerate(chunks):
         chunk_id = hashlib.sha256(
