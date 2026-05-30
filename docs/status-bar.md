@@ -18,7 +18,14 @@ confirmed populated), and the **Spanish translate-bridge round-trips** (ES query
 EN RAG → ES answer; ES and EN give identical behaviour = bridge is transparent).
 `FRONTEND_URL` set + prod migrations 005/007/008 run.
 
-**ACTIVE FOCUS — retrieval grounding / answer quality.**
+**CI/CD (2026-05-30):** frontend auto-deploys on `git push origin main` — Vercel
+project `agroadvisor` is GitHub-connected (Root Directory=`frontend`). Backend
+redeploys via orphan-branch force-push to the HF git remote. Accidental duplicate
+Vercel projects (`agro-advisor-ar*`) cleaned up. Exact redeploy commands: CLAUDE.md
+Priorities #2.
+
+**NEXT SESSION — research how to make retrieval + responses better** (lift answer
+correctness off ~40%, confidence off the "Low" floor). Concrete levers below.
 
 ✅ **FIXED + shipped 2026-05-30 (`f553863`): GENERAL_AG zero-retrieval bug.**
 `IN_SCOPE_GENERAL_AG` mapped to `None`, which made Pinecone search the empty
