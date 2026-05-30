@@ -6,6 +6,27 @@
 answer suppression across crops; root cause is the citation-guard groundedness
 design, not a single threshold.
 
+## STATUS (updated 2026-05-29, after the Spanish translate-bridge reframe)
+
+- ✅ **P0** (contradiction override + empty-chunks ungrounded) — DONE (`fc382e3`).
+- ✅ **P1.1** (fall back only on quota, re-raise real errors) — DONE (`e4c06ad`).
+- ✅ **P1.2** (per-namespace harness) — DONE (`0a8ed04`).
+- ✅ **P2.1** (paraphrase/number-tolerant groundedness) — DONE (`a6a2d57`).
+- ✅ **gte+reranker EN retrieval** (was "out of scope") — DONE this session
+  (`agroar-prod-gte`); cut suppression 80%→0% on the EN path.
+- ❌ **P2.2 (language-aware guard) — OBSOLETE.** The Spanish translate-bridge
+  (`docs/.../2026-05-29-spanish-translate-bridge-design.md`) translates ES→EN
+  *before* the pipeline, so the guard only ever sees English. `detected_lang`
+  was removed. No multilingual NLI needed — skip this entirely.
+- ⏳ **P2.3** (calibrate thresholds per namespace) — PENDING; now simpler (one
+  English distribution; ES rides the same English guard).
+- ⏳ **P3.1** (single provider abstraction) — PENDING; scope grew to **4** files
+  (`rag.py`, `classifier.py`, `citation_guard_v2.py`, **`translation.py`**).
+- ⏳ **P3.2** (harden local adapter) — PENDING.
+
+**Remaining work = P2.3 + P3.1 + P3.2 (all polish; none blocks deploy/pilot).**
+Phases below are the original plan; treat P0/P1/P2.1 as historical record.
+
 ## Problem summary
 
 The NLI citation guard (`backend/services/citation_guard_v2.py`) decides whether
@@ -96,12 +117,12 @@ small, surgical, ship first.
   scores above suppression; a fabricated rate still scores low. Per-crop harness
   shows suppression drops on grounded answers without passing ungrounded ones.
 
-### 2.2 Language-aware guard
-- **File:** `citation_guard_v2.py` + `rag.py` (pass `detected_lang`).
-- **Change:** use a multilingual NLI/groundedness model (e.g. mDeBERTa-xnli or
-  a bge-based scorer) for ES, or explicitly relax/skip with a documented caveat
-  until available. Guard must not score Spanish text with an English-only model.
-- **Accept:** ES answers are not systematically suppressed vs EN on the ES eval.
+### 2.2 Language-aware guard — ❌ OBSOLETE (do not implement)
+Superseded by the Spanish translate-bridge: ES queries are translated to English
+before retrieval/generation, and the advisory is translated back to Spanish only
+*after* the guard runs. The NLI guard therefore only ever scores English text —
+there is nothing Spanish for it to mis-score. `detected_lang` was removed from
+`rag.py`. No multilingual NLI model is needed.
 
 ### 2.3 Calibrate thresholds per namespace from data
 - **Files:** thresholds → config; calibration documented in the plan/eval.
@@ -117,9 +138,11 @@ small, surgical, ship first.
 
 ### 3.1 Single provider-selection abstraction
 - **New:** `backend/services/llm_provider.py` — one helper returning the ordered
-  provider list (incl. `LLM_PRIMARY=local`), used by `rag.py`, `classifier.py`,
-  `citation_guard_v2.py`. Removes the triplicated, already-drifting logic.
-- **Accept:** the three call sites import one helper; no duplicated ordering.
+  provider list (incl. `LLM_PRIMARY=local`), used by **`rag.py`, `classifier.py`,
+  `citation_guard_v2.py`, and `translation.py`** (the bridge added a 4th copy of
+  the ordering logic, already drifting on which Groq model each uses). Removes the
+  duplicated logic.
+- **Accept:** the four call sites import one helper; no duplicated ordering.
 
 ### 3.2 Harden local-mode adapter (dev-only)
 - **File:** `backend/services/local_llm.py`.
@@ -136,8 +159,10 @@ P0 → P1 → P2 → P3, one phase at a time, each verified with the local eval 
 moving on. P0 and P1.1 are safety/visibility and should land first. P1.2
 (per-crop harness) gates P2.3 calibration. P2 is the substantive redesign.
 
-## Out of scope (separate tracks, already known)
-- Shipping gte-base + reranker to the production EN index (retrieval grounding
-  upgrade) — complementary; raises entailment by retrieving better chunks.
-- ES corpus quality (MT-bootstrap) improvements.
+## Out of scope (separate tracks)
+- ~~Shipping gte-base + reranker to the EN index~~ — ✅ DONE this session
+  (`agroar-prod-gte`); was the dominant lever (suppression 80%→0% on the EN path).
+- ~~ES corpus quality (MT-bootstrap)~~ — moot; the dedicated ES corpus/index was
+  removed and replaced by the translate-bridge.
 - Re-baselining the retrieval benchmark off the contaminated `eval_set_v2`.
+- Answer *correctness* (~40%): generation/chunking quality, separate from the guard.
