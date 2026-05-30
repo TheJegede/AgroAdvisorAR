@@ -18,13 +18,25 @@ confirmed populated), and the **Spanish translate-bridge round-trips** (ES query
 EN RAG → ES answer; ES and EN give identical behaviour = bridge is transparent).
 `FRONTEND_URL` set + prod migrations 005/007/008 run.
 
-**ACTIVE FOCUS — retrieval grounding / answer quality.** Some topics (e.g. "cover
-crop after rice harvest") retrieve **no Extension chunk** (only the injected SOIL
-context) → NLI 0.00 → answer suppressed + Extension escalation. EN and ES behave
-identically, so this is a corpus-coverage / retrieval / NLI-calibration gap, not a
-deploy or bridge bug. Matches the documented ~40%-correct answer-quality issue.
-Next: diagnose miss-vs-drop (HF logs: classifier namespace + Pinecone scores) and
-corpus coverage. See `docs/superpowers/plans/2026-05-29-citation-guard-remediation.md`.
+**ACTIVE FOCUS — retrieval grounding / answer quality.**
+
+✅ **FIXED + shipped 2026-05-30 (`f553863`): GENERAL_AG zero-retrieval bug.**
+`IN_SCOPE_GENERAL_AG` mapped to `None`, which made Pinecone search the empty
+default namespace → 0 docs → NLI 0.00 → every general-ag answer suppressed (all
+20k vectors live in rice/soybeans/poultry; no `general` namespace). Fix:
+`rag._namespaces_for` + `_fanout_search` fan out across the crop namespaces, merge
+by score. TDD'd (`tests/test_rag_retrieval.py`); live proof 0→5 docs; verified in
+prod (cover-crop query: NLI 0.00 → 0.34, suppressed → populated).
+
+Still open (next levers):
+- **`document_title` metadata missing in the gte index** → the title-match citation
+  guard (`rag.py:122`) can never validate → confidence force-capped at "Low" even
+  when grounded (e.g. NLI 0.34/0.54). Fix = re-ingest gte with title metadata
+  (corpus cache `corpus_en.jsonl` currently only has `{chunk_id, namespace, text}`)
+  OR relax the title-match downgrade and trust the NLI score.
+- **Corpus coverage thin on some topics** (cover-crop-after-rice) → weak grounding,
+  generic answers. Content/ingestion effort. See
+  `docs/superpowers/plans/2026-05-29-citation-guard-remediation.md`.
 
 Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
 handling).
