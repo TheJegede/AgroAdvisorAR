@@ -98,18 +98,25 @@ def faithfulness(advisory: dict, chunks: list[dict]) -> tuple[float, str]:
 # Pluggable judges (Groq by default; swapped to local Qwen for --provider local).
 JUDGE_CORR = score_item
 JUDGE_FAITH = faithfulness
+BRIDGE = False  # set by --bridge: translate each query ES->EN before the pipeline
 
 
 async def evaluate(item):
     cat = _NS_TO_CAT.get(item["namespace"], "IN_SCOPE_GENERAL_AG")
     lang = item.get("lang", "en")
+    # Bridge mode: translate the (Spanish) query to English first, exactly as
+    # query.py does in production. Scores the English advisory it produces.
+    query = item["query"]
+    if BRIDGE:
+        from services.translation import translate_to_en
+        query = await translate_to_en(query)
     advisory, chunks = await run_rag_query(
-        message=item["query"], county_fips=EVAL_COUNTY_FIPS, language="en",
+        message=query, county_fips=EVAL_COUNTY_FIPS, language="en",
         category=cat, session_history=[],
     )
     adv = advisory.model_dump() if hasattr(advisory, "model_dump") else advisory
     suppressed = _is_suppressed(adv)
-    corr, c_r = JUDGE_CORR(item["query"], adv, item["chunk_text"])
+    corr, c_r = JUDGE_CORR(query, adv, item["chunk_text"])
     faith, f_r = JUDGE_FAITH(adv, chunks)
     return {
         "namespace": item["namespace"],
@@ -190,9 +197,14 @@ async def main():
                     help="groq=Groq generation; local=Qwen-7B on GPU (free, no quota; also judges locally)")
     ap.add_argument("--no-guard", action="store_true",
                     help="disable NLI suppression to measure raw answer quality")
+    ap.add_argument("--eval-set", type=Path, default=EVAL_SET,
+                    help="eval set jsonl (e.g. evals/ar_agqa_es.jsonl for the ES bridge)")
+    ap.add_argument("--bridge", action="store_true",
+                    help="translate each query to English first (production ES path)")
     args = ap.parse_args()
 
-    global JUDGE_CORR, JUDGE_FAITH
+    global JUDGE_CORR, JUDGE_FAITH, BRIDGE
+    BRIDGE = args.bridge
     if args.provider == "groq":
         _force_groq_generation()
     elif args.provider == "local":
@@ -201,11 +213,16 @@ async def main():
         config.LLM_PRIMARY = "groq"                         # so local is tried first
         JUDGE_CORR = local_llm.judge_correctness            # judge locally too (Groq drained)
         JUDGE_FAITH = local_llm.judge_faithfulness
+        if args.bridge:
+            # Route the translation bridge through the SAME local Qwen model
+            # (one model on GPU — avoids a second 7B load / OOM).
+            from services import translation as _tr
+            _tr._providers = lambda: [local_llm.LocalChat()]
     if args.no_guard:
         config.NLI_CITATION_GUARD_ENABLED = False
-    print(f"provider={args.provider}  guard={'off' if args.no_guard else 'on'}")
+    print(f"provider={args.provider}  guard={'off' if args.no_guard else 'on'}  bridge={args.bridge}")
 
-    items = [json.loads(l) for l in open(EVAL_SET, encoding="utf-8")]
+    items = [json.loads(l) for l in open(args.eval_set, encoding="utf-8")]
     sample = sample_items(items, args.sample, seed=args.seed)
 
     results, skipped = [], 0

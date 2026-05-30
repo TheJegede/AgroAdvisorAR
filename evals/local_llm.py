@@ -103,6 +103,17 @@ class LocalChat:
     def with_structured_output(self, schema):
         return _Structured(schema)
 
+    async def ainvoke(self, messages):
+        """Plain text call (used by the translation bridge in eval)."""
+        import asyncio
+        from types import SimpleNamespace
+        system = "\n".join(getattr(m, "content", "") for m in messages
+                           if m.__class__.__name__ == "SystemMessage")
+        user = "\n".join(getattr(m, "content", "") for m in messages
+                         if m.__class__.__name__ != "SystemMessage")
+        text = await asyncio.to_thread(_gen, system, user, 256)
+        return SimpleNamespace(content=text)
+
 
 # --- local LLM-as-judge ---
 def _summarize(advisory: dict) -> str:
