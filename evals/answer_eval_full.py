@@ -102,15 +102,84 @@ JUDGE_FAITH = faithfulness
 
 async def evaluate(item):
     cat = _NS_TO_CAT.get(item["namespace"], "IN_SCOPE_GENERAL_AG")
+    lang = item.get("lang", "en")
     advisory, chunks = await run_rag_query(
-        message=item["query"], county_fips=EVAL_COUNTY_FIPS, language="en",
+        message=item["query"], county_fips=EVAL_COUNTY_FIPS, language=lang,
         category=cat, session_history=[],
     )
     adv = advisory.model_dump() if hasattr(advisory, "model_dump") else advisory
     suppressed = _is_suppressed(adv)
     corr, c_r = JUDGE_CORR(item["query"], adv, item["chunk_text"])
     faith, f_r = JUDGE_FAITH(adv, chunks)
-    return corr, faith, suppressed, c_r, f_r
+    return {
+        "namespace": item["namespace"],
+        "lang": lang,
+        "suppressed": suppressed,
+        "correctness": corr,
+        "faithfulness": faith,
+        # None when the guard is disabled (--no-guard) or the model omits it.
+        "confidence_score": adv.get("confidence_score"),
+        "corr_rationale": c_r,
+        "faith_rationale": f_r,
+    }
+
+
+def _mean(xs):
+    """Mean over non-None values; None if every value is None / list is empty."""
+    xs = [x for x in xs if x is not None]
+    return sum(xs) / len(xs) if xs else None
+
+
+def per_namespace_breakdown(results):
+    """Group scored per-item results by (namespace, lang) and aggregate.
+
+    Each result is a dict with keys: namespace, lang, suppressed (bool),
+    correctness, faithfulness, confidence_score (float|None).
+    Returns an ordered list of per-group summary dicts.
+    """
+    groups = {}
+    for r in results:
+        key = (r["namespace"], r.get("lang", "en"))
+        groups.setdefault(key, []).append(r)
+
+    rows = []
+    for key in sorted(groups):
+        ns, lang = key
+        g = groups[key]
+        n = len(g)
+        n_supp = sum(1 for r in g if r["suppressed"])
+        rows.append({
+            "namespace": ns,
+            "lang": lang,
+            "count": n,
+            "suppression_rate": n_supp / n if n else 0.0,
+            "mean_correctness": _mean([r["correctness"] for r in g]),
+            "mean_faithfulness": _mean([r["faithfulness"] for r in g]),
+            "mean_confidence_score": _mean([r["confidence_score"] for r in g]),
+        })
+    return rows
+
+
+def _fmt_pct(x):
+    return "  n/a" if x is None else f"{100*x:4.0f}%"
+
+
+def _fmt_score(x):
+    return " n/a" if x is None else f"{x:4.2f}"
+
+
+def print_per_namespace(results):
+    rows = per_namespace_breakdown(results)
+    print("\n=== PER-NAMESPACE BREAKDOWN ===")
+    print(f"{'namespace':>9} {'lang':>4} {'n':>3} {'supp':>5} {'corr':>5} {'faith':>5} {'conf':>5}")
+    for row in rows:
+        print(
+            f"{row['namespace']:>9} {row['lang']:>4} {row['count']:>3} "
+            f"{_fmt_pct(row['suppression_rate'])} "
+            f"{_fmt_pct(row['mean_correctness'])} "
+            f"{_fmt_pct(row['mean_faithfulness'])} "
+            f"{_fmt_score(row['mean_confidence_score'])}"
+        )
 
 
 async def main():
@@ -139,26 +208,30 @@ async def main():
     items = [json.loads(l) for l in open(EVAL_SET, encoding="utf-8")]
     sample = sample_items(items, args.sample, seed=args.seed)
 
-    corr_s, faith_s, n_supp, skipped = [], [], 0, 0
+    results, skipped = [], 0
     for i, it in enumerate(sample, 1):
         try:
-            corr, faith, suppressed, c_r, f_r = await evaluate(it)
-            corr_s.append(corr)
-            faith_s.append(faith)
-            n_supp += 1 if suppressed else 0
-            tag = "SUPPRESSED" if suppressed else f"corr={corr:.1f} faith={faith:.1f}"
-            print(f"[{i}/{len(sample)}] {it['namespace']:>8} {tag} | {c_r[:45]} || {f_r[:45]}")
+            r = await evaluate(it)
+            results.append(r)
+            tag = ("SUPPRESSED" if r["suppressed"]
+                   else f"corr={r['correctness']:.1f} faith={r['faithfulness']:.1f}")
+            print(f"[{i}/{len(sample)}] {it['namespace']:>8} {tag} "
+                  f"| {r['corr_rationale'][:45]} || {r['faith_rationale'][:45]}")
         except Exception as e:
             skipped += 1
             print(f"[{i}/{len(sample)}] SKIPPED {type(e).__name__}: {str(e)[:80]}")
 
-    n = len(corr_s)
+    n = len(results)
+    n_supp = sum(1 for r in results if r["suppressed"])
+    corr_s = [r["correctness"] for r in results]
+    faith_s = [r["faithfulness"] for r in results]
     print("\n=== END-TO-END ANSWER EVAL ===")
     print(f"scored={n} skipped={skipped}")
     if n:
         print(f"suppression rate: {100*n_supp/n:.0f}%  ({n_supp}/{n})")
         print(f"correctness  mean: {100*sum(corr_s)/n:.1f}%")
         print(f"faithfulness mean: {100*sum(faith_s)/n:.1f}%")
+        print_per_namespace(results)
 
 
 if __name__ == "__main__":
