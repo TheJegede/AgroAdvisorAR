@@ -39,24 +39,47 @@ chunks `Document N:` and the LLM echoes that into citation titles, breaking exac
 
 - **Prod: LIVE + smoke-tested (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app`
   → API proxy → backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
-- **Current focus = CITATION GUARD OVERHAUL** (root cause above). Retrieval + generation are NOT the problem.
-- **Phase 0 SHIPPED this session** (uncommitted at time of writing): contradiction confidence gate
-  (Fix 1) + strip `Document N:` prefix (Fix 2). A/B query recovered empty/Low/0.0 → full/High/0.43.
-  Batch: 2/6 recovered; remaining 4/6 still suppressed **because the NLI model itself is broken**.
+- **CITATION GUARD OVERHAUL = SHIPPED 2026-05-31** (branch `guard-overhaul`, Phases 1–6). The broken
+  MiniLM NLI is retired from the hot path; an LLM-as-judge (provider chain) now scores groundedness,
+  suppression is surgical (per-claim, rate-safe), and `Document N:` is killed at the prompt source.
+  **Measured effect (local Qwen gen + Gemini judge, gte config, n=9): suppression 11% (1/9), faithfulness
+  88.9%, confidence_score now 0.64–1.00 mean** — vs the broken NLI's 0.0/0.34/0.54. Full backend suite
+  93 passed / 1 pre-existing stale fail.
+- **Phase 0 SHIPPED earlier** (`f457d28`): contradiction confidence gate (Fix 1) + strip `Document N:` (Fix 2).
 - **Retrieval mechanics are EXHAUSTED and were never the bottleneck** — 5 levers tested, all rejected
   (table below). Retrieval-v3 + rechunk-titles plans **DELETED 2026-05-31** (abandoned narrow path).
   Reusable measurement harness kept (`eval_retrieval_matrix`, audit, filter, ablation).
-- **Generation-model upgrade (7B→70B) is deferred** until the guard is trustworthy — it was
-  corrupting every correctness number.
+- **Generation-model upgrade (7B→70B) is now UNBLOCKED** — the guard no longer corrupts correctness
+  numbers, so a prod-like 70B eval (Groq paid/Dev tier) is the next real lever.
+
+### ✅ GUARD OVERHAUL — what shipped (branch `guard-overhaul`)
+Executed `docs/superpowers/plans/2026-05-31-citation-guard-overhaul.md` via subagent-driven-development
+(implementer + review per phase, TDD throughout):
+
+1. **Phase 1** (`3a0cd8a`) — lexical-contradiction guard: never honor a CONTRADICTED label when the claim
+   shares ≥0.6 content-token overlap with a chunk (`LEXICAL_CONTRADICTION_GUARD`).
+2. **Phase 2** (`8eee998`, fix `f5457b4`) — LLM-as-judge groundedness (`judge_claims_llm` + `GROUNDEDNESS_JUDGE=llm`
+   default); MiniLM NLI kept only as offline fallback (run off the event loop).
+3. **Phase 3** (`cd30cd0`) — surgical suppression: drop the contradicted claim and mean the rest;
+   full-suppress ONLY when a contradiction is safety-critical (names a rate/unit/number — `_SAFETY_CRITICAL_RE`).
+4. **Phase 4** (`4ba97fc`) — thresholds env-overridable (`GUARD_SUPPRESSION_THRESHOLD`/`GUARD_ESCALATION_THRESHOLD`).
+   Calibration: LLM-judge scores shifted UP to 0.64–1.00; **kept defaults 0.2/0.4** (now cut only the
+   genuine bottom tail — 11% suppression ≈ bottom decile). Per-namespace: poultry conf 1.00, rice 0.85, soybeans 0.64.
+5. **Phase 5** (`e2ca0d1`) — cite retrieved docs by bracketed title (no `Document N:` in the prompt);
+   scrub residual `Document N:` from displayed citation titles + cause/action/summary prose in `rag.py`.
+6. **Phase 6** — config audit: local `.env` was **legacy `agroar-prod` (MiniLM) + contaminated fine-tune
+   embedder** → **FIXED to `agroar-prod-gte` + `thenlper/gte-base`** (gte retrieval verified, gold in top-5).
 
 ### ▶▶ RESUME HERE (next session)
-Execute `docs/superpowers/plans/2026-05-31-citation-guard-overhaul.md`, phase by phase:
-
-1. **Phase 1** — lexical-contradiction guard (cheap, no new model). Verify with `trace_pipeline_batch.py`.
-2. **Phase 2** — LLM-as-judge groundedness (the real fix; reuses the provider chain).
-3. **Phase 3** — surgical suppression (drop the contradicted claim, don't nuke the whole answer).
-4. **Phase 4** — recalibrate thresholds from per-namespace eval data.
-5. **Phase 5/6** — clean `Document N:` at the source (prompt) + config audit (local/prod gte vs legacy fine-tune).
+1. **⚠️ OWNER ACTION — verify HF Space env** (could not check from local; not authed to the Space). In the HF
+   Space → Settings → Variables/Secrets, confirm `PINECONE_INDEX_NAME=agroar-prod-gte` and
+   `EMBEDDING_MODEL_PATH=thenlper/gte-base`. If they're legacy, prod is mis-served — fix them.
+2. **Prod-like 70B answer eval** (now unblocked) when Groq Dev/paid tier is available — the guard no longer
+   corrupts correctness numbers, so this is the next real quality lever.
+3. **Re-ingest gte with title/section metadata (1B)** so the title-match guard validates real citations
+   (gte index still `(no title meta)`).
+4. **Known calibration item:** `_SAFETY_CRITICAL_RE` matches a bare digit, so a CONTRADICTED claim mentioning
+   a growth stage (V3/R5) full-suppresses (fail-safe but conservative) — tighten with eval data if it fires.
 
 Do **not** resume any retrieval-v3 work. Keep `agroar-prod-gte` / 512-char / dense top-5 as the retrieval baseline.
 
