@@ -54,7 +54,7 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 ### ▶▶ RESUME HERE (next session)
 1. **⚠️ OWNER ACTION — verify HF Space env** (couldn't check from local; not authed to the Space).
    HF Space → Settings → Variables/Secrets: confirm `PINECONE_INDEX_NAME=agroar-prod-gte` and
-   `EMBEDDING_MODEL_PATH=thenlper/gte-base`. (Owner confirmed both keys present 2026-05-31; values not yet verified.)
+   `EMBEDDING_MODEL_PATH=thenlper/gte-base`. (Owner confirmed both keys present and values verified.)
 2. **Prod-like 70B answer eval** (now unblocked) when Groq Dev/paid tier is available — the real next lever.
 3. **Re-ingest / cut over gte WITH title+section metadata** so the title-match guard validates real
    citations (the live `agroar-prod-gte` index stores only `{text, namespace}` → `(no title meta)`).
