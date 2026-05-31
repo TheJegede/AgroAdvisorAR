@@ -201,6 +201,27 @@ async def _postprocess_async(
         })
     })
 
+    # Step 2b: scrub residual "Document N:" from user-facing fields. The LLM
+    # echoes the prompt's chunk scaffolding into citation titles and prose even
+    # after the Phase 5 prompt fix; the title-match branch above only normalizes
+    # titles when `titles_present`. Run this ALWAYS (titleless gte index too) so
+    # users never see "Document N:" in the returned advisory.
+    result = result.model_copy(update={
+        "problem_summary": _strip_doc_prefix(result.problem_summary),
+        "recommended_actions": [_strip_doc_prefix(a) for a in result.recommended_actions],
+        "likely_causes": [
+            c.model_copy(update={
+                "cause": _strip_doc_prefix(c.cause),
+                "explanation": _strip_doc_prefix(c.explanation),
+            })
+            for c in result.likely_causes
+        ],
+        "citations": [
+            c.model_copy(update={"document_title": _strip_doc_prefix(c.document_title)})
+            for c in result.citations
+        ],
+    })
+
     # Step 3: NLI claim verification. This can be disabled for constrained
     # runtimes, but defaults on so confidence scoring remains active.
     if not config.NLI_CITATION_GUARD_ENABLED:

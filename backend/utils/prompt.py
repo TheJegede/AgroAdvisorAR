@@ -8,7 +8,7 @@ ONLY based on the provided document context. You do not generate information
 not present in the retrieved documents."""
 
 OUTPUT_INSTRUCTIONS = """Respond in {language}. Return ONLY valid JSON matching the AdvisoryResponse schema.
-Every claim must cite a specific retrieved document by its exact title and section.
+Every claim must cite a specific retrieved document by its exact title (shown in [brackets]) and section. Do not invent or use numbered-document labels — cite the bracketed title text verbatim.
 If context is insufficient to answer, set confidence to "Low" and explain why.
 Never recommend products not mentioned in the retrieved documents.
 Always include a warnings array — use an empty array if no warnings apply.
@@ -67,11 +67,12 @@ def build_system_prompt(
     # Retrieved document context
     if retrieved_docs:
         parts.append("[RETRIEVED DOCUMENT CONTEXT]")
-        for i, doc in enumerate(retrieved_docs, 1):
+        for doc in retrieved_docs:
             meta = doc.metadata
             title = meta.get("document_title", "Unknown")
             section = meta.get("section_heading", "")
-            parts.append(f"Document {i}: {title} | {section} | {doc.page_content}")
+            label = f"{title} — {section}".strip(" —")
+            parts.append(f"[{label}] {doc.page_content}")
         parts.append("")
 
     # Conversation history

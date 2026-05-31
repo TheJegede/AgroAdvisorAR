@@ -512,3 +512,44 @@ def test_guard_thresholds_env_overridable(monkeypatch):
     monkeypatch.delenv("GUARD_ESCALATION_THRESHOLD")
     importlib.reload(_config)
     importlib.reload(importlib.import_module("services.citation_guard_v2"))
+
+
+def test_postprocess_scrubs_document_prefix_from_displayed_fields(monkeypatch):
+    # Phase 5: even with titleless retrieval (titles_present False, so the
+    # title-match branch never runs), the LLM can echo "Document N:" into the
+    # user-facing fields. _postprocess_async must scrub it from citation titles,
+    # likely-cause cause/explanation, recommended_actions, and problem_summary
+    # ALWAYS — independent of titles_present and before/regardless of the NLI step.
+    import asyncio
+    import types
+    rag = importlib.import_module("services.rag")
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", False)
+
+    from models.advisory import AdvisoryResponse, Cause, Citation, ContextMeta
+    ctx = ContextMeta(soil_data_available=False, weather_data_available=False, county_fips="05001")
+    resp = AdvisoryResponse(
+        problem_summary="Document 5: nitrogen stress observed.",
+        likely_causes=[Cause(cause="Document 6: deficiency",
+                             explanation="Document 2: Nitrogen deficiency.")],
+        recommended_actions=["Document 3: Scout weekly."],
+        products_rates=[],
+        warnings=[],
+        citations=[Citation(document_title="Document 1: Rice Guide", section="s", url=None)],
+        confidence="Medium",
+        confidence_explanation="ok",
+        language="en",
+        context_meta=ctx,
+    )
+    # docs carry NO document_title → titles_present is False → prove scrub still runs.
+    docs = [types.SimpleNamespace(metadata={}, page_content="some content")]
+
+    result = asyncio.run(rag._postprocess_async(resp, docs, {}, {}, "05001"))
+
+    assert "Document" not in result.problem_summary
+    assert all("Document" not in a for a in result.recommended_actions)
+    assert all("Document" not in c.cause and "Document" not in c.explanation
+               for c in result.likely_causes)
+    assert all("Document" not in c.document_title for c in result.citations)
+    # Real content preserved.
+    assert "Scout weekly." in result.recommended_actions[0]
+    assert result.citations[0].document_title == "Rice Guide"
