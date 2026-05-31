@@ -20,7 +20,7 @@ Ensure response_type is "informational".
 Provide a summary of the topic in problem_summary.
 Provide a clear, detailed, educational explanation of the concepts in detailed_explanation (since this is an informational query, not a crop-health issue diagnosis).
 Provide a list of key educational points or guidelines in key_points.
-Since this query is informational/educational and not a crop-health diagnosis, leave likely_causes and products_rates empty ([]).
+Since this query is informational/educational and not a crop-health diagnosis, leave likely_causes, recommended_actions, and products_rates empty ([]).
 Every claim must cite a specific retrieved document by its exact title (shown in [brackets]) and section. Do not invent or use numbered-document labels — cite the bracketed title text verbatim.
 If context is insufficient to answer, set confidence to "Low" and explain why.
 Always include a warnings array — use an empty array if no warnings apply.

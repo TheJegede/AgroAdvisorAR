@@ -47,10 +47,10 @@ class AdvisoryDraft(BaseModel):
     detailed_explanation: Optional[str] = None
     key_points: List[str] = []
     likely_causes: List[Cause] = []
-    recommended_actions: List[str]
+    recommended_actions: List[str] = []
     products_rates: List[Product] = []
-    warnings: List[str]
-    citations: List[Citation]
+    warnings: List[str] = []
+    citations: List[Citation] = []
     confidence: Literal["High", "Medium", "Low"]
     confidence_explanation: str
     language: Literal["en", "es"]
