@@ -60,4 +60,4 @@ class AdvisoryResponse(AdvisoryDraft):
     confidence_score: Optional[float] = None
     claim_verification: Optional[List[ClaimResult]] = None
     escalation: Optional[str] = None
-
+    suppressed: bool = False  # True when the guard blanked the body (score < SUPPRESSION)

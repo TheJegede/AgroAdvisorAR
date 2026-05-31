@@ -32,6 +32,15 @@ def _strip_doc_prefix(text: str) -> str:
     return _DOC_PREFIX_RE.sub("", text or "").strip()
 
 
+_PLACEHOLDER_RE = re.compile(r"\[?\s*RETRIEVED DOCUMENT CONTEXT\s*\]?", re.IGNORECASE)
+
+
+def _strip_scaffolding(text: str) -> str:
+    """Remove prompt scaffolding the LLM copies verbatim: 'Document N:' prefixes and
+    the '[RETRIEVED DOCUMENT CONTEXT]' context header."""
+    return _PLACEHOLDER_RE.sub("", _DOC_PREFIX_RE.sub("", text or "")).strip()
+
+
 def _is_quota_error(e: Exception) -> bool:
     """True for rate-limit / quota-exhaustion errors that warrant a provider
     fallback. Other errors (auth, schema, bugs) should surface, not be masked by
@@ -148,9 +157,9 @@ def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
         ]))
         for product in result.products_rates
     )
-    # Strip "Document N:" scaffolding so decomposition verifies real content,
-    # not meta-claims about document numbering.
-    return _strip_doc_prefix(" ".join(p for p in parts if p))
+    # Strip prompt scaffolding so decomposition verifies real content,
+    # not meta-claims about document numbering or context headers.
+    return _strip_scaffolding(" ".join(p for p in parts if p))
 
 
 async def _postprocess_async(
@@ -207,17 +216,17 @@ async def _postprocess_async(
     # titles when `titles_present`. Run this ALWAYS (titleless gte index too) so
     # users never see "Document N:" in the returned advisory.
     result = result.model_copy(update={
-        "problem_summary": _strip_doc_prefix(result.problem_summary),
-        "recommended_actions": [_strip_doc_prefix(a) for a in result.recommended_actions],
+        "problem_summary": _strip_scaffolding(result.problem_summary),
+        "recommended_actions": [_strip_scaffolding(a) for a in result.recommended_actions],
         "likely_causes": [
             c.model_copy(update={
-                "cause": _strip_doc_prefix(c.cause),
-                "explanation": _strip_doc_prefix(c.explanation),
+                "cause": _strip_scaffolding(c.cause),
+                "explanation": _strip_scaffolding(c.explanation),
             })
             for c in result.likely_causes
         ],
         "citations": [
-            c.model_copy(update={"document_title": _strip_doc_prefix(c.document_title)})
+            c.model_copy(update={"document_title": _strip_scaffolding(c.document_title)})
             for c in result.citations
         ],
     })
@@ -250,14 +259,25 @@ async def _postprocess_async(
         "escalation": escalation,
     }
 
+    # Reconcile the user-facing confidence label with the guard score. The
+    # LLM-authored `confidence` is advisory; the guard score is authoritative.
+    # Downgrade only — never upgrade an LLM "Low".
     if confidence_score < citation_guard_v2.SUPPRESSION_THRESHOLD:
-        escalation_msg = escalation or "Please contact your local UA Extension office."
+        update["confidence"] = "Low"
+    elif confidence_score < citation_guard_v2.ESCALATION_THRESHOLD:
+        if result.confidence == "High":
+            update["confidence"] = "Medium"
+
+    if confidence_score < citation_guard_v2.SUPPRESSION_THRESHOLD:
+        # Blank the unverified body. The escalation is carried by `escalation`
+        # (rendered as its own card) — do NOT also duplicate it into warnings.
         update.update({
+            "suppressed": True,
             "problem_summary": "",
             "likely_causes": [],
             "recommended_actions": [],
             "products_rates": [],
-            "warnings": [escalation_msg],
+            "warnings": [],
         })
 
     return result.model_copy(update=update)

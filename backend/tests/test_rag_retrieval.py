@@ -123,3 +123,64 @@ def test_titled_index_keeps_only_matching_citations(monkeypatch):
 
     assert out.confidence == "High"
     assert [c.document_title for c in out.citations] == ["Rice Disease MP154"]
+
+
+# --- Task 1.1: suppressed field default -----------------------------------
+
+
+def test_advisory_response_has_suppressed_default_false():
+    a = _make_advisory([])
+    assert a.suppressed is False
+
+
+# --- Task 1.2: confidence label reconciliation + suppressed flag ----------
+
+
+def _patch_guard(rag, monkeypatch, score):
+    """Force the NLI guard on and stub verify_answer to a fixed score."""
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", True)
+
+    async def _fake(answer, chunks):
+        return {"confidence_score": score, "claim_verification": [], "escalation": None}
+
+    monkeypatch.setattr(rag.citation_guard_v2, "verify_answer", _fake)
+
+
+def test_suppression_forces_low_and_suppressed_flag(monkeypatch):
+    rag = importlib.import_module("services.rag")
+    _patch_guard(rag, monkeypatch, 0.0)
+    result = _make_advisory([]).model_copy(update={"confidence": "High"})
+    out = _run_postprocess(rag, result, [_MetaDoc({"namespace": "rice"}, "rice content")])
+    assert out.confidence == "Low"
+    assert out.suppressed is True
+    assert out.problem_summary == ""
+    assert out.warnings == []              # escalation NOT duplicated as a warning
+    assert out.recommended_actions == []
+
+
+def test_escalation_band_downgrades_high_to_medium(monkeypatch):
+    rag = importlib.import_module("services.rag")
+    _patch_guard(rag, monkeypatch, 0.3)    # in [SUPPRESSION=0.2, ESCALATION=0.4)
+    result = _make_advisory([]).model_copy(update={"confidence": "High"})
+    out = _run_postprocess(rag, result, [_MetaDoc({"namespace": "rice"}, "rice content")])
+    assert out.confidence == "Medium"
+    assert out.suppressed is False
+
+
+def test_high_score_keeps_llm_confidence(monkeypatch):
+    rag = importlib.import_module("services.rag")
+    _patch_guard(rag, monkeypatch, 0.9)
+    result = _make_advisory([]).model_copy(update={"confidence": "High"})
+    out = _run_postprocess(rag, result, [_MetaDoc({"namespace": "rice"}, "rice content")])
+    assert out.confidence == "High"
+    assert out.suppressed is False
+
+
+# --- Task 1.3: _strip_scaffolding removes [RETRIEVED DOCUMENT CONTEXT] ---
+
+
+def test_strip_scaffolding_removes_context_header():
+    rag = importlib.import_module("services.rag")
+    assert rag._strip_scaffolding("Read the report, see [RETRIEVED DOCUMENT CONTEXT]") == "Read the report, see"
+    assert rag._strip_scaffolding("RETRIEVED DOCUMENT CONTEXT") == ""
+    assert rag._strip_scaffolding("Document 3: rice guide") == "rice guide"   # still strips Document N:
