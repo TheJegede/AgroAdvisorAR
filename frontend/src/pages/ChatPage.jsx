@@ -114,7 +114,7 @@ export default function ChatPage() {
         ])
       },
       onError: (errMsg) => {
-        const isTechnical = /pydantic|langchain|structured output|validation error|OUTPUT_PARSING|Request failed: 5/i.test(errMsg)
+        const isTechnical = /pydantic|langchain|structured output|validation|failed|parsing|request failed|error code|failed_generation|tool_use_failed/i.test(errMsg)
         setMessages((prev) => [
           ...prev,
           { id: Date.now() + 1, role: 'assistant', type: 'error', content: isTechnical ? t.errorGeneric : errMsg },
