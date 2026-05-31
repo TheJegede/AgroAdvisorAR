@@ -24,11 +24,12 @@ redeploys via orphan-branch force-push to the HF git remote. Accidental duplicat
 Vercel projects (`agro-advisor-ar*`) cleaned up. Exact redeploy commands: CLAUDE.md
 Priorities #2.
 
-**NEXT SESSION — improve answer quality without continuing failed v3 retrieval plumbing.**
-Retrieval v3 Modules 0-2 were tested on 2026-05-31 and are **stopped as a production path**:
-the metadata-rich/contextual v3 corpus underperformed current v2/prod even after weak-gold
-filtering. Keep the eval/audit tools, but do not continue v3 Modules 3-7 unless a new corpus
-candidate first beats the current gate.
+✅ **CITATION GUARD OVERHAUL SHIPPED + merged to `main` 2026-05-31 (Phases 1–6).** The broken
+MiniLM NLI judge is retired; an LLM-as-judge (provider chain) scores groundedness, suppression
+is surgical + rate-safe, and `Document N:` is killed at the prompt source. Effect (local-Qwen gen
++ Gemini judge, gte, n=9): **suppression 67%→11%, faithfulness 88.9%, confidence_score 0.64–1.00
+mean**. Backend redeployed to HF. **NEXT SESSION = (a) OWNER verify HF Space env points at gte;
+(b) prod-like 70B answer eval — now unblocked (the guard no longer corrupts correctness numbers).**
 
 ✅ **FIXED + shipped 2026-05-30 (`f553863`): GENERAL_AG zero-retrieval bug.**
 `IN_SCOPE_GENERAL_AG` mapped to `None`, which made Pinecone search the empty
@@ -44,18 +45,9 @@ hybrid BM25 (flat), query rewrite (wash), HyDE (worse), ms-marco reranker (regre
 Real next levers are NOT retrieval technique → see PROGRESS.md. Two confounds make absolute
 numbers unreliable (single-gold metric + local-Qwen eval vs prod Groq-70b).
 
-✅ **1B TITLE-METADATA v2 INDEX BUILT 2026-05-31 (cutover pending).** Rebuilt
-`agroar-prod-gte-v2` clean (512-char chunks + `document_title` metadata, 20,546 vectors)
-so the title-match citation guard (`rag.py`) can validate real titles → un-floor "Low"
-confidence. Retrieval eval hit@5 0.25 = baseline (no regression, as expected — titles aren't
-embedded). **Only task left = gated prod cutover, BLOCKED on Groq TPD** (needs an answer-eval).
-Plan: `docs/superpowers/plans/2026-05-30-retrieval-rechunk-titles.md`. Commit `f8d4525`.
-
-⛔ **RETRIEVAL v3 STOPPED 2026-05-31.** Module 0 harness is useful; Modules 1-2 produced a
-deterministic section-aware/contextual corpus, but eval failed: full remapped v3 contextual
-`hit@5=0.160`; after filtering 49 weak gold targets, best v3 ablation was plain
-`source_text` at `hit@5=0.218`, still below current v2/prod. Do not proceed to hybrid
-candidate retrieval/reranking/Small2Big/cutover on this v3 corpus.
+📌 **PENDING — gte title/section metadata.** The live `agroar-prod-gte` index stores only
+`{text, namespace}` (no `document_title`), so the title-match guard can't validate citations.
+Re-ingest gte WITH title metadata (preserve the winning 512-char chunking) so it can. See PROGRESS.md.
 
 Still open (next levers, evidence-ranked):
 - **Generation model 7B → 70B** — biggest unmeasured correctness lever (eval uses local
@@ -63,8 +55,6 @@ Still open (next levers, evidence-ranked):
 - **Corpus-coverage audit** — 82% faithful + 40% correct ⇒ precise answers (rates/products)
   may not be IN the corpus. Audit which gold answers have a supporting chunk.
 - **Trustworthy eval** — prod-70b gen + better/human judge before further optimization.
-- **Conservative v2.5 only** — preserve 512-character source-text embeddings and current
-  prod retrieval defaults; metadata/display changes are acceptable only if eval-gated.
 
 Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
 handling).
@@ -172,7 +162,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | **Prod smoke test passed** — in-browser: register/login, EN rice query → grounded cited advisory (`agroar-prod-gte` populated), county/soil/weather context, persistence, Spanish translate-bridge round-trip (ES ≡ EN). `FRONTEND_URL` + prod migrations 005/007/008 applied. | Deployment | 2026-05-30 |
 | Chat welcome chips re-localize on language toggle — `ChatPage.jsx` `useMemo` dep fixed from `[]` → `[lang]` (chips were frozen to mount-time language) | Frontend UI | 2026-05-30 |
 | Retrieval-mechanics research arc — 5 levers tested + rejected (token-chunk reverted `f07b523`, hybrid BM25, query rewrite, HyDE, ms-marco reranker); deployed config wins (40% corr/82.5% faith); reusable free local-Qwen A/B eval tooling left in tree | Core RAG | 2026-05-30 |
-| 1B title-metadata index `agroar-prod-gte-v2` built clean (512-char + `document_title`, 20,546 vectors); retrieval no-regression (hit@5 0.25); cutover gated on Groq TPD (`f8d4525`) | Core RAG | 2026-05-31 |
+| Citation guard overhaul — LLM-as-judge replaces broken NLI, surgical rate-safe suppression, cite-by-title; suppression 67%→11%, faith 88.9%; merged to main + HF redeployed (`3a0cd8a`..`ab78673`) | Core RAG | 2026-05-31 |
 
 ---
 
