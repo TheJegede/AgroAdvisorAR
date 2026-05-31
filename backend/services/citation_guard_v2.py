@@ -156,6 +156,65 @@ def _lexical_support(claim: str, chunks: list[str]) -> float:
     return best
 
 
+_JUDGE_PROMPT = """You are auditing an agricultural advisory for groundedness.
+Given the EVIDENCE passages and a list of CLAIMS, label each claim:
+- ENTAILED: the evidence supports the claim (paraphrase and equivalent numbers count).
+- NEUTRAL: the evidence neither supports nor contradicts it.
+- CONTRADICTED: the evidence states the opposite (e.g. a different rate/product, a negation).
+Return ONLY a JSON array, one object per claim, same order:
+[{{"claim": "...", "label": "ENTAILED|NEUTRAL|CONTRADICTED", "score": 0.0-1.0}}]
+score = your confidence the claim is supported (1.0 fully supported, 0.0 unsupported/contradicted).
+
+EVIDENCE:
+{evidence}
+
+CLAIMS:
+{claims}
+"""
+
+
+def _judge_providers():
+    # Same ordering as decomposition: reuse the configured provider chain.
+    return _decompose_providers()
+
+
+async def judge_claims_llm(claims: list[str], chunks: list[str]) -> list[ClaimResult]:
+    """Score claims for groundedness with an LLM judge (provider chain), with a
+    lexical backstop so specific grounded numbers/products are never under-scored."""
+    if not claims:
+        return []
+    if not chunks:
+        return [ClaimResult(claim=c, label="NEUTRAL", score=0.0) for c in claims]
+    evidence = "\n---\n".join(ch[:800] for ch in chunks[:3])
+    claims_block = "\n".join(f"{i+1}. {c}" for i, c in enumerate(claims))
+    prompt = _JUDGE_PROMPT.format(evidence=evidence, claims=claims_block)
+    for llm in _judge_providers():
+        if llm is None:
+            continue
+        try:
+            resp = await llm.ainvoke([HumanMessage(content=prompt)])
+            raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", resp.content.strip(), flags=re.MULTILINE).strip()
+            parsed = json.loads(raw)
+            out: list[ClaimResult] = []
+            for claim, obj in zip(claims, parsed):
+                label = obj.get("label", "NEUTRAL")
+                if label not in _NLI_LABELS:
+                    label = "NEUTRAL"
+                llm_score = float(obj.get("score", 0.0))
+                lexical = _lexical_support(claim, chunks[:3])
+                score = max(llm_score, lexical)
+                # Lexical backstop also vetoes false contradictions on restated content.
+                if label == "CONTRADICTED" and lexical >= LEXICAL_CONTRADICTION_GUARD:
+                    label = "NEUTRAL"
+                out.append(ClaimResult(claim=claim, label=label, score=score))
+            if len(out) == len(claims):
+                return out
+        except Exception as e:
+            logger.warning("LLM groundedness judge failed, trying next: %s", str(e)[:150])
+    # Fallback: legacy NLI per-claim.
+    return [verify_claim(c, chunks) for c in claims]
+
+
 def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
     """Score a single claim's groundedness against retrieved chunks.
 
@@ -257,9 +316,12 @@ async def verify_answer(answer: str, chunks: list[dict]) -> dict:
     if not claims_text:
         return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
 
-    results = await asyncio.to_thread(
-        lambda: [verify_claim(c, chunk_texts) for c in claims_text]
-    )
+    if config.GROUNDEDNESS_JUDGE == "llm":
+        results = await judge_claims_llm(claims_text, chunk_texts)
+    else:
+        results = await asyncio.to_thread(
+            lambda: [verify_claim(c, chunk_texts) for c in claims_text]
+        )
 
     confidence_score = score_answer(results)
     return {

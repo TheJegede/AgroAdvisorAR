@@ -67,3 +67,7 @@ NLI_CITATION_GUARD_ENABLED = os.environ.get("NLI_CITATION_GUARD_ENABLED", "1") n
     "false",
     "False",
 }
+
+# Groundedness judge: "llm" (default) reuses the provider chain; "nli" keeps the
+# legacy CrossEncoder for offline/no-API runs.
+GROUNDEDNESS_JUDGE = os.environ.get("GROUNDEDNESS_JUDGE", "llm")

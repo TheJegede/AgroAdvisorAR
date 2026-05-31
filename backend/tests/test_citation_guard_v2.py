@@ -428,3 +428,46 @@ def test_postprocess_suppresses_body_below_threshold(monkeypatch):
     assert result.recommended_actions == []
     assert len(result.warnings) == 1
     assert "Contact" in result.warnings[0]
+
+
+def test_judge_claims_llm_parses_labels_and_scores(monkeypatch):
+    mod = importlib.import_module("services.citation_guard_v2")
+
+    class FakeResp:
+        content = (
+            '[{"claim":"GPM = D x D x L estimates flow.","label":"ENTAILED","score":0.9},'
+            '{"claim":"Apply 999 lb N/ac.","label":"CONTRADICTED","score":0.0}]'
+        )
+
+    class FakeLLM:
+        async def ainvoke(self, messages):
+            return FakeResp()
+
+    monkeypatch.setattr(mod, "_judge_providers", lambda: [FakeLLM()])
+    import asyncio
+    results = asyncio.run(mod.judge_claims_llm(
+        ["GPM = D x D x L estimates flow.", "Apply 999 lb N/ac."],
+        ["GPM = D x D x L. Apply 150 lb N/ac at green-up."],
+    ))
+    assert results[0].label == "ENTAILED" and results[0].score >= 0.8
+    assert results[1].label == "CONTRADICTED"
+
+
+def test_verify_answer_uses_llm_judge_when_configured(monkeypatch):
+    mod = importlib.import_module("services.citation_guard_v2")
+    import asyncio
+
+    async def fake_decompose(answer):
+        return ["claim one"]
+
+    async def fake_judge(claims, chunks):
+        from models.advisory import ClaimResult
+        return [ClaimResult(claim="claim one", label="ENTAILED", score=0.88)]
+
+    monkeypatch.setattr(mod, "decompose_claims", fake_decompose)
+    monkeypatch.setattr(mod, "judge_claims_llm", fake_judge)
+    monkeypatch.setattr(mod.config, "GROUNDEDNESS_JUDGE", "llm")
+
+    out = asyncio.run(mod.verify_answer("some answer", [{"snippet": "evidence"}]))
+    assert out["confidence_score"] == 0.88
+    assert out["claim_verification"][0].label == "ENTAILED"
