@@ -100,17 +100,37 @@ def test_score_answer_partial_grounding_nonzero():
     assert abs(mod.score_answer(claims) - 0.3) < 0.001
 
 
-def test_score_answer_contradiction_forces_suppression():
-    # P0.1: any CONTRADICTED claim forces 0.0 — a contradicted fact must never be
-    # diluted by grounded/neutral claims and shipped.
+def test_score_answer_drops_single_contradiction_keeps_rest():
+    # One contradicted claim among grounded ones should NOT zero the whole answer;
+    # the contradicted claim is dropped and the rest scored.
     mod = importlib.import_module("services.citation_guard_v2")
     from models.advisory import ClaimResult
     claims = [
-        ClaimResult(claim="A", label="ENTAILED", score=0.9),
-        ClaimResult(claim="B", label="NEUTRAL", score=0.6),
-        ClaimResult(claim="C", label="CONTRADICTED", score=0.05),
+        ClaimResult(claim="A grounded.", label="ENTAILED", score=0.9),
+        ClaimResult(claim="B grounded.", label="ENTAILED", score=0.8),
+        ClaimResult(claim="C off-topic.", label="CONTRADICTED", score=0.0),
     ]
-    # mean would be ~0.52 (would pass); contradiction override must return 0.0
+    score = mod.score_answer(claims)
+    assert score > 0.2  # not suppressed; ~mean(0.9, 0.8)
+
+
+def test_score_answer_all_contradicted_suppresses():
+    mod = importlib.import_module("services.citation_guard_v2")
+    from models.advisory import ClaimResult
+    claims = [ClaimResult(claim="x", label="CONTRADICTED", score=0.0),
+              ClaimResult(claim="y", label="CONTRADICTED", score=0.0)]
+    assert mod.score_answer(claims) == 0.0
+
+
+def test_score_answer_safety_critical_contradiction_suppresses():
+    # A contradiction on a rate/unit (e.g. wrong lb/ac) must fully suppress even
+    # among grounded claims — a wrong chemical rate can harm a crop.
+    mod = importlib.import_module("services.citation_guard_v2")
+    from models.advisory import ClaimResult
+    claims = [
+        ClaimResult(claim="Scout the field weekly.", label="ENTAILED", score=0.9),
+        ClaimResult(claim="Apply 999 lb N/ac.", label="CONTRADICTED", score=0.0),
+    ]
     assert mod.score_answer(claims) == 0.0
 
 

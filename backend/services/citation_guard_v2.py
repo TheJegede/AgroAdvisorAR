@@ -266,21 +266,33 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
     return ClaimResult(claim=claim, label=label, score=score)
 
 
-def score_answer(results: list[ClaimResult]) -> float:
-    """Groundedness = mean entailment probability across all claims, with a hard
-    contradiction override.
+# A CONTRADICTED claim that names a rate/unit/number is safety-critical: shipping
+# a wrong chemical or fertilizer rate can harm a crop or flock, so it still forces
+# full suppression rather than being surgically dropped. (Product-name detection
+# is deferred — numeric rates/units are the concrete, testable safety signal.)
+_SAFETY_CRITICAL_RE = re.compile(
+    r"\d|\b(?:lb|lbs|oz|qt|qts|gal|gpa|pt|pts|fl\s*oz)\b|/\s*ac", re.IGNORECASE
+)
 
-    Uses each claim's entailment probability (not only claims hard-labeled
-    ENTAILED) so generic-but-correct advice is not over-suppressed. BUT if any
-    claim is labeled CONTRADICTED, return 0.0 to force suppression: a contradicted
-    fact (e.g. a wrong chemical rate) must never be diluted by grounded/neutral
-    claims in the mean and shipped to a farmer. Empty list → 1.0.
-    """
+
+def _is_safety_critical_contradiction(result: ClaimResult) -> bool:
+    return result.label == "CONTRADICTED" and bool(_SAFETY_CRITICAL_RE.search(result.claim))
+
+
+def score_answer(results: list[ClaimResult]) -> float:
+    """Groundedness = mean support of NON-contradicted claims. A contradicted
+    claim is dropped (surgically removed from the advisory upstream), not used to
+    zero an otherwise grounded answer — UNLESS it is safety-critical (names a
+    rate/unit/number), in which case the whole answer is suppressed because a
+    wrong rate must never ship. Empty list → 1.0. All claims contradicted → 0.0."""
     if not results:
         return 1.0
-    if any(r.label == "CONTRADICTED" for r in results):
+    if any(_is_safety_critical_contradiction(r) for r in results):
         return 0.0
-    return float(sum(r.score for r in results) / len(results))
+    kept = [r for r in results if r.label != "CONTRADICTED"]
+    if not kept:
+        return 0.0
+    return float(sum(r.score for r in kept) / len(kept))
 
 
 def escalation_cue(county_fips: str) -> Optional[str]:
