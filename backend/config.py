@@ -71,3 +71,9 @@ NLI_CITATION_GUARD_ENABLED = os.environ.get("NLI_CITATION_GUARD_ENABLED", "1") n
 # Groundedness judge: "llm" (default) reuses the provider chain; "nli" keeps the
 # legacy CrossEncoder for offline/no-API runs.
 GROUNDEDNESS_JUDGE = os.environ.get("GROUNDEDNESS_JUDGE", "llm")
+
+# Citation-guard operating thresholds (recalibrated from per-namespace eval data).
+# Below ESCALATION → attach an Extension-agent escalation; below SUPPRESSION → blank
+# the body (force Low). Env-overridable so calibration doesn't need a code change.
+GUARD_ESCALATION_THRESHOLD = float(os.environ.get("GUARD_ESCALATION_THRESHOLD", "0.4"))
+GUARD_SUPPRESSION_THRESHOLD = float(os.environ.get("GUARD_SUPPRESSION_THRESHOLD", "0.2"))

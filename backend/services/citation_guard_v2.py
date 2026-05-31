@@ -18,9 +18,9 @@ from models.advisory import ClaimResult
 
 logger = logging.getLogger(__name__)
 
-# Thresholds (tune during eval)
-ESCALATION_THRESHOLD = 0.4
-SUPPRESSION_THRESHOLD = 0.2
+# Thresholds — env-overridable via config (GUARD_*_THRESHOLD) for eval calibration.
+ESCALATION_THRESHOLD = config.GUARD_ESCALATION_THRESHOLD
+SUPPRESSION_THRESHOLD = config.GUARD_SUPPRESSION_THRESHOLD
 # A CONTRADICTED argmax from the small NLI model is only trusted when the
 # contradiction probability clears this bar. score_answer hard-zeroes the WHOLE
 # answer on any contradiction, so marginal/false contradictions on grounded

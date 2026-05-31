@@ -491,3 +491,24 @@ def test_verify_answer_uses_llm_judge_when_configured(monkeypatch):
     out = asyncio.run(mod.verify_answer("some answer", [{"snippet": "evidence"}]))
     assert out["confidence_score"] == 0.88
     assert out["claim_verification"][0].label == "ENTAILED"
+
+
+def test_guard_thresholds_env_overridable(monkeypatch):
+    """Config exposes env-overridable thresholds; guard module constants derive from config."""
+    monkeypatch.setenv("GUARD_SUPPRESSION_THRESHOLD", "0.15")
+    monkeypatch.setenv("GUARD_ESCALATION_THRESHOLD", "0.45")
+
+    import config as _config
+    importlib.reload(_config)
+    assert _config.GUARD_SUPPRESSION_THRESHOLD == 0.15
+    assert _config.GUARD_ESCALATION_THRESHOLD == 0.45
+
+    guard = importlib.reload(importlib.import_module("services.citation_guard_v2"))
+    assert guard.SUPPRESSION_THRESHOLD == 0.15
+    assert guard.ESCALATION_THRESHOLD == 0.45
+
+    # Restore defaults so other tests are unaffected.
+    monkeypatch.delenv("GUARD_SUPPRESSION_THRESHOLD")
+    monkeypatch.delenv("GUARD_ESCALATION_THRESHOLD")
+    importlib.reload(_config)
+    importlib.reload(importlib.import_module("services.citation_guard_v2"))
