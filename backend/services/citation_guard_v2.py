@@ -1,4 +1,5 @@
-"""NLI-based claim verification for F2 citation guard."""
+"""Groundedness verification for the F2 citation guard (LLM-as-judge by default,
+MiniLM NLI as offline fallback)."""
 from __future__ import annotations
 
 import asyncio
@@ -211,8 +212,8 @@ async def judge_claims_llm(claims: list[str], chunks: list[str]) -> list[ClaimRe
                 return out
         except Exception as e:
             logger.warning("LLM groundedness judge failed, trying next: %s", str(e)[:150])
-    # Fallback: legacy NLI per-claim.
-    return [verify_claim(c, chunks) for c in claims]
+    # Fallback: legacy NLI per-claim (sync CrossEncoder → run off the event loop).
+    return await asyncio.to_thread(lambda: [verify_claim(c, chunks) for c in claims])
 
 
 def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
@@ -299,7 +300,8 @@ def escalation_cue(county_fips: str) -> Optional[str]:
 
 
 async def verify_answer(answer: str, chunks: list[dict]) -> dict:
-    """Orchestrate claim decomposition, NLI scoring, and escalation lookup.
+    """Orchestrate claim decomposition, groundedness scoring (LLM judge or NLI
+    per config), and escalation lookup.
 
     Args:
         answer: Farmer-facing prose (problem_summary + recommended_actions joined).
