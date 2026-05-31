@@ -119,6 +119,8 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
   `[RETRIEVED DOCUMENT CONTEXT]` leaks; prompt header unbracketed; titleless docs get
   `Arkansas Extension source N` handle; `SuppressedNotice` + i18n EN+ES; AdvisoryCard branches on
   `suppressed`, gates `EscalationCard`. 100/101 backend, 26/26 frontend, lint clean. 2026-05-31
+- **Chat delete functionality** — enabled deleting chat sessions and cascading messages in backend services, exposed DELETE route, added trash icon next to each chat item in sidebar with confirmation dialog, added tests. 2026-05-31
+
 
 ---
 

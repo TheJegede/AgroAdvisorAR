@@ -165,6 +165,8 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | Retrieval-mechanics research arc — 5 levers tested + rejected (token-chunk reverted `f07b523`, hybrid BM25, query rewrite, HyDE, ms-marco reranker); deployed config wins (40% corr/82.5% faith); reusable free local-Qwen A/B eval tooling left in tree | Core RAG | 2026-05-30 |
 | Citation guard overhaul — LLM-as-judge replaces broken NLI, surgical rate-safe suppression, cite-by-title; suppression 67%→11%, faith 88.9%; merged to main + HF redeployed (`3a0cd8a`..`ab78673`) | Core RAG | 2026-05-31 |
 | Informational routing (Defect 5) — branched prompt/intent classification, updated advisory model, gated front-end rendering, added backend tests | Core RAG | 2026-05-31 |
+| Chat delete functionality — enabled deleting chat sessions and cascading messages in backend services, exposed DELETE route, added trash icon next to each chat item in sidebar with confirmation dialog, added tests | Frontend UI + Core RAG | 2026-05-31 |
+
 
 
 ---
