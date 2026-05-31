@@ -64,14 +64,19 @@ def build_system_prompt(
         parts.append(awd_context)
         parts.append("")
 
-    # Retrieved document context
+    # Retrieved document context. The header is intentionally NOT wrapped in [brackets]
+    # so the model can't mistake it for a citable title.
     if retrieved_docs:
-        parts.append("[RETRIEVED DOCUMENT CONTEXT]")
-        for doc in retrieved_docs:
+        parts.append("=== RETRIEVED CONTEXT (cite each passage by its [bracketed] title) ===")
+        for i, doc in enumerate(retrieved_docs, 1):
             meta = doc.metadata
-            title = meta.get("document_title", "Unknown")
+            title = meta.get("document_title") or ""
             section = meta.get("section_heading", "")
             label = f"{title} — {section}".strip(" —")
+            if not label:
+                # Titleless gte index stores only {text, namespace}. Give a stable,
+                # citable handle rather than "[Unknown]", which the model echoes verbatim.
+                label = f"Arkansas Extension source {i}"
             parts.append(f"[{label}] {doc.page_content}")
         parts.append("")
 

@@ -33,3 +33,30 @@ def test_output_instructions_cite_by_title_not_document_number():
     text = OUTPUT_INSTRUCTIONS.lower()
     assert "title" in text
     assert "document n" not in text and "document number" not in text
+
+
+# --- Task 2.1: unbracket header + stable titleless handle ----------------
+
+
+def _build(retrieved_docs=None):
+    return build_system_prompt(
+        soil_context={"available": False}, weather_context={"available": False},
+        retrieved_docs=retrieved_docs if retrieved_docs is not None
+            else [_doc("Rice Irrigation Guide", "Flow Rate", "GPM = D x D x L.")],
+        session_history=[], language="English", is_safety_critical=False,
+        county_name="Arkansas",
+    )
+
+
+def test_prompt_header_is_not_bracketed():
+    # The context header must NOT be wrapped in [brackets] — the model echoes any
+    # bracketed token as if it were a citable document title.
+    out = _build()
+    assert "[RETRIEVED DOCUMENT CONTEXT]" not in out
+
+
+def test_titleless_docs_get_stable_handle_not_unknown():
+    titleless = [Document(page_content="Rice blast control info.", metadata={})]
+    out = _build(retrieved_docs=titleless)
+    assert "[Unknown]" not in out
+    assert "Arkansas Extension source 1" in out
