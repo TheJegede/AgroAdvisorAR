@@ -15,8 +15,7 @@
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **CITATION GUARD OVERHAUL = SHIPPED + merged to `main` 2026-05-31.** Backend redeployed to HF.
-| Citation guard overhaul — LLM-as-judge replaces broken NLI, surgical rate-safe suppression, cite-by-title; suppression 67%→11%, faith 88.9%; merged to main + HF redeployed (`3a0cd8a`..`ab78673`) | Core RAG | 2026-05-31 |
-| **Response rendering defects (M1+M2+M3)** — `suppressed` flag on AdvisoryResponse; confidence label reconciliation with guard score (High→Medium in [0.2,0.4), Low below 0.2); `_strip_scaffolding` kills `[RETRIEVED DOCUMENT CONTEXT]` leak; prompt context header unbracketed; titleless docs get `Arkansas Extension source N` handle; `SuppressedNotice` component + i18n EN+ES; AdvisoryCard branches on `suppressed` and gates EscalationCard. All TDD, 4 commits. Backend 14/14, frontend 26/26, lint 0 errors. (`685a202`..`b0ff6c4`) | Core RAG + Frontend UI | 2026-05-31 |
+- **RESPONSE RENDERING DEFECTS (M1+M2+M3) = SHIPPED 2026-05-31 (session 2).** `suppressed` flag + confidence label reconciliation + `_strip_scaffolding` + prompt unbracket + `SuppressedNotice` + AdvisoryCard branch. Backend 100/101 (1 pre-existing stale), frontend 26/26, lint clean. Pushed to `main` → Vercel auto-deployed. (`685a202`..`1a196db`)
   The broken MiniLM NLI judge is retired from the hot path; an **LLM-as-judge** (provider chain)
   now scores groundedness, suppression is **surgical + rate-safe**, and `Document N:` scaffolding
   is killed at the prompt source. **Effect (local-Qwen gen + Gemini judge, gte, n=9): suppression
@@ -113,6 +112,13 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 - `fe25f28` (1A) title-match guard skips titleless gte index → defers to NLI (un-floors confidence)
 - `85986c9` split `AdvisoryDraft` (LLM) vs `AdvisoryResponse` (guard fields) — fixed hallucinated
   verifications + gen crashes on enum typos
+- `3a0cd8a`..`ab78673` **Citation guard overhaul** — LLM-as-judge, surgical suppression, cite-by-title;
+  suppression 67%→11%, faithfulness 88.9%; prod-deployed 2026-05-31
+- `685a202`..`1a196db` **Response rendering defects (M1+M2+M3)** — `suppressed` flag; confidence label
+  reconciliation (High→Medium in [0.2,0.4), Low below 0.2); `_strip_scaffolding` kills
+  `[RETRIEVED DOCUMENT CONTEXT]` leaks; prompt header unbracketed; titleless docs get
+  `Arkansas Extension source N` handle; `SuppressedNotice` + i18n EN+ES; AdvisoryCard branches on
+  `suppressed`, gates `EscalationCard`. 100/101 backend, 26/26 frontend, lint clean. 2026-05-31
 
 ---
 

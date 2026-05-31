@@ -39,16 +39,16 @@ Run all backend tests from `backend/`: `cd backend && pytest`.
 
 > **Reuse existing helpers in this test file:** `_make_advisory(citations_titles)` (builds an `AdvisoryResponse` with `confidence="High"`), `_MetaDoc(metadata, page_content="")`, and `_run_postprocess(rag, result, docs)` (calls `_postprocess_async` with `county_fips="05001"`). Vary confidence with `result.model_copy(update={"confidence": ...})`. Patch the guard with monkeypatch + an async stub (no `AsyncMock` import needed).
 
-- [ ] **Step 1: Write the failing test** — append to `backend/tests/test_rag_retrieval.py`:
+- [x] **Step 1: Write the failing test** — append to `backend/tests/test_rag_retrieval.py`:
 ```python
 def test_advisory_response_has_suppressed_default_false():
     a = _make_advisory([])
     assert a.suppressed is False
 ```
-- [ ] **Step 2: Run, verify it fails**
+- [x] **Step 2: Run, verify it fails**
 Run: `cd backend && pytest tests/test_rag_retrieval.py::test_advisory_response_has_suppressed_default_false -v`
 Expected: FAIL — `AdvisoryResponse` has no attribute/field `suppressed`.
-- [ ] **Step 3: Implement** — in `backend/models/advisory.py`, add to `AdvisoryResponse`:
+- [x] **Step 3: Implement** — in `backend/models/advisory.py`, add to `AdvisoryResponse`:
 ```python
 class AdvisoryResponse(AdvisoryDraft):
     # F2 guard-computed fields — filled by the citation guard, NOT the LLM.
@@ -57,10 +57,10 @@ class AdvisoryResponse(AdvisoryDraft):
     escalation: Optional[str] = None
     suppressed: bool = False  # True when the guard blanked the body (score < SUPPRESSION)
 ```
-- [ ] **Step 4: Run, verify it passes**
+- [x] **Step 4: Run, verify it passes**
 Run: `cd backend && pytest tests/test_rag_retrieval.py::test_advisory_response_has_suppressed_default_false -v`
 Expected: PASS.
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add backend/models/advisory.py backend/tests/test_rag_retrieval.py
 git commit -m "feat(model): add suppressed flag to AdvisoryResponse"
@@ -68,7 +68,7 @@ git commit -m "feat(model): add suppressed flag to AdvisoryResponse"
 
 ### Task 1.2: Reconcile confidence label with guard score + set suppressed
 
-- [ ] **Step 1: Write the failing tests** — append to `backend/tests/test_rag_retrieval.py` (add `import importlib` is already at top; reuse `_make_advisory`/`_MetaDoc`/`_run_postprocess`):
+- [x] **Step 1: Write the failing tests** — append to `backend/tests/test_rag_retrieval.py`
 ```python
 def _patch_guard(rag, monkeypatch, score):
     """Force the NLI guard on and stub verify_answer to a fixed score."""
@@ -107,10 +107,18 @@ def test_high_score_keeps_llm_confidence(monkeypatch):
     assert out.confidence == "High"
     assert out.suppressed is False
 ```
-- [ ] **Step 2: Run, verify they fail**
+- [x] **Step 2: Run, verify they fail**
 Run: `cd backend && pytest tests/test_rag_retrieval.py -k "suppression_forces_low or escalation_band or high_score_keeps" -v`
 Expected: FAIL — `suppression_forces_low` gets `confidence=="High"` and no `suppressed`; `escalation_band` gets `"High"`; `warnings` non-empty.
-- [ ] **Step 3: Implement** — in `backend/services/rag.py`, replace the Step-3 tail (currently ~247-263) with:
+- [x] **Step 3: Implement** — in `backend/services/rag.py`, replace the Step-3 tail (currently ~247-263) with the reconciliation + suppression block.
+- [x] **Step 4: Run, verify they pass**
+Run: `cd backend && pytest tests/test_rag_retrieval.py -k "suppression_forces_low or escalation_band or high_score_keeps" -v`
+Expected: PASS (3 tests).
+- [x] **Step 5: Commit**
+```bash
+git add backend/services/rag.py backend/tests/test_rag_retrieval.py
+git commit -m "fix(guard): reconcile confidence label with score; stop duplicating escalation"
+```
 ```python
     update: dict = {
         "confidence_score": confidence_score,
@@ -152,7 +160,7 @@ git commit -m "fix(guard): reconcile confidence label with score; stop duplicati
 
 ### Task 1.3: Scrub the `[RETRIEVED DOCUMENT CONTEXT]` placeholder (defense in depth)
 
-- [ ] **Step 1: Write the failing test** — append to `backend/tests/test_rag_retrieval.py`:
+- [x] **Step 1: Write the failing test** — append to `backend/tests/test_rag_retrieval.py`:
 ```python
 import importlib  # already present at module top; rag = importlib.import_module("services.rag")
 
@@ -163,10 +171,24 @@ def test_strip_scaffolding_removes_context_header():
     assert rag._strip_scaffolding("RETRIEVED DOCUMENT CONTEXT") == ""
     assert rag._strip_scaffolding("Document 3: rice guide") == "rice guide"   # still strips Document N:
 ```
-- [ ] **Step 2: Run, verify it fails**
+- [x] **Step 2: Run, verify it fails**
 Run: `cd backend && pytest tests/test_rag_retrieval.py::test_strip_scaffolding_removes_context_header -v`
 Expected: FAIL — `rag` has no attribute `_strip_scaffolding`.
-- [ ] **Step 3: Implement** — in `backend/services/rag.py`, after `_strip_doc_prefix` (~32) add:
+- [x] **Step 3: Implement** — add `_PLACEHOLDER_RE` + `_strip_scaffolding` in `backend/services/rag.py` after `_strip_doc_prefix`; replace all `_strip_doc_prefix(` calls with `_strip_scaffolding(`.
+- [x] **Step 4: Run, verify it passes + no regressions**
+Run: `cd backend && pytest tests/test_rag_retrieval.py -v`
+Expected: PASS including the existing title-guard tests.
+- [x] **Step 5: Commit**
+```bash
+git add backend/services/rag.py backend/tests/test_rag_retrieval.py
+git commit -m "fix(guard): scrub leaked [RETRIEVED DOCUMENT CONTEXT] header from prose and citations"
+```
+
+### Task 1.4: Full backend suite gate
+
+- [x] **Step 1: Run the full suite**
+Run: `cd backend && pytest`
+Result: 100/101 — only the one documented stale fail `test_citation_guard_v2.py::test_verifiable_text_includes_all_advisory_fields` remains. Updated `test_postprocess_suppresses_body_below_threshold` to match new design (`warnings=[]`, `suppressed=True`, escalation in `result.escalation`).
 ```python
 _PLACEHOLDER_RE = re.compile(r"\[?\s*RETRIEVED DOCUMENT CONTEXT\s*\]?", re.IGNORECASE)
 
@@ -202,7 +224,19 @@ Expected: all green EXCEPT the one documented stale fail `test_citation_guard_v2
 
 ### Task 2.1: Non-bracketed header + stable titleless handle
 
-- [ ] **Step 1: Write the failing tests** — append to `backend/tests/test_prompt.py`. `test_prompt.py` does NOT have a `_build` helper, so define one here (reuses the existing `Document` + `build_system_prompt` imports at the top of the file):
+- [x] **Step 1: Write the failing tests** — append to `backend/tests/test_prompt.py`.
+- [x] **Step 2: Run, verify they fail**
+Run: `cd backend && pytest tests/test_prompt.py -k "header_is_not_bracketed or stable_handle" -v`
+Expected: FAIL — bracketed header present; titleless doc renders `[Unknown]`.
+- [x] **Step 3: Implement** — in `backend/utils/prompt.py` replace the `if retrieved_docs:` block (~67-76) with non-bracketed header and numbered titleless label.
+- [x] **Step 4: Run, verify all prompt tests pass**
+Run: `cd backend && pytest tests/test_prompt.py -v`
+Expected: PASS including `test_prompt_does_not_label_documents_numerically` and `test_prompt_includes_output_instructions`.
+- [x] **Step 5: Commit**
+```bash
+git add backend/utils/prompt.py backend/tests/test_prompt.py
+git commit -m "fix(prompt): unbracket context header; give titleless docs a citable handle"
+```
 ```python
 def _build(retrieved_docs=None):
     return build_system_prompt(
@@ -272,7 +306,19 @@ Run from `frontend/`: `npm run lint && npx vitest run`.
 
 ### Task 3.1: SuppressedNotice component
 
-- [ ] **Step 1: Write the failing test** — `frontend/src/components/advisory/SuppressedNotice.test.js`:
+- [x] **Step 1: Write the failing test** — `frontend/src/components/advisory/SuppressedNotice.test.jsx` (project uses call-as-function pattern, no `@testing-library/react`).
+- [x] **Step 2: Run, verify it fails**
+Run: `cd frontend && npx vitest run src/components/advisory/SuppressedNotice.test.jsx`
+Expected: FAIL — module `./SuppressedNotice` not found.
+- [x] **Step 3a: Add i18n keys** — in `frontend/src/constants/i18n.js`, added `suppressedTitle` + `suppressedBody` to both `en` and `es` objects.
+- [x] **Step 3b: Implement component** — `frontend/src/components/advisory/SuppressedNotice.jsx` created.
+- [x] **Step 4: Run, verify it passes**
+Result: 3/3 PASS.
+- [x] **Step 5: Commit**
+```bash
+git add frontend/src/components/advisory/SuppressedNotice.jsx frontend/src/components/advisory/SuppressedNotice.test.jsx frontend/src/constants/i18n.js
+git commit -m "feat(ui): add SuppressedNotice for withheld answers"
+```
 ```jsx
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
@@ -330,7 +376,17 @@ git commit -m "feat(ui): add SuppressedNotice for withheld answers"
 
 ### Task 3.2: Branch AdvisoryCard on `suppressed`
 
-- [ ] **Step 1: Write the failing test** — `frontend/src/components/advisory/AdvisoryCard.test.js` (create or extend):
+- [x] **Step 1: Write the failing test** — `frontend/src/components/advisory/AdvisoryCard.test.jsx` (call-as-function + `vi.mock` pattern).
+- [x] **Step 2: Run, verify it fails**
+Expected: FAIL — suppressed branch not implemented.
+- [x] **Step 3: Implement** — imported `SuppressedNotice`; replaced body block with `{response.suppressed ? <SuppressedNotice .../> : <> body sections </>}`; gated `EscalationCard` with `{!response.suppressed && ...}`.
+- [x] **Step 4: Run, verify it passes + lint**
+Result: 26/26 frontend tests PASS, lint 0 errors.
+- [x] **Step 5: Commit**
+```bash
+git add frontend/src/components/advisory/AdvisoryCard.jsx frontend/src/components/advisory/AdvisoryCard.test.jsx
+git commit -m "fix(ui): render suppressed answers as a withheld-answer notice"
+```
 ```jsx
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
