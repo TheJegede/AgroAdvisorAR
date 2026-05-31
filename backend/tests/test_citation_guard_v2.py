@@ -379,6 +379,24 @@ def test_verifiable_text_strips_document_prefix():
     assert "soybeans ch 13" in text  # real content preserved
 
 
+def test_verify_claim_high_lexical_overlap_not_contradicted(monkeypatch):
+    # A claim that restates the chunk (high content-token overlap) must not be
+    # honored as CONTRADICTED even if the NLI is confident — that pattern is the
+    # model's systematic false positive on grounded technical claims.
+    mod = importlib.import_module("services.citation_guard_v2")
+    fake_scores = np.array([[0.70, 0.15, 0.15]])  # confident CONTRADICTED argmax
+    mock_model = MagicMock()
+    mock_model.predict.return_value = fake_scores
+    monkeypatch.setattr(mod, "_nli_model", mock_model)
+
+    # claim restates the chunk almost verbatim → lexical overlap ~1.0
+    result = mod.verify_claim(
+        "The formula GPM = D x D x L estimates flow rate.",
+        ["GPM = D x D x L. Formula: gallons per minute estimates flow rate."],
+    )
+    assert result.label != "CONTRADICTED"
+
+
 def test_postprocess_suppresses_body_below_threshold(monkeypatch):
     import asyncio
     rag = importlib.import_module("services.rag")

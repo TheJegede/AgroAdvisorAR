@@ -25,6 +25,11 @@ SUPPRESSION_THRESHOLD = 0.2
 # answer on any contradiction, so marginal/false contradictions on grounded
 # paraphrases (e.g. a claim that restates the chunk) must not trigger it.
 CONTRADICTION_MIN_PROB = 0.55
+# A claim restating chunk content (high content-token overlap) cannot be a
+# genuine contradiction. Above this lexical-support level, never honor a
+# CONTRADICTED label — it is the NLI's systematic false positive on grounded
+# paraphrase / technical claims.
+LEXICAL_CONTRADICTION_GUARD = 0.6
 
 _NLI_LABELS = ["CONTRADICTED", "ENTAILED", "NEUTRAL"]
 
@@ -156,9 +161,10 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
 
     Blends NLI entailment probability (semantic support) with lexical token-recall
     (paraphrase / specific numbers & product names that hard NLI misses):
-    score = max(entailment_prob, lexical_support). The CONTRADICTED label is taken
-    from NLI alone, so the P0.1 contradiction override still fires on negation even
-    when lexical overlap is high (e.g. "do NOT apply X" vs "apply X").
+    score = max(entailment_prob, lexical_support). The CONTRADICTED label is demoted
+    when either the NLI confidence is marginal (below CONTRADICTION_MIN_PROB) OR the
+    claim shares high content-token overlap with a chunk (above LEXICAL_CONTRADICTION_GUARD)
+    — both patterns are systematic NLI false positives on grounded technical claims.
 
     CrossEncoder nli-MiniLM2-L6-H768 label order: [contradiction, entailment, neutral]
     """
@@ -184,14 +190,16 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
     contradiction_prob = float(best_scores[0])
     entailment_prob = float(best_scores[1])
     neutral_prob = float(best_scores[2])
-    # Defect-A guard: don't trust an unconfident CONTRADICTED verdict. Because a
-    # single contradiction zeroes the entire answer, demote a marginal one to the
-    # better of entailment/neutral. A confident contradiction (real negation /
-    # wrong rate) clears the bar and still suppresses.
-    if label == "CONTRADICTED" and contradiction_prob < CONTRADICTION_MIN_PROB:
+    lexical = _lexical_support(claim, chunks[:3])
+    # Defect-A guard: don't trust an unconfident contradiction, AND never trust a
+    # contradiction against a chunk the claim is clearly restating (high lexical
+    # overlap). Demote to the better of entailment/neutral.
+    if label == "CONTRADICTED" and (
+        contradiction_prob < CONTRADICTION_MIN_PROB
+        or lexical >= LEXICAL_CONTRADICTION_GUARD
+    ):
         label = "ENTAILED" if entailment_prob >= neutral_prob else "NEUTRAL"
 
-    lexical = _lexical_support(claim, chunks[:3])
     # Either semantic entailment OR lexical grounding counts as support.
     score = max(entailment_prob, lexical)
 
