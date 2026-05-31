@@ -69,5 +69,9 @@ export function useSessions() {
     return { messages, sessionHistory }
   }, [])
 
-  return { listSessions, createSession, loadSession }
+  const deleteSession = useCallback(async function deleteSession(sessionId) {
+    await api.delete(`/sessions/${sessionId}`)
+  }, [])
+
+  return { listSessions, createSession, loadSession, deleteSession }
 }

@@ -223,6 +223,7 @@ export const LABELS = {
     suppressedBody: 'This response was withheld because it could not be verified against our Arkansas Extension sources. Please reach out for direct guidance:',
     detailedExplanation: 'Detailed Explanation',
     keyPoints: 'Key Educational Points',
+    deleteSessionConfirm: 'Are you sure you want to delete this conversation?',
   },
   es: {
     appName: 'AgroAdvisor AR',
@@ -448,5 +449,6 @@ export const LABELS = {
     suppressedBody: 'Esta respuesta se retuvo porque no pudo verificarse con nuestras fuentes de Extensión de Arkansas. Comuníquese para obtener orientación directa:',
     detailedExplanation: 'Explicación detallada',
     keyPoints: 'Puntos educativos clave',
+    deleteSessionConfirm: '¿Estás seguro de que deseas eliminar esta conversación?',
   },
 }

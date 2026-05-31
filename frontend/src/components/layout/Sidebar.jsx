@@ -28,7 +28,7 @@ export default function Sidebar({ open, onClose }) {
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
-  const { listSessions } = useSessions()
+  const { listSessions, deleteSession } = useSessions()
   const { profile } = useProfile()
   const [sessions, setSessions] = useState([])
 
@@ -43,6 +43,21 @@ export default function Sidebar({ open, onClose }) {
     logout()
     resetLang()
     navigate('/login')
+  }
+
+  async function handleDeleteSession(sessionId) {
+    if (!window.confirm(t.deleteSessionConfirm || 'Are you sure you want to delete this conversation?')) {
+      return
+    }
+    try {
+      await deleteSession(sessionId)
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+      if (currentSessionId === sessionId) {
+        navigate('/')
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err)
+    }
   }
 
   const initials = profile?.full_name
@@ -108,18 +123,36 @@ export default function Sidebar({ open, onClose }) {
               <p className="text-xs text-white/60 px-3 py-1.5">{t.noSessions}</p>
             ) : (
               sessions.slice(0, 12).map((s) => (
-                <button
+                <div
                   key={s.id}
-                  onClick={() => { navigate(`/?session=${s.id}`); onClose?.() }}
                   className={[
-                    'text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ml-1',
+                    'group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ml-1 mr-2',
                     currentSessionId === s.id
                       ? 'bg-white/15 text-white'
                       : 'text-white/60 hover:bg-white/10 hover:text-white/90',
                   ].join(' ')}
                 >
-                  {s.preview || t.newChat}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => { navigate(`/?session=${s.id}`); onClose?.() }}
+                    className="flex-1 text-left truncate min-w-0"
+                  >
+                    {s.preview || t.newChat}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteSession(s.id)
+                    }}
+                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/40 hover:text-white transition-opacity p-1 ml-1 flex-shrink-0"
+                    aria-label="Delete conversation"
+                  >
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               ))
             )}
           </div>

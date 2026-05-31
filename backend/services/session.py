@@ -82,3 +82,16 @@ def get_messages(session_id: str, user_id: str) -> list[dict] | None:
         .execute()
     )
     return result.data
+
+
+def delete_session(session_id: str, user_id: str) -> bool:
+    client = _get_service_client()
+    # Manual user_id check because service client bypasses RLS
+    result = (
+        client.table("chat_sessions")
+        .delete()
+        .eq("id", session_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    return bool(result.data)
