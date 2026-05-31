@@ -11,32 +11,54 @@
 
 ---
 
+## 🔴 ROOT CAUSE FOUND (2026-05-31): the CITATION GUARD was the bottleneck — not retrieval, not generation
+
+A live end-to-end trace localized "bad frontend responses" to the **citation guard**, which
+was **deleting and flooring correct, grounded advisories**. Retrieval and generation are
+**exonerated**. This reframes the entire research arc: the ~40% correctness / "Low" floor
+was the guard corrupting good answers, so every retrieval/generation number measured WITH
+the guard on was misleading.
+
+**Evidence (diagnostic scripts left in `evals/`):**
+- `trace_retrieval.py` — retrieval is fine: 6/6 sampled queries returned on-topic chunks, gold in top-5.
+- `trace_generation.py` — generation is fine: Groq produced a correct grounded answer; guard blanked it (`confidence_score 0.0`, body emptied, "Low").
+- A/B with `NLI_CITATION_GUARD_ENABLED=0` → same query returns a full, useful advisory.
+- The judge is **confidently wrong**: on a rice query whose gold chunk literally contains `GPM = D x D x L`, the NLI labeled 7/8 true claims `CONTRADICTED` at prob 0.5–0.625. No threshold fixes a model this wrong.
+
+**The three guard defects:** (A) `score_answer` hard-zeroes the whole answer on ANY
+`CONTRADICTED` claim — one weak-NLI false positive nukes everything; (B) the prompt numbers
+chunks `Document N:` and the LLM echoes that into citation titles, breaking exact title-match
+→ confidence force-floored to "Low"; (C) decomposition emits un-entailable meta-claims
+("Document 2 is related to…") feeding (A).
+
+**▶ NEW FOCUS = fix the guard.** Plan: `docs/superpowers/plans/2026-05-31-citation-guard-overhaul.md`.
+
+---
+
 ## TL;DR — current state
 
 - **Prod: LIVE + smoke-tested (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app`
   → API proxy → backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
-- **Current focus = research: lift answer correctness off ~40%, confidence off the "Low" floor.**
-- **Retrieval mechanics are EXHAUSTED** — 5 levers tested, ALL rejected (table below).
-  The deployed config wins. **Do not re-propose retrieval-technique changes** without
-  reading the "Rejected" table first.
-- **Retrieval v3 architecture plan is STOPPED as a production path (2026-05-31).**
-  Keep its eval/audit tools, but do **not** continue Modules 3-7 on the current v3 corpus.
-  Section-aware/contextual chunks failed the gate and underperformed v2/prod even after
-  weak-gold filtering.
-- **Real next levers are NOT retrieval technique** (see "Next" below).
+- **Current focus = CITATION GUARD OVERHAUL** (root cause above). Retrieval + generation are NOT the problem.
+- **Phase 0 SHIPPED this session** (uncommitted at time of writing): contradiction confidence gate
+  (Fix 1) + strip `Document N:` prefix (Fix 2). A/B query recovered empty/Low/0.0 → full/High/0.43.
+  Batch: 2/6 recovered; remaining 4/6 still suppressed **because the NLI model itself is broken**.
+- **Retrieval mechanics are EXHAUSTED and were never the bottleneck** — 5 levers tested, all rejected
+  (table below). Retrieval-v3 + rechunk-titles plans **DELETED 2026-05-31** (abandoned narrow path).
+  Reusable measurement harness kept (`eval_retrieval_matrix`, audit, filter, ablation).
+- **Generation-model upgrade (7B→70B) is deferred** until the guard is trustworthy — it was
+  corrupting every correctness number.
 
 ### ▶▶ RESUME HERE (next session)
-Do **not** resume Retrieval v3 Module 3. The current v3 corpus is a failed candidate.
-Next work should use the practical path:
+Execute `docs/superpowers/plans/2026-05-31-citation-guard-overhaul.md`, phase by phase:
 
-1. Keep/commit the useful diagnostic harness (`eval_retrieval_matrix`, v3 audit/filter/ablation).
-2. Preserve current prod/v2 retrieval defaults: `agroar-prod-gte`, 512-character source chunks,
-   dense top-5, reranker off.
-3. Treat `agroar-prod-gte-v2` title-metadata cutover as optional/gated only: run answer-eval
-   A/B when Groq TPD/paid tier allows, then flip only if confidence improves without answer
-   regression. Rollback = `PINECONE_INDEX_NAME=agroar-prod-gte`.
-4. Prioritize corpus-coverage/eval relabeling and prod-like 70B answer eval over new retrieval
-   plumbing.
+1. **Phase 1** — lexical-contradiction guard (cheap, no new model). Verify with `trace_pipeline_batch.py`.
+2. **Phase 2** — LLM-as-judge groundedness (the real fix; reuses the provider chain).
+3. **Phase 3** — surgical suppression (drop the contradicted claim, don't nuke the whole answer).
+4. **Phase 4** — recalibrate thresholds from per-namespace eval data.
+5. **Phase 5/6** — clean `Document N:` at the source (prompt) + config audit (local/prod gte vs legacy fine-tune).
+
+Do **not** resume any retrieval-v3 work. Keep `agroar-prod-gte` / 512-char / dense top-5 as the retrieval baseline.
 
 ---
 
