@@ -20,6 +20,11 @@ logger = logging.getLogger(__name__)
 # Thresholds (tune during eval)
 ESCALATION_THRESHOLD = 0.4
 SUPPRESSION_THRESHOLD = 0.2
+# A CONTRADICTED argmax from the small NLI model is only trusted when the
+# contradiction probability clears this bar. score_answer hard-zeroes the WHOLE
+# answer on any contradiction, so marginal/false contradictions on grounded
+# paraphrases (e.g. a claim that restates the chunk) must not trigger it.
+CONTRADICTION_MIN_PROB = 0.55
 
 _NLI_LABELS = ["CONTRADICTED", "ENTAILED", "NEUTRAL"]
 
@@ -176,7 +181,16 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
     label_idx = int(best_scores.argmax())
     label = _NLI_LABELS[label_idx]
 
+    contradiction_prob = float(best_scores[0])
     entailment_prob = float(best_scores[1])
+    neutral_prob = float(best_scores[2])
+    # Defect-A guard: don't trust an unconfident CONTRADICTED verdict. Because a
+    # single contradiction zeroes the entire answer, demote a marginal one to the
+    # better of entailment/neutral. A confident contradiction (real negation /
+    # wrong rate) clears the bar and still suppresses.
+    if label == "CONTRADICTED" and contradiction_prob < CONTRADICTION_MIN_PROB:
+        label = "ENTAILED" if entailment_prob >= neutral_prob else "NEUTRAL"
+
     lexical = _lexical_support(claim, chunks[:3])
     # Either semantic entailment OR lexical grounding counts as support.
     score = max(entailment_prob, lexical)

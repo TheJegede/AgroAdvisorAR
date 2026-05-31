@@ -276,6 +276,109 @@ def test_postprocess_skips_nli_when_disabled(monkeypatch):
     assert result.confidence_score is None
 
 
+def test_verify_claim_marginal_contradiction_demoted(monkeypatch):
+    # Defect A: the small NLI model marks grounded paraphrases as CONTRADICTED
+    # with only a marginal contradiction probability. A contradiction below the
+    # confidence gate must NOT be trusted — otherwise one false positive zeroes
+    # the entire answer via score_answer's hard override.
+    mod = importlib.import_module("services.citation_guard_v2")
+    # contradiction (0.45) is the argmax but below CONTRADICTION_MIN_PROB
+    fake_scores = np.array([[0.45, 0.20, 0.35]])
+    mock_model = MagicMock()
+    mock_model.predict.return_value = fake_scores
+    monkeypatch.setattr(mod, "_nli_model", mock_model)
+
+    result = mod.verify_claim(
+        "Sprayer calibration is often abused.",
+        ["No single aspect of spray application is so abused as sprayer calibration."],
+    )
+    assert result.label != "CONTRADICTED"
+
+
+def test_verify_claim_confident_contradiction_kept(monkeypatch):
+    # Regression guard: a CONFIDENT contradiction (e.g. a wrong rate / negation)
+    # must still be labeled CONTRADICTED so real errors are suppressed.
+    mod = importlib.import_module("services.citation_guard_v2")
+    fake_scores = np.array([[0.88, 0.05, 0.07]])
+    mock_model = MagicMock()
+    mock_model.predict.return_value = fake_scores
+    monkeypatch.setattr(mod, "_nli_model", mock_model)
+
+    result = mod.verify_claim("Do not irrigate.", ["Irrigation is required in dry spells."])
+    assert result.label == "CONTRADICTED"
+
+
+def test_strip_doc_prefix():
+    rag = importlib.import_module("services.rag")
+    assert rag._strip_doc_prefix("Document 4: soybeans recommended chemicals") == "soybeans recommended chemicals"
+    assert rag._strip_doc_prefix("Calibrate using Document 2: rice handbook") == "Calibrate using rice handbook"
+    assert rag._strip_doc_prefix("soybeans ch 13") == "soybeans ch 13"
+
+
+def test_title_match_strips_document_prefix(monkeypatch):
+    # Defect B: the LLM echoes the prompt's "Document N:" prefix into citation
+    # titles, so exact title-matching never matched and confidence was forced
+    # Low even for grounded answers. Stripping the prefix must let the match
+    # succeed (confidence preserved, citation normalized).
+    import asyncio
+    import types
+    rag = importlib.import_module("services.rag")
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", False)
+
+    from models.advisory import AdvisoryResponse, Citation, ContextMeta
+    ctx = ContextMeta(soil_data_available=False, weather_data_available=False, county_fips="05001")
+    resp = AdvisoryResponse(
+        problem_summary="x",
+        likely_causes=[],
+        recommended_actions=["do"],
+        products_rates=[],
+        warnings=[],
+        citations=[Citation(
+            document_title="Document 2: soybeans ch 13 chemical application and control",
+            section="s",
+            url=None,
+        )],
+        confidence="Medium",
+        confidence_explanation="ok",
+        language="en",
+        context_meta=ctx,
+    )
+    docs = [types.SimpleNamespace(
+        metadata={"document_title": "soybeans ch 13 chemical application and control"},
+        page_content="calibration text",
+    )]
+    result = asyncio.run(rag._postprocess_async(resp, docs, {}, {}, "05001"))
+    assert result.confidence == "Medium"  # NOT downgraded to Low
+    assert len(result.citations) == 1
+    assert result.citations[0].document_title == "soybeans ch 13 chemical application and control"
+
+
+def test_verifiable_text_strips_document_prefix():
+    # Defect C: "Document N:" scaffolding leaking into the verifiable prose
+    # produced un-entailable meta-claims ("Document 2 is related to ...") during
+    # decomposition. Strip it so only real agricultural content is verified.
+    rag = importlib.import_module("services.rag")
+    from models.advisory import AdvisoryResponse, Cause, ContextMeta
+    ctx = ContextMeta(soil_data_available=False, weather_data_available=False, county_fips="05001")
+    resp = AdvisoryResponse(
+        problem_summary="Ensuring the right spray amount",
+        likely_causes=[Cause(cause="bad calibration",
+                             explanation="According to Document 4: soybeans guide, calibration is abused.")],
+        recommended_actions=["Calibrate using Document 2: soybeans ch 13."],
+        products_rates=[],
+        warnings=[],
+        citations=[],
+        confidence="Low",
+        confidence_explanation="x",
+        language="en",
+        context_meta=ctx,
+    )
+    text = rag._advisory_to_verifiable_text(resp)
+    assert "Document 2" not in text
+    assert "Document 4" not in text
+    assert "soybeans ch 13" in text  # real content preserved
+
+
 def test_postprocess_suppresses_body_below_threshold(monkeypatch):
     import asyncio
     rag = importlib.import_module("services.rag")

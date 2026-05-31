@@ -1,6 +1,7 @@
 """Core RAG chain: retrieve → inject context → Gemini structured output."""
 import asyncio
 import logging
+import re
 from datetime import date as _date
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -17,6 +18,18 @@ from utils.counties import get_county_info
 import config
 
 logger = logging.getLogger(__name__)
+
+# The prompt numbers retrieved chunks as "Document N: <title> | ...". The LLM
+# echoes that scaffolding into citation titles and prose, which (a) broke exact
+# title-matching so confidence was forced Low even for grounded answers, and
+# (b) spawned un-entailable meta-claims ("Document 2 is related to ...") during
+# NLI decomposition. Strip it before matching/verifying.
+_DOC_PREFIX_RE = re.compile(r"\bDocument\s+\d+\s*:?\s*", re.IGNORECASE)
+
+
+def _strip_doc_prefix(text: str) -> str:
+    """Remove "Document N:" scaffolding the LLM copies from the prompt context."""
+    return _DOC_PREFIX_RE.sub("", text or "").strip()
 
 
 def _is_quota_error(e: Exception) -> bool:
@@ -135,7 +148,9 @@ def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
         ]))
         for product in result.products_rates
     )
-    return " ".join(p for p in parts if p)
+    # Strip "Document N:" scaffolding so decomposition verifies real content,
+    # not meta-claims about document numbering.
+    return _strip_doc_prefix(" ".join(p for p in parts if p))
 
 
 async def _postprocess_async(
@@ -164,10 +179,14 @@ async def _postprocess_async(
         retrieved_titles = {
             doc.metadata.get("document_title", "").lower() for doc in docs
         }
-        valid_citations = [
-            c for c in result.citations
-            if c.document_title.lower() in retrieved_titles
-        ]
+        # Strip the "Document N:" prefix the LLM copies from the prompt so a
+        # grounded citation actually matches the retrieved title. Store the
+        # normalized title back on the kept citation.
+        valid_citations = []
+        for c in result.citations:
+            clean_title = _strip_doc_prefix(c.document_title)
+            if clean_title.lower() in retrieved_titles:
+                valid_citations.append(c.model_copy(update={"document_title": clean_title}))
         if not valid_citations:
             result = result.model_copy(update={"confidence": "Low"})
         else:
