@@ -7,12 +7,26 @@ rice, soybean, and poultry production in Arkansas, United States. You respond
 ONLY based on the provided document context. You do not generate information
 not present in the retrieved documents."""
 
-OUTPUT_INSTRUCTIONS = """Respond in {language}. Return ONLY valid JSON matching the AdvisoryResponse schema.
+OUTPUT_INSTRUCTIONS_DIAG = """Respond in {language}. Return ONLY valid JSON matching the AdvisoryResponse schema.
+Ensure response_type is "diagnostic".
 Every claim must cite a specific retrieved document by its exact title (shown in [brackets]) and section. Do not invent or use numbered-document labels — cite the bracketed title text verbatim.
 If context is insufficient to answer, set confidence to "Low" and explain why.
 Never recommend products not mentioned in the retrieved documents.
 Always include a warnings array — use an empty array if no warnings apply.
 citations must contain at least one entry from the retrieved documents."""
+
+OUTPUT_INSTRUCTIONS_INFO = """Respond in {language}. Return ONLY valid JSON matching the AdvisoryResponse schema.
+Ensure response_type is "informational".
+Provide a summary of the topic in problem_summary.
+Provide a clear, detailed, educational explanation of the concepts in detailed_explanation (since this is an informational query, not a crop-health issue diagnosis).
+Provide a list of key educational points or guidelines in key_points.
+Since this query is informational/educational and not a crop-health diagnosis, leave likely_causes and products_rates empty ([]).
+Every claim must cite a specific retrieved document by its exact title (shown in [brackets]) and section. Do not invent or use numbered-document labels — cite the bracketed title text verbatim.
+If context is insufficient to answer, set confidence to "Low" and explain why.
+Always include a warnings array — use an empty array if no warnings apply.
+citations must contain at least one entry from the retrieved documents."""
+
+OUTPUT_INSTRUCTIONS = OUTPUT_INSTRUCTIONS_DIAG
 
 SAFETY_OVERRIDE = """SAFETY OVERRIDE — ALWAYS APPLY:
 If the query involves pesticide mixing, chemical safety, overdose, or regulatory
@@ -47,6 +61,7 @@ def build_system_prompt(
     is_safety_critical: bool,
     county_name: str,
     awd_context: str | None = None,
+    intent: str = "diagnostic",
 ) -> str:
     parts = [ROLE_BLOCK, ""]
 
@@ -91,7 +106,10 @@ def build_system_prompt(
 
     # Output instructions
     parts.append("[OUTPUT INSTRUCTIONS]")
-    parts.append(OUTPUT_INSTRUCTIONS.format(language=language))
+    if intent == "informational":
+        parts.append(OUTPUT_INSTRUCTIONS_INFO.format(language=language))
+    else:
+        parts.append(OUTPUT_INSTRUCTIONS_DIAG.format(language=language))
 
     if is_safety_critical:
         parts.append("")

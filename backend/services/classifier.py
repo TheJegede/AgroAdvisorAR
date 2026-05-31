@@ -29,25 +29,37 @@ def _get_groq_llm():
     return _groq_llm
 
 CATEGORIES = {
-    "IN_SCOPE_RICE",
-    "IN_SCOPE_SOYBEANS",
-    "IN_SCOPE_POULTRY",
-    "IN_SCOPE_GENERAL_AG",
+    "IN_SCOPE_RICE:DIAG",
+    "IN_SCOPE_RICE:INFO",
+    "IN_SCOPE_SOYBEANS:DIAG",
+    "IN_SCOPE_SOYBEANS:INFO",
+    "IN_SCOPE_POULTRY:DIAG",
+    "IN_SCOPE_POULTRY:INFO",
+    "IN_SCOPE_GENERAL_AG:DIAG",
+    "IN_SCOPE_GENERAL_AG:INFO",
     "OUT_OF_SCOPE",
     "SAFETY_CRITICAL",
 }
 
 # Specific crop categories — eligible for follow-up inheritance
-SPECIFIC_CROP_CATEGORIES = {"IN_SCOPE_RICE", "IN_SCOPE_SOYBEANS", "IN_SCOPE_POULTRY"}
+SPECIFIC_CROP_CATEGORIES = {
+    "IN_SCOPE_RICE:DIAG", "IN_SCOPE_RICE:INFO",
+    "IN_SCOPE_SOYBEANS:DIAG", "IN_SCOPE_SOYBEANS:INFO",
+    "IN_SCOPE_POULTRY:DIAG", "IN_SCOPE_POULTRY:INFO",
+}
 # Ambiguous follow-up threshold (word count)
 _FOLLOWUP_WORD_LIMIT = 8
 
 
-CLASSIFIER_PROMPT = """Classify this farmer query into exactly one category:
-- IN_SCOPE_RICE
-- IN_SCOPE_SOYBEANS
-- IN_SCOPE_POULTRY
-- IN_SCOPE_GENERAL_AG
+CLASSIFIER_PROMPT = """Classify this farmer query into exactly one category. If the query falls into one of the agricultural in-scope categories, append either ':DIAG' (if the query is diagnostic, seeking identifying causes, treatment rates, products, or troubleshooting for a specific crop/flock problem or health issue) or ':INFO' (if the query is informational/educational, asking for general practices, explanations, guidelines, or definitions without describing a specific active problem):
+- IN_SCOPE_RICE:DIAG
+- IN_SCOPE_RICE:INFO
+- IN_SCOPE_SOYBEANS:DIAG
+- IN_SCOPE_SOYBEANS:INFO
+- IN_SCOPE_POULTRY:DIAG
+- IN_SCOPE_POULTRY:INFO
+- IN_SCOPE_GENERAL_AG:DIAG
+- IN_SCOPE_GENERAL_AG:INFO
 - OUT_OF_SCOPE
 - SAFETY_CRITICAL
 
@@ -55,7 +67,7 @@ SAFETY_CRITICAL: queries about pesticide mixing, chemical overdose, toxic exposu
 OUT_OF_SCOPE: any non-agricultural topic.
 
 Query: {message}
-Return ONLY the category string. No explanation."""
+Return ONLY the category string (e.g. IN_SCOPE_RICE:INFO). No explanation."""
 
 _llm: ChatGoogleGenerativeAI | None = None
 
@@ -77,10 +89,14 @@ def _get_llm() -> ChatGoogleGenerativeAI:
 # None as "no namespace" at the retriever — that searches Pinecone's empty default
 # namespace and returns zero docs.
 CATEGORY_TO_NAMESPACE = {
-    "IN_SCOPE_RICE": CROP_NAMESPACES[CROP_RICE],
-    "IN_SCOPE_SOYBEANS": CROP_NAMESPACES[CROP_SOYBEANS],
-    "IN_SCOPE_POULTRY": CROP_NAMESPACES[CROP_POULTRY],
-    "IN_SCOPE_GENERAL_AG": None,
+    "IN_SCOPE_RICE:DIAG": CROP_NAMESPACES[CROP_RICE],
+    "IN_SCOPE_RICE:INFO": CROP_NAMESPACES[CROP_RICE],
+    "IN_SCOPE_SOYBEANS:DIAG": CROP_NAMESPACES[CROP_SOYBEANS],
+    "IN_SCOPE_SOYBEANS:INFO": CROP_NAMESPACES[CROP_SOYBEANS],
+    "IN_SCOPE_POULTRY:DIAG": CROP_NAMESPACES[CROP_POULTRY],
+    "IN_SCOPE_POULTRY:INFO": CROP_NAMESPACES[CROP_POULTRY],
+    "IN_SCOPE_GENERAL_AG:DIAG": None,
+    "IN_SCOPE_GENERAL_AG:INFO": None,
 }
 
 
@@ -93,7 +109,7 @@ async def classify_query(message: str, last_category: str | None = None) -> str:
     else:
         ordered = ([_get_groq_llm(), _get_llm()] if config.LLM_PRIMARY == "groq"
                    else [_get_llm(), _get_groq_llm()])
-    category = "IN_SCOPE_GENERAL_AG"
+    category = "IN_SCOPE_GENERAL_AG:DIAG"
     for llm in ordered:
         if llm is None:
             continue
@@ -101,7 +117,13 @@ async def classify_query(message: str, last_category: str | None = None) -> str:
             response = await llm.ainvoke([HumanMessage(content=prompt)])
             category = response.content.strip().upper()
             if category not in CATEGORIES:
-                category = "IN_SCOPE_GENERAL_AG"
+                # If category is valid but missing suffix, default to DIAG
+                if category + ":DIAG" in CATEGORIES:
+                    category = category + ":DIAG"
+                elif category + ":INFO" in CATEGORIES:
+                    category = category + ":INFO"
+                else:
+                    category = "IN_SCOPE_GENERAL_AG:DIAG"
             break
         except Exception as e:
             # Only swallow quota/rate-limit (fall back, then degrade to
@@ -113,7 +135,7 @@ async def classify_query(message: str, last_category: str | None = None) -> str:
 
     # Inherit last crop context for short, ambiguous follow-ups
     if (
-        category == "IN_SCOPE_GENERAL_AG"
+        category.startswith("IN_SCOPE_GENERAL_AG")
         and last_category in SPECIFIC_CROP_CATEGORIES
         and len(message.split()) <= _FOLLOWUP_WORD_LIMIT
     ):

@@ -42,10 +42,13 @@ class AdvisoryDraft(BaseModel):
     tokens) and crash generation on enum-label typos (e.g. "ENTAILLED") or wrong
     types ("expected null, but got array"), dropping whole advisories.
     """
+    response_type: Literal["diagnostic", "informational"] = "diagnostic"
     problem_summary: str
-    likely_causes: List[Cause]
+    detailed_explanation: Optional[str] = None
+    key_points: List[str] = []
+    likely_causes: List[Cause] = []
     recommended_actions: List[str]
-    products_rates: List[Product]
+    products_rates: List[Product] = []
     warnings: List[str]
     citations: List[Citation]
     confidence: Literal["High", "Medium", "Low"]

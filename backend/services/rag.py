@@ -118,7 +118,9 @@ def _namespaces_for(category: str) -> list[str]:
     which made Pinecone search the empty default namespace → zero docs → every
     general-ag answer suppressed.
     """
-    ns = CATEGORY_TO_NAMESPACE.get(category)
+    # Support categories with or without DIAG/INFO suffix
+    clean_cat = category.split(":", 1)[0] if ":" in category else category
+    ns = CATEGORY_TO_NAMESPACE.get(category) or CATEGORY_TO_NAMESPACE.get(clean_cat + ":DIAG")
     return [ns] if ns else list(CROP_NAMESPACES.values())
 
 
@@ -144,6 +146,10 @@ def _advisory_to_verifiable_text(result: AdvisoryResponse) -> str:
     score and caused good answers to be suppressed.
     """
     parts: list[str] = [result.problem_summary]
+    if result.detailed_explanation:
+        parts.append(result.detailed_explanation)
+    if result.key_points:
+        parts.extend(result.key_points)
     parts.extend(
         f"{cause.cause}: {cause.explanation}" for cause in result.likely_causes
     )
@@ -217,6 +223,8 @@ async def _postprocess_async(
     # users never see "Document N:" in the returned advisory.
     result = result.model_copy(update={
         "problem_summary": _strip_scaffolding(result.problem_summary),
+        "detailed_explanation": _strip_scaffolding(result.detailed_explanation) if result.detailed_explanation else None,
+        "key_points": [_strip_scaffolding(kp) for kp in result.key_points] if result.key_points else [],
         "recommended_actions": [_strip_scaffolding(a) for a in result.recommended_actions],
         "likely_causes": [
             c.model_copy(update={
@@ -315,9 +323,17 @@ async def run_rag_query(
     soil = ctx["soil"]
     weather = ctx["weather"]
 
+    # Parse intent and base category
+    intent = "diagnostic"
+    base_category = category
+    if ":" in category:
+        base_category, intent_suffix = category.split(":", 1)
+        if intent_suffix.lower() == "info":
+            intent = "informational"
+
     # AWD context injection for rice queries with registered fields
     awd_context: str | None = None
-    if rice_fields and category == "IN_SCOPE_RICE":
+    if rice_fields and base_category == "IN_SCOPE_RICE":
         try:
             from services import awd_scheduler
             from services.context import fetch_usgs_well
@@ -357,9 +373,10 @@ async def run_rag_query(
         retrieved_docs=docs,
         session_history=session_history,
         language=language,
-        is_safety_critical=(category == "SAFETY_CRITICAL"),
+        is_safety_critical=(base_category == "SAFETY_CRITICAL"),
         county_name=county_name,
         awd_context=awd_context,
+        intent=intent,
     )
 
     messages = [

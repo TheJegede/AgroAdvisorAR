@@ -221,6 +221,8 @@ export const LABELS = {
     errLastFloodDateRequired: 'Last flood date is required.',
     suppressedTitle: "We couldn't verify a confident answer",
     suppressedBody: 'This response was withheld because it could not be verified against our Arkansas Extension sources. Please reach out for direct guidance:',
+    detailedExplanation: 'Detailed Explanation',
+    keyPoints: 'Key Educational Points',
   },
   es: {
     appName: 'AgroAdvisor AR',
@@ -444,5 +446,7 @@ export const LABELS = {
     errLastFloodDateRequired: 'La fecha de inundacion es requerida.',
     suppressedTitle: 'No pudimos verificar una respuesta confiable',
     suppressedBody: 'Esta respuesta se retuvo porque no pudo verificarse con nuestras fuentes de Extensión de Arkansas. Comuníquese para obtener orientación directa:',
+    detailedExplanation: 'Explicación detallada',
+    keyPoints: 'Puntos educativos clave',
   },
 }

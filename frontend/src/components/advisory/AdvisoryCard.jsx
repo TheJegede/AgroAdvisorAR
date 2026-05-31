@@ -39,12 +39,41 @@ const CROP_CHIP_CONFIG = {
 
 function CropChip({ category }) {
   const { t } = useLang()
-  const config = CROP_CHIP_CONFIG[category]
+  const cleanCat = category ? category.split(':')[0] : category
+  const config = CROP_CHIP_CONFIG[cleanCat]
   if (!config) return null
   return (
     <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${config.cls}`}>
       {t[config.key]}
     </span>
+  )
+}
+
+function DetailedExplanation({ explanation }) {
+  const { t } = useLang()
+  if (!explanation) return null
+  return (
+    <div className="mt-4 border-t border-gray-100 dark:border-hc-border pt-4">
+      <h4 className="text-sm font-semibold text-charcoal dark:text-hc-fg">{t.detailedExplanation}</h4>
+      <p className="text-sm text-charcoal-light dark:text-hc-fg mt-2 leading-relaxed whitespace-pre-wrap">{explanation}</p>
+    </div>
+  )
+}
+
+function KeyPoints({ points }) {
+  const { t } = useLang()
+  if (!points || !points.length) return null
+  return (
+    <div className="mt-4 border-t border-gray-100 dark:border-hc-border pt-4">
+      <h4 className="text-sm font-semibold text-charcoal dark:text-hc-fg">{t.keyPoints}</h4>
+      <ul className="list-disc pl-5 mt-2 space-y-1">
+        {points.map((p, idx) => (
+          <li key={idx} className="text-sm text-charcoal-light dark:text-hc-fg leading-relaxed">
+            {p}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -68,6 +97,14 @@ function AdvisoryCardInner({ response, messageId, category }) {
 
       {response.suppressed ? (
         <SuppressedNotice escalation={response.escalation} />
+      ) : response.response_type === 'informational' ? (
+        <>
+          <WarningsBanner warnings={response.warnings} />
+          <ProblemSummary summary={response.problem_summary} />
+          <DetailedExplanation explanation={response.detailed_explanation} />
+          <KeyPoints points={response.key_points} />
+          <RecommendedActions actions={response.recommended_actions} />
+        </>
       ) : (
         <>
           <WarningsBanner warnings={response.warnings} />
