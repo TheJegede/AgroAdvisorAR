@@ -132,6 +132,19 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 
 ---
 
+## 🔍 Defect 5 Quality Investigation Findings (2026-05-31)
+
+We traced the two informational soil queries through the retrieval index across all namespaces (merged by similarity score):
+- **Query 1:** *"How do I read a soil test report and what amendments should I apply?"*
+  - **Retrieval:** Gold chunks found in top-5 (FSA2153 soil test report, fertilizer recommendations) with cosine similarity scores of ~0.87.
+  - **Status:** **Retrieval is excellent.** The issue is formatting: forcing informational/educational queries into the crop-diagnosis Pydantic schema (`AdvisoryResponse`), which expects `likely_causes` and `products_rates`, leads to artificial causes or empty answers.
+- **Query 2:** *"What are the most common nutrient deficiencies in Arkansas soils?"*
+  - **Retrieval:** Gold chunks found in top-5 (widespread boron deficiency in NE Arkansas, manganese deficiency on pH > 6.5, zinc deficiency on pH > 6.0) with similarity scores of ~0.91.
+  - **Status:** **Retrieval is excellent.** The issue is formatting: forcing informational/educational queries into the crop-diagnosis Pydantic schema (`AdvisoryResponse`), which expects `likely_causes` and `products_rates`, leads to artificial causes or empty answers.
+- **Go/No-go Decision:** **Go** on proposing an informational-answer shape. We need a secondary schema or a prompt branch for informational queries (non-diagnostic intent) that doesn't force `likely_causes` or `products_rates`.
+
+---
+
 ## Known issues / housekeeping
 
 - **Stale test:** `test_citation_guard_v2.py::test_verifiable_text_includes_all_advisory_fields` asserts

@@ -473,14 +473,14 @@ git commit -m "fix(ui): render suppressed answers as a withheld-answer notice"
 
 **Files:** run `evals/trace_retrieval.py`, `evals/trace_generation.py`; write findings into `PROGRESS.md`.
 
-- [ ] **Step 1:** Trace both failing queries through retrieval:
+- [x] **Step 1:** Trace both failing queries through retrieval:
   - "How do I read a soil test report and what amendments should I apply?"
   - "What are the most common nutrient deficiencies in Arkansas soils?"
   Run: `cd evals && python trace_retrieval.py` (adapt the script's query input). Record whether gold/on-topic chunks appear in top-5.
-- [ ] **Step 2: Decide** based on the trace:
+- [x] **Step 2: Decide** based on the trace:
   - Retrieval fine but answer generic → propose an informational-answer shape (a prompt branch or a non-diagnosis schema variant) so "Likely Causes" isn't forced onto informational questions. Write the proposal as a follow-up plan.
   - Retrieval thin → corpus-coverage audit (see memory `project-eval-contamination`).
-- [ ] **Step 3:** Append findings (the retrieval trace for both queries + the go/no-go decision) to `PROGRESS.md`.
+- [x] **Step 3:** Append findings (the retrieval trace for both queries + the go/no-go decision) to `PROGRESS.md`.
 
 ---
 

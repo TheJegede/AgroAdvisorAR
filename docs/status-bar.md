@@ -28,8 +28,9 @@ Priorities #2.
 MiniLM NLI judge is retired; an LLM-as-judge (provider chain) scores groundedness, suppression
 is surgical + rate-safe, and `Document N:` is killed at the prompt source. Effect (local-Qwen gen
 + Gemini judge, gte, n=9): **suppression 67%→11%, faithfulness 88.9%, confidence_score 0.64–1.00
-mean**. Backend redeployed to HF. **NEXT SESSION = (a) OWNER verify HF Space env points at gte;
-(b) prod-like 70B answer eval — now unblocked (the guard no longer corrupts correctness numbers).**
+mean**. Backend redeployed to HF.
+
+✅ **INFORMATIONAL ROUTING (DEFECT 5) SHIPPED + fully tested 2026-05-31.** Added branched prompt instructions and Pydantic models for educational queries (avoiding diagnostic schemas), updated the classifier, and branched card rendering in the UI. Checked against local unit tests and Vitest (0 failures).
 
 ✅ **FIXED + shipped 2026-05-30 (`f553863`): GENERAL_AG zero-retrieval bug.**
 `IN_SCOPE_GENERAL_AG` mapped to `None`, which made Pinecone search the empty
@@ -163,6 +164,8 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | Chat welcome chips re-localize on language toggle — `ChatPage.jsx` `useMemo` dep fixed from `[]` → `[lang]` (chips were frozen to mount-time language) | Frontend UI | 2026-05-30 |
 | Retrieval-mechanics research arc — 5 levers tested + rejected (token-chunk reverted `f07b523`, hybrid BM25, query rewrite, HyDE, ms-marco reranker); deployed config wins (40% corr/82.5% faith); reusable free local-Qwen A/B eval tooling left in tree | Core RAG | 2026-05-30 |
 | Citation guard overhaul — LLM-as-judge replaces broken NLI, surgical rate-safe suppression, cite-by-title; suppression 67%→11%, faith 88.9%; merged to main + HF redeployed (`3a0cd8a`..`ab78673`) | Core RAG | 2026-05-31 |
+| Informational routing (Defect 5) — branched prompt/intent classification, updated advisory model, gated front-end rendering, added backend tests | Core RAG | 2026-05-31 |
+
 
 ---
 
