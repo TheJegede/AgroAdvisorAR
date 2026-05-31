@@ -446,8 +446,12 @@ def test_postprocess_suppresses_body_below_threshold(monkeypatch):
     result = asyncio.run(rag._postprocess_async(resp, [], {}, {}, "05001"))
     assert result.problem_summary == ""
     assert result.recommended_actions == []
-    assert len(result.warnings) == 1
-    assert "Contact" in result.warnings[0]
+    # New design: escalation is carried by result.escalation (rendered via SuppressedNotice),
+    # NOT duplicated into warnings. warnings is empty to avoid showing it twice.
+    assert result.warnings == []
+    assert result.suppressed is True
+    assert result.escalation is not None
+    assert "Contact" in result.escalation
 
 
 def test_judge_claims_llm_parses_labels_and_scores(monkeypatch):
