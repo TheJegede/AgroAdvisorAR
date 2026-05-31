@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-05-31
+> **Last updated:** 2026-05-31 (session 2)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -15,6 +15,8 @@
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **CITATION GUARD OVERHAUL = SHIPPED + merged to `main` 2026-05-31.** Backend redeployed to HF.
+| Citation guard overhaul — LLM-as-judge replaces broken NLI, surgical rate-safe suppression, cite-by-title; suppression 67%→11%, faith 88.9%; merged to main + HF redeployed (`3a0cd8a`..`ab78673`) | Core RAG | 2026-05-31 |
+| **Response rendering defects (M1+M2+M3)** — `suppressed` flag on AdvisoryResponse; confidence label reconciliation with guard score (High→Medium in [0.2,0.4), Low below 0.2); `_strip_scaffolding` kills `[RETRIEVED DOCUMENT CONTEXT]` leak; prompt context header unbracketed; titleless docs get `Arkansas Extension source N` handle; `SuppressedNotice` component + i18n EN+ES; AdvisoryCard branches on `suppressed` and gates EscalationCard. All TDD, 4 commits. Backend 14/14, frontend 26/26, lint 0 errors. (`685a202`..`b0ff6c4`) | Core RAG + Frontend UI | 2026-05-31 |
   The broken MiniLM NLI judge is retired from the hot path; an **LLM-as-judge** (provider chain)
   now scores groundedness, suppression is **surgical + rate-safe**, and `Document N:` scaffolding
   is killed at the prompt source. **Effect (local-Qwen gen + Gemini judge, gte, n=9): suppression
