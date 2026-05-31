@@ -1,6 +1,6 @@
 # AgroAdvisor AR — Completion to Production
 
-**Last updated:** 2026-05-30  
+**Last updated:** 2026-05-31  
 **MVP target:** September 2026  
 **Production readiness:** 80%  
 **PRD phase progress:** 80%
@@ -35,15 +35,25 @@ default namespace → 0 docs → NLI 0.00 → every general-ag answer suppressed
 by score. TDD'd (`tests/test_rag_retrieval.py`); live proof 0→5 docs; verified in
 prod (cover-crop query: NLI 0.00 → 0.34, suppressed → populated).
 
-Still open (next levers):
-- **`document_title` metadata missing in the gte index** → the title-match citation
-  guard (`rag.py:122`) can never validate → confidence force-capped at "Low" even
-  when grounded (e.g. NLI 0.34/0.54). Fix = re-ingest gte with title metadata
-  (corpus cache `corpus_en.jsonl` currently only has `{chunk_id, namespace, text}`)
-  OR relax the title-match downgrade and trust the NLI score.
-- **Corpus coverage thin on some topics** (cover-crop-after-rice) → weak grounding,
-  generic answers. Content/ingestion effort. See
-  `docs/superpowers/plans/2026-05-29-citation-guard-remediation.md`.
+✅ **RETRIEVAL MECHANICS EXHAUSTED 2026-05-30 — 5 levers tested, ALL rejected; deployed
+config wins (40% corr / 82.5% faith).** Token-chunking (regression, REVERTED `f07b523`),
+hybrid BM25 (flat), query rewrite (wash), HyDE (worse), ms-marco reranker (regression).
+Real next levers are NOT retrieval technique → see PROGRESS.md. Two confounds make absolute
+numbers unreliable (single-gold metric + local-Qwen eval vs prod Groq-70b).
+
+✅ **1B TITLE-METADATA v2 INDEX BUILT 2026-05-31 (cutover pending).** Rebuilt
+`agroar-prod-gte-v2` clean (512-char chunks + `document_title` metadata, 20,546 vectors)
+so the title-match citation guard (`rag.py`) can validate real titles → un-floor "Low"
+confidence. Retrieval eval hit@5 0.25 = baseline (no regression, as expected — titles aren't
+embedded). **Only task left = gated prod cutover, BLOCKED on Groq TPD** (needs an answer-eval).
+Plan: `docs/superpowers/plans/2026-05-30-retrieval-rechunk-titles.md`. Commit `f8d4525`.
+
+Still open (next levers, evidence-ranked):
+- **Generation model 7B → 70B** — biggest unmeasured correctness lever (eval uses local
+  Qwen-7B; prod is Groq-70b). Blocked: Groq free TPD exhausted → needs paid Dev tier.
+- **Corpus-coverage audit** — 82% faithful + 40% correct ⇒ precise answers (rates/products)
+  may not be IN the corpus. Audit which gold answers have a supporting chunk.
+- **Trustworthy eval** — prod-70b gen + better/human judge before further optimization.
 
 Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
 handling).
@@ -150,6 +160,8 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | **Production deploy** — backend Docker on HF Spaces (`whoisluwah-agroadvisor-backend.hf.space`, 2 CPU/16GB), frontend on Vercel (`agroadvisor-eta.vercel.app`), wired via Vercel `/api/*` rewrite proxy (same-origin, no CORS). Dockerfile + `.dockerignore` + `frontend/vercel.json` + `.npmrc` (legacy-peer-deps). API proxy verified (FastAPI 401 answers through it). | Deployment | 2026-05-30 |
 | **Prod smoke test passed** — in-browser: register/login, EN rice query → grounded cited advisory (`agroar-prod-gte` populated), county/soil/weather context, persistence, Spanish translate-bridge round-trip (ES ≡ EN). `FRONTEND_URL` + prod migrations 005/007/008 applied. | Deployment | 2026-05-30 |
 | Chat welcome chips re-localize on language toggle — `ChatPage.jsx` `useMemo` dep fixed from `[]` → `[lang]` (chips were frozen to mount-time language) | Frontend UI | 2026-05-30 |
+| Retrieval-mechanics research arc — 5 levers tested + rejected (token-chunk reverted `f07b523`, hybrid BM25, query rewrite, HyDE, ms-marco reranker); deployed config wins (40% corr/82.5% faith); reusable free local-Qwen A/B eval tooling left in tree | Core RAG | 2026-05-30 |
+| 1B title-metadata index `agroar-prod-gte-v2` built clean (512-char + `document_title`, 20,546 vectors); retrieval no-regression (hit@5 0.25); cutover gated on Groq TPD (`f8d4525`) | Core RAG | 2026-05-31 |
 
 ---
 
