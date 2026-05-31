@@ -13,6 +13,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "ingestion"))
 
@@ -68,14 +69,37 @@ def chunk_all_pdfs() -> list:
     return docs
 
 
+def load_corpus_jsonl(path: Path) -> list:
+    docs = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            docs.append(SimpleNamespace(
+                page_content=row.get("source_text") or row.get("text") or "",
+                metadata={
+                    "chunk_id": row["chunk_id"],
+                    "crop_type": row.get("namespace") or row.get("crop_type") or "general",
+                },
+            ))
+    return docs
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--eval-set", type=Path, default=DEFAULT_EVAL)
     ap.add_argument("--out", type=Path, default=Path(__file__).parent / "eval_set_v2_remap.jsonl")
+    ap.add_argument(
+        "--corpus-jsonl",
+        type=Path,
+        default=None,
+        help="Optional corpus artifact to remap against, e.g. ingestion/en_chunks/corpus_v3.jsonl.",
+    )
     args = ap.parse_args()
 
     items = [json.loads(l) for l in open(args.eval_set, encoding="utf-8")]
-    new_docs = chunk_all_pdfs()
+    new_docs = load_corpus_jsonl(args.corpus_jsonl) if args.corpus_jsonl else chunk_all_pdfs()
     print(f"Re-chunked {len(new_docs)} new chunks; remapping {len(items)} eval items...")
 
     out, dropped = [], 0

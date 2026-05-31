@@ -24,8 +24,11 @@ redeploys via orphan-branch force-push to the HF git remote. Accidental duplicat
 Vercel projects (`agro-advisor-ar*`) cleaned up. Exact redeploy commands: CLAUDE.md
 Priorities #2.
 
-**NEXT SESSION — research how to make retrieval + responses better** (lift answer
-correctness off ~40%, confidence off the "Low" floor). Concrete levers below.
+**NEXT SESSION — improve answer quality without continuing failed v3 retrieval plumbing.**
+Retrieval v3 Modules 0-2 were tested on 2026-05-31 and are **stopped as a production path**:
+the metadata-rich/contextual v3 corpus underperformed current v2/prod even after weak-gold
+filtering. Keep the eval/audit tools, but do not continue v3 Modules 3-7 unless a new corpus
+candidate first beats the current gate.
 
 ✅ **FIXED + shipped 2026-05-30 (`f553863`): GENERAL_AG zero-retrieval bug.**
 `IN_SCOPE_GENERAL_AG` mapped to `None`, which made Pinecone search the empty
@@ -48,12 +51,20 @@ confidence. Retrieval eval hit@5 0.25 = baseline (no regression, as expected —
 embedded). **Only task left = gated prod cutover, BLOCKED on Groq TPD** (needs an answer-eval).
 Plan: `docs/superpowers/plans/2026-05-30-retrieval-rechunk-titles.md`. Commit `f8d4525`.
 
+⛔ **RETRIEVAL v3 STOPPED 2026-05-31.** Module 0 harness is useful; Modules 1-2 produced a
+deterministic section-aware/contextual corpus, but eval failed: full remapped v3 contextual
+`hit@5=0.160`; after filtering 49 weak gold targets, best v3 ablation was plain
+`source_text` at `hit@5=0.218`, still below current v2/prod. Do not proceed to hybrid
+candidate retrieval/reranking/Small2Big/cutover on this v3 corpus.
+
 Still open (next levers, evidence-ranked):
 - **Generation model 7B → 70B** — biggest unmeasured correctness lever (eval uses local
   Qwen-7B; prod is Groq-70b). Blocked: Groq free TPD exhausted → needs paid Dev tier.
 - **Corpus-coverage audit** — 82% faithful + 40% correct ⇒ precise answers (rates/products)
   may not be IN the corpus. Audit which gold answers have a supporting chunk.
 - **Trustworthy eval** — prod-70b gen + better/human judge before further optimization.
+- **Conservative v2.5 only** — preserve 512-character source-text embeddings and current
+  prod retrieval defaults; metadata/display changes are acceptable only if eval-gated.
 
 Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
 handling).

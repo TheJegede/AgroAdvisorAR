@@ -19,14 +19,24 @@
 - **Retrieval mechanics are EXHAUSTED** — 5 levers tested, ALL rejected (table below).
   The deployed config wins. **Do not re-propose retrieval-technique changes** without
   reading the "Rejected" table first.
+- **Retrieval v3 architecture plan is STOPPED as a production path (2026-05-31).**
+  Keep its eval/audit tools, but do **not** continue Modules 3-7 on the current v3 corpus.
+  Section-aware/contextual chunks failed the gate and underperformed v2/prod even after
+  weak-gold filtering.
 - **Real next levers are NOT retrieval technique** (see "Next" below).
 
 ### ▶▶ RESUME HERE (next session)
-1B title-metadata index is **BUILT** (`agroar-prod-gte-v2`, clean, retrieval no-regression).
-**Only task left = gated prod cutover, BLOCKED on Groq TPD** (needs an answer-eval to confirm
-confidence un-floors). When Groq generation is available: run the answer-eval A/B (old vs v2),
-then flip HF `PINECONE_INDEX_NAME=agroar-prod-gte-v2`. Full steps:
-`docs/superpowers/plans/2026-05-30-retrieval-rechunk-titles.md`.
+Do **not** resume Retrieval v3 Module 3. The current v3 corpus is a failed candidate.
+Next work should use the practical path:
+
+1. Keep/commit the useful diagnostic harness (`eval_retrieval_matrix`, v3 audit/filter/ablation).
+2. Preserve current prod/v2 retrieval defaults: `agroar-prod-gte`, 512-character source chunks,
+   dense top-5, reranker off.
+3. Treat `agroar-prod-gte-v2` title-metadata cutover as optional/gated only: run answer-eval
+   A/B when Groq TPD/paid tier allows, then flip only if confidence improves without answer
+   regression. Rollback = `PINECONE_INDEX_NAME=agroar-prod-gte`.
+4. Prioritize corpus-coverage/eval relabeling and prod-like 70B answer eval over new retrieval
+   plumbing.
 
 ---
 
@@ -102,6 +112,272 @@ Two confounds = absolute numbers unreliable; relative deltas valid.
 Remaining = the gated prod cutover: flip HF `PINECONE_INDEX_NAME=agroar-prod-gte-v2` once an
 answer-eval confirms confidence un-floors off "Low" — **blocked on Groq TPD reset / paid tier**
 (answer-eval needs generation). Plan: `docs/superpowers/plans/2026-05-30-retrieval-rechunk-titles.md` (pruned to live steps). Rollback = revert env to `agroar-prod-gte`.
+
+### Retrieval v3 plan execution — Module 0 started (2026-05-31) - Using Codex for this
+
+Built the evaluation harness first, per
+`docs/superpowers/plans/2026-05-31-retrieval-v3-architecture.md`, before any ingestion or
+backend retrieval changes:
+
+- Added `evals/eval_retrieval_matrix.py`.
+- One command now compares `dense`, `sparse`, `hybrid_rrf`, and optional `hybrid_rerank`
+  on the same eval set.
+- Reports `hit@1`, `hit@5`, `MRR@5`, `NDCG@5`, `candidate_recall@20/30`, and
+  per-namespace breakdown.
+- Saves JSON results under `evals/results/`.
+- Added pure unit tests in `evals/tests/test_eval_retrieval_matrix.py` so metric logic is
+  covered without Pinecone/model/API dependencies.
+
+Validation passed:
+
+```bash
+python -m pytest evals/tests/test_eval_retrieval_matrix.py evals/tests/test_hybrid_core.py
+python evals/eval_retrieval_matrix.py --help
+python -m compileall evals/eval_retrieval_matrix.py
+```
+
+Live matrix run against `agroar-prod-gte-v2` also completed with Pinecone/model access:
+
+```bash
+EMBEDDING_MODEL_PATH=thenlper/gte-base PINECONE_INDEX_NAME=agroar-prod-gte-v2 python evals/eval_retrieval_matrix.py --eval-set evals/eval_set_v2_remap.jsonl
+```
+
+Saved result: `evals/results/retrieval_matrix_20260531_140038.json`.
+
+| Strategy | hit@1 | hit@5 | MRR@5 | NDCG@5 | rec@20 | rec@30 |
+|---|---:|---:|---:|---:|---:|---:|
+| dense | 0.090 | 0.245 | 0.148 | 0.172 | 0.430 | 0.470 |
+| sparse | 0.035 | 0.115 | 0.062 | 0.075 | 0.190 | 0.200 |
+| hybrid_rrf | 0.115 | 0.240 | 0.162 | 0.181 | 0.355 | 0.430 |
+
+Interpretation: Module 0 is implemented, and the measured result reinforces the existing
+finding that naive BM25+RRF is not enough. Dense v2 is still near the expected no-regression
+baseline, while hybrid improves hit@1/MRR slightly but misses the v3 gate (`hit@5 >= 0.40`,
+`candidate_recall@30 >= 0.65`). Next v3 work should move to section-aware/contextual corpus
+work, not production cutover.
+
+### Retrieval v3 plan execution — Module 1 section-aware corpus started (2026-05-31)
+
+Added a section-aware extraction/chunking path without changing the live ingestion or backend
+retrieval path:
+
+- `ingestion/extractor.py` now has `extract_pages()` preserving 1-based page numbers.
+- `ingestion/chunker.py` now has `chunk_sectioned_document()` plus deterministic `doc_id`,
+  `parent_section_id`, page range, `doc_type`, `pub_year`, `section_heading`,
+  `subsection_heading`, and contextual `retrieval_text` metadata.
+- Existing `chunk_document()` remains intact for current gte/live scripts.
+- Added `ingestion/build_corpus_v3.py`, which writes the v3 experiment artifact to
+  `ingestion/en_chunks/corpus_v3.jsonl` (ignored by git like the existing corpus cache).
+- Added `ingestion/tests/test_section_aware_chunker.py`.
+
+Real corpus build result:
+
+```bash
+python ingestion/build_corpus_v3.py
+```
+
+Output: `21,065` chunks, `document_title` coverage `100.0%`, `section_heading` coverage
+`97.1%`. The chunk count is close to the current 20,546-vector corpus, so the heading
+heuristic is no longer grossly over-splitting table cells. Known caveat: some PDF header,
+FAQ, and caption-like lines are still imperfectly classified as headings; acceptable for
+the first v3 experiment artifact, but inspect before index cutover.
+
+Validation passed:
+
+```bash
+python -m pytest ingestion/tests/test_section_aware_chunker.py ingestion/tests/test_ingest_gte_metadata.py
+python -m compileall ingestion/extractor.py ingestion/chunker.py ingestion/build_corpus_v3.py
+```
+
+### Retrieval v3 plan execution — Module 2 contextual chunk text continued (2026-05-31)
+
+Completed the deterministic contextual-text slice for v3 ingestion, still without changing the
+live production retrieval path:
+
+- `ingestion/chunker.py` now builds a concise `retrieval_header` for section-aware chunks:
+  document title, section heading, and a short deterministic content summary with salient terms.
+- Header generation filters obvious author/byline lines so the synthetic context starts with
+  retrievable agricultural content instead of names where possible.
+- `retrieval_text` is now `retrieval_header + source chunk`; `source_text` remains the original
+  PDF chunk in the corpus artifact for citations/display.
+- `ingestion/build_corpus_v3.py` writes both `retrieval_header` and `retrieval_text` alongside
+  `source_text`.
+- Added `ingestion/ingest_retrieval_v3.py`, which embeds `retrieval_text` into a separate
+  v3 experiment index and preserves original text in
+  Pinecone metadata `text`/`source_text`.
+- Added `ingestion/tests/test_ingest_retrieval_v3.py`.
+- Extended `evals/remap_eval_set.py` and `evals/eval_retrieval_matrix.py` so v3 can be
+  remapped/evaluated against `ingestion/en_chunks/corpus_v3.jsonl` instead of the old
+  production chunk IDs.
+
+Real corpus rebuild result:
+
+```bash
+python ingestion/build_corpus_v3.py
+```
+
+Output remains `21,065` chunks, `document_title` coverage `100.0%`, and `section_heading`
+coverage `97.1%`. PyMuPDF still emits one font warning for an embedded AGaramond face, but
+the build completes.
+
+Validation passed:
+
+```bash
+python -m pytest ingestion/tests/test_section_aware_chunker.py ingestion/tests/test_ingest_gte_metadata.py ingestion/tests/test_ingest_retrieval_v3.py
+python -m pytest ingestion/tests/test_ingest_retrieval_v3.py evals/tests/test_eval_retrieval_matrix.py
+python -m compileall ingestion/chunker.py ingestion/build_corpus_v3.py ingestion/ingest_retrieval_v3.py
+python -m compileall ingestion/ingest_retrieval_v3.py evals/remap_eval_set.py evals/eval_retrieval_matrix.py
+```
+
+Index/eval result:
+
+```bash
+python ingestion/ingest_retrieval_v3.py --model thenlper/gte-base --index agroar-prod-retrieval-v3-gte
+python evals/remap_eval_set.py --eval-set evals/eval_set_v2.jsonl --corpus-jsonl ingestion/en_chunks/corpus_v3.jsonl --out evals/eval_set_v2_remap_v3.jsonl
+python evals/eval_retrieval_matrix.py --eval-set evals/eval_set_v2_remap_v3.jsonl --model thenlper/gte-base --index agroar-prod-retrieval-v3-gte --corpus-jsonl ingestion/en_chunks/corpus_v3.jsonl
+```
+
+Correct gte v3 index built: `agroar-prod-retrieval-v3-gte`, `21,065` vectors, 768-dim.
+Saved result: `evals/results/retrieval_matrix_20260531_143239.json`.
+
+| Strategy | hit@1 | hit@5 | MRR@5 | NDCG@5 | rec@20 | rec@30 |
+|---|---:|---:|---:|---:|---:|---:|
+| dense | 0.060 | 0.160 | 0.094 | 0.111 | 0.315 | 0.360 |
+| sparse | 0.025 | 0.070 | 0.043 | 0.049 | 0.160 | 0.180 |
+| hybrid_rrf | 0.080 | 0.155 | 0.110 | 0.121 | 0.230 | 0.300 |
+
+Verdict: Module 2 implementation is complete, but the acceptance gate **fails** on the
+single-gold remapped eval. Contextual v3 chunks underperform current dense v2/current prod
+(`hit@5` roughly `0.160` vs `0.245-0.250`). Do not cut over. Next investigation should
+inspect whether the deterministic section split/remap is producing overly broad or shifted
+gold chunks, especially for rice (`hit@5=0.064`), before moving to Module 3.
+
+Caveat: one accidental 384-dim Pinecone index named `agroar-prod-retrieval-v3` was created
+before the ingester default was fixed; ignore/delete later. The valid index from this run is
+`agroar-prod-retrieval-v3-gte`.
+
+### Retrieval v3 Module 2 failure audit — rice first (2026-05-31)
+
+Added `evals/audit_retrieval_v3_failures.py` to explain failed v3 retrieval rows by comparing:
+
+- original eval gold chunk text,
+- v3 remapped gold chunk/source text,
+- v3 retrieval header/title/section,
+- dense top-k matches from Pinecone with title/section/source previews.
+
+Validation:
+
+```bash
+python -m compileall evals/audit_retrieval_v3_failures.py
+python evals/audit_retrieval_v3_failures.py --help
+```
+
+Ran the rice audit:
+
+```bash
+python evals/audit_retrieval_v3_failures.py --original-eval evals/eval_set_v2.jsonl --remapped-eval evals/eval_set_v2_remap_v3.jsonl --corpus-jsonl ingestion/en_chunks/corpus_v3.jsonl --index agroar-prod-retrieval-v3-gte --namespace rice --limit 200
+```
+
+Saved:
+
+- `evals/results/retrieval_v3_failure_audit_rice_20260531_144039.json`
+- `evals/results/retrieval_v3_failure_audit_rice_20260531_144039.md`
+
+Findings over all audited dense rice failures:
+
+- Audited failures: `86` out of `110` rice eval items.
+- Mean original-to-v3 gold text overlap: `0.8374`.
+- Low-overlap remaps `<0.5`: `1`.
+- Mean gold retrieval-header length: `204.2` chars.
+- Top-1 result had the same document title as gold only `16/86` times.
+- Top-1 result had the same section heading as gold only `12/86` times.
+- Gold section distribution among failures is dominated by weak research-paper sections:
+  `Abstract` = `28`, `Acknowledgments` = `10`, `Introduction` = `9`.
+- `38/86` rice failures have gold chunks from `Abstract` or `Acknowledgments`.
+- `12/86` failed rice queries mention another crop such as soybean/corn/cotton.
+
+Interpretation:
+
+- Bad v3 remapping is **not** the primary cause; the remapped chunks usually preserve the
+  original gold text.
+- The bigger issue is that the single-gold eval often points to brittle research-study chunks
+  (`Abstract`, `Acknowledgments`, tables/results fragments) while dense retrieval prefers more
+  generally useful Extension guidance such as handbooks, weed-control chapters, and N-ST*R docs.
+- The v3 headers may still add noise, but the first-order blocker is eval/corpus target quality:
+  the gold answer evidence is often a poor target for farmer-answer retrieval.
+
+Decision:
+
+- Do **not** proceed to Module 3 on this v3 corpus as a production candidate.
+- Next improvement should be a controlled ablation plus eval cleanup:
+  1. run v3 variants embedding `source_text` only vs `title | section + source_text` vs current
+     header + source;
+  2. separately tag/filter eval gold chunks from low-value sections (`Abstract`,
+     `Acknowledgments`, `References`, table fragments) to see whether the regression is real
+     retrieval loss or mostly a broken single-gold target;
+  3. prefer a conservative v2.5 candidate if ablation confirms that 512-char source-text
+     embeddings remain stronger.
+
+### Retrieval v3 Module 2 ablation + eval cleanup (2026-05-31)
+
+Confirmed the interrupted follow-up work and completed the controlled diagnostic slice:
+
+- Added `evals/filter_eval_by_section.py` to tag/filter weak single-gold targets whose
+  remapped v3 gold chunks come from brittle sections (`Abstract`, `Acknowledgments`,
+  `References`) or table/results fragments.
+- Added `evals/eval_v3_ablation.py` to compare local dense retrieval over the same v3
+  corpus without creating new Pinecone indexes:
+  `source_text`, `title_section_source`, and current contextual `retrieval_text`.
+- Added focused unit coverage in `evals/tests/test_v3_diagnostics.py`.
+
+Eval cleanup result:
+
+```bash
+python evals/filter_eval_by_section.py --eval-set evals/eval_set_v2_remap_v3.jsonl --corpus-jsonl ingestion/en_chunks/corpus_v3.jsonl --out evals/eval_set_v2_remap_v3_filtered.jsonl --tagged-out evals/eval_set_v2_remap_v3_tagged.jsonl --report evals/results/eval_set_v2_remap_v3_section_filter.json
+```
+
+Filtered `49/200` rows, leaving `151`. Filtered rows were overwhelmingly rice (`48/49`):
+`Abstract` = `33`, `Acknowledgments` = `10`, `References` = `4`, table/results fragments = `2`.
+
+Full eval ablation:
+
+```bash
+python evals/eval_v3_ablation.py --eval-set evals/eval_set_v2_remap_v3.jsonl --corpus-jsonl ingestion/en_chunks/corpus_v3.jsonl --model thenlper/gte-base --batch-size 64 --out evals/results/v3_ablation_full_20260531_codex.json
+```
+
+| Variant | hit@1 | hit@5 | MRR@5 | NDCG@5 | rec@20 | rec@30 |
+|---|---:|---:|---:|---:|---:|---:|
+| source_text | 0.090 | 0.185 | 0.126 | 0.141 | 0.330 | 0.370 |
+| title_section_source | 0.075 | 0.145 | 0.102 | 0.113 | 0.280 | 0.325 |
+| retrieval_text | 0.060 | 0.160 | 0.095 | 0.111 | 0.320 | 0.360 |
+
+Filtered eval ablation:
+
+```bash
+python evals/eval_v3_ablation.py --eval-set evals/eval_set_v2_remap_v3_filtered.jsonl --corpus-jsonl ingestion/en_chunks/corpus_v3.jsonl --model thenlper/gte-base --batch-size 64 --out evals/results/v3_ablation_filtered_20260531_codex.json
+```
+
+| Variant | hit@1 | hit@5 | MRR@5 | NDCG@5 | rec@20 | rec@30 |
+|---|---:|---:|---:|---:|---:|---:|
+| source_text | 0.113 | 0.218 | 0.151 | 0.168 | 0.397 | 0.437 |
+| title_section_source | 0.099 | 0.192 | 0.135 | 0.149 | 0.351 | 0.397 |
+| retrieval_text | 0.073 | 0.199 | 0.118 | 0.138 | 0.397 | 0.444 |
+
+Validation passed:
+
+```bash
+python -m compileall evals/eval_v3_ablation.py evals/filter_eval_by_section.py evals/audit_retrieval_v3_failures.py
+python evals/filter_eval_by_section.py --help
+python evals/eval_v3_ablation.py --help
+python -m pytest evals/tests/test_v3_diagnostics.py
+```
+
+Verdict: filtering bad gold targets improves the measured v3 result, but the v3 corpus still
+does **not** beat the current v2/prod baseline. The contextual header is not helping dense
+retrieval; the best v3 representation is plain `source_text`, and even that remains below
+the current 512-character v2/prod index. Do **not** proceed to Module 3 or production cutover
+from this corpus. Next candidate should be conservative v2.5 work or corpus/eval relabeling,
+not more retrieval plumbing on the current v3 artifact.
 
 ---
 

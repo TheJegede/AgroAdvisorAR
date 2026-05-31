@@ -1,17 +1,29 @@
 """PDF text + table extraction."""
+from dataclasses import dataclass
 import re
 import fitz  # PyMuPDF
 
 
-def extract_text(pdf_path: str) -> str:
+@dataclass(frozen=True)
+class PageText:
+    page_number: int
+    text: str
+
+
+def extract_pages(pdf_path: str) -> list[PageText]:
+    """Extract cleaned text one page at a time, preserving 1-based page numbers."""
     doc = fitz.open(pdf_path)
     pages = []
     for page in doc:
-        text = page.get_text("text")
-        text = _clean_page(text)
-        pages.append(text)
+        text = _clean_page(page.get_text("text"))
+        if text:
+            pages.append(PageText(page_number=page.number + 1, text=text))
     doc.close()
-    return "\n".join(pages)
+    return pages
+
+
+def extract_text(pdf_path: str) -> str:
+    return "\n".join(page.text for page in extract_pages(pdf_path))
 
 
 def _clean_page(text: str) -> str:
