@@ -13,6 +13,7 @@ import ProductsRates from './ProductsRates'
 import CitationsSection from './CitationsSection'
 import ConfidenceExplainer from './ConfidenceExplainer'
 import FeedbackWidget from './FeedbackWidget'
+import SuppressedNotice from './SuppressedNotice'
 
 class ErrorBoundary extends Component {
   state = { error: null }
@@ -59,14 +60,23 @@ function AdvisoryCardInner({ response, messageId, category }) {
         <ContextMetaBar meta={response.context_meta} />
       </div>
       <ConfidenceExplainer explanation={response.confidence_explanation} />
-      <EscalationCard escalation={response.escalation} />
+      {/* EscalationCard is gated: when suppressed, SuppressedNotice already shows
+          the escalation contact — don't duplicate it in EscalationCard. */}
+      {!response.suppressed && <EscalationCard escalation={response.escalation} />}
 
       {response.confidence === 'Low' && <LowConfidenceBanner />}
-      <WarningsBanner warnings={response.warnings} />
-      <ProblemSummary summary={response.problem_summary} />
-      <LikelyCauses causes={response.likely_causes} />
-      <RecommendedActions actions={response.recommended_actions} />
-      <ProductsRates products={response.products_rates} />
+
+      {response.suppressed ? (
+        <SuppressedNotice escalation={response.escalation} />
+      ) : (
+        <>
+          <WarningsBanner warnings={response.warnings} />
+          <ProblemSummary summary={response.problem_summary} />
+          <LikelyCauses causes={response.likely_causes} />
+          <RecommendedActions actions={response.recommended_actions} />
+          <ProductsRates products={response.products_rates} />
+        </>
+      )}
       <CitationsSection citations={response.citations} />
       <FeedbackWidget messageId={messageId} />
     </div>
