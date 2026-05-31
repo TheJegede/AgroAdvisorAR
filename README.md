@@ -143,7 +143,7 @@ Copy `.env.example` to `.env` in the project root and fill in:
 
 ## Key design decisions
 
-- **Structured output.** `with_structured_output(AdvisoryResponse)` via Groq tool calling (primary), Gemini `response_schema` as fallback. No regex or JSON post-parsing.
+- **Structured output & Informational routing.** `with_structured_output(AdvisoryResponse)` via Groq tool calling (primary), Gemini `response_schema` as fallback. No regex or JSON post-parsing. The schema supports both `"diagnostic"` and `"informational"` types (`response_type`). Diagnostic responses populate crop-health fields (causes, products/rates). Informational responses (for educational/non-diagnostic queries) leave crop-health fields empty and instead populate `detailed_explanation` and `key_points` to prevent awkward diagnostics.
 - **Groq-primary, provider chain.** `classifier.py`, `rag.py`, and `citation_guard_v2.py` try providers in order (default Groq first, Gemini fallback) and degrade gracefully. Gemini's free tier is 20 req/day, so Groq is primary. Note: Groq's free tier has per-day **token** caps too — generation falls back 70b → 8b-instant to stretch them; a second free provider may be needed for sustained load.
 - **County context.** Every query injects county-level soil (SSURGO SDA API) and weather (NOAA NWS API) for the user's `county_fips`. Cached 6h in Upstash Redis. Both APIs must complete in 3s or the response degrades gracefully via `soil_data_available` / `weather_data_available` flags.
 - **Citation guard.** After generation, citations are cross-checked against retrieved chunk titles. Unmatched citations are stripped; if none remain, confidence is downgraded to `Low`.
@@ -208,6 +208,7 @@ High-contrast mode available via sidebar toggle — sets `data-theme="hc"` on `<
 | `POST` | `/api/v1/sessions` | Create chat session |
 | `GET`  | `/api/v1/sessions` | List user's sessions (newest 20) |
 | `GET`  | `/api/v1/sessions/{id}/messages` | List messages for session |
+| `DELETE`| `/api/v1/sessions/{id}` | Deletes chat session (cascades to messages) |
 
 See `CLAUDE.md` for `curl` examples.
 
