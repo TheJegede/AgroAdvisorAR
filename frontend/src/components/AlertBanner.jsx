@@ -16,8 +16,10 @@ export default function AlertBanner({ onPrefill }) {
   }, [])
 
   function dismiss(id) {
-    api.patch(`/alerts/${id}/dismiss`).catch(() => {})
     setAlerts(prev => prev.filter(a => a.id !== id))
+    api.patch(`/alerts/${id}/dismiss`).catch(() => {
+      api.get('/alerts').then(res => setAlerts(res.data)).catch(() => {})
+    })
   }
 
   if (alerts.length === 0) return null

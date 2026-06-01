@@ -24,7 +24,7 @@ export default function CitationsSection({ citations }) {
             <li key={i} className="text-xs text-gray-700 dark:text-hc-fg leading-relaxed">
               {c.url ? (
                 <a href={c.url} target="_blank" rel="noopener noreferrer"
-                  className="text-field dark:text-hc-accent underline font-bold">
+                  className="text-field-dark dark:text-hc-accent underline font-bold">
                   {c.document_title}
                 </a>
               ) : (

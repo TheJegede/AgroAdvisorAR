@@ -224,6 +224,10 @@ export const LABELS = {
     detailedExplanation: 'Detailed Explanation',
     keyPoints: 'Key Educational Points',
     deleteSessionConfirm: 'Are you sure you want to delete this conversation?',
+    offline: 'Offline — some features unavailable',
+    retry: 'Retry',
+    sessionsLoadError: "Couldn't load conversations. Tap to retry.",
+    profileUnavailable: 'Profile unavailable',
   },
   es: {
     appName: 'AgroAdvisor AR',
@@ -450,5 +454,9 @@ export const LABELS = {
     detailedExplanation: 'Explicación detallada',
     keyPoints: 'Puntos educativos clave',
     deleteSessionConfirm: '¿Estás seguro de que deseas eliminar esta conversación?',
+    offline: 'Sin conexión — algunas funciones no están disponibles',
+    retry: 'Reintentar',
+    sessionsLoadError: 'No se pudieron cargar las conversaciones. Toca para reintentar.',
+    profileUnavailable: 'Perfil no disponible',
   },
 }

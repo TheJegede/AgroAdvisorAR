@@ -195,7 +195,7 @@ export default function ChatPage() {
             onClick={retry}
             className="text-sm text-field dark:text-hc-accent border border-field/30 dark:border-hc-border rounded-full px-4 py-1.5 hover:bg-field/5 transition-colors"
           >
-            {t.retry || 'Retry'}
+            {t.retry}
           </button>
         </div>
       )}

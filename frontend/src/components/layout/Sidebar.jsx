@@ -40,7 +40,7 @@ function SessionsList({ sessions, currentSessionId, onNavigate, onDelete, loadin
           onClick={onRetry}
           className="text-xs text-white/60 hover:text-white px-3 py-1.5 text-left underline"
         >
-          {t.sessionsLoadError || "Couldn't load conversations. Tap to retry."}
+          {t.sessionsLoadError}
         </button>
       </div>
     )
@@ -92,7 +92,7 @@ function SidebarFooter({ initials, fullName, profileLoading, profileError, t }) 
       </div>
       <div className="min-w-0">
         {profileError ? (
-          <p className="text-white/50 text-sm truncate">Profile unavailable</p>
+          <p className="text-white/50 text-sm truncate">{t.profileUnavailable}</p>
         ) : profileLoading && !fullName ? (
           <div className="w-24 h-3 bg-white/10 rounded animate-pulse" />
         ) : (

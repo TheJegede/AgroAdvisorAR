@@ -65,7 +65,7 @@ export default function ChatInput({ onSubmit, disabled, prefill = '' }) {
         </p>
       )}
 
-      <div className="flex items-end gap-2 rounded-2xl border border-gray-200 dark:border-hc-border dark:border-2 px-3 py-2 bg-white dark:bg-hc-bg
+      <div className="flex items-end gap-2 rounded-card border border-gray-200 dark:border-hc-border dark:border-2 px-3 py-2 bg-white dark:bg-hc-bg
         focus-within:border-field focus-within:ring-1 focus-within:ring-field/20 dark:focus-within:ring-2 dark:focus-within:ring-hc-focus transition-all">
 
         {/* Paperclip — decorative */}
