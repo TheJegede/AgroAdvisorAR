@@ -179,7 +179,7 @@ export default function ChatPage() {
               disabled={streaming}
               className="flex-shrink-0 text-xs bg-white border border-gray-200 rounded-full px-3 py-1.5
                 hover:border-field hover:bg-field/5 transition-colors text-gray-600
-                disabled:opacity-50
+                min-h-touch disabled:opacity-50
                 dark:bg-hc-bg dark:text-hc-fg dark:border-2 dark:border-hc-border dark:hover:bg-hc-fg dark:hover:text-hc-bg"
             >
               {q}

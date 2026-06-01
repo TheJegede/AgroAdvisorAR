@@ -7,7 +7,7 @@ import { useSessions } from '../../hooks/useSessions'
 import { useProfile } from '../../hooks/useProfile'
 
 function SidebarNavItem({ to, onClick, children, ariaPressed, ariaLabel }) {
-  const cls = 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors'
+  const cls = 'flex items-center gap-3 px-3 py-3 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors'
   if (to) {
     return (
       <Link to={to} onClick={onClick} className={cls} aria-label={ariaLabel}>
@@ -48,7 +48,7 @@ function SessionsList({ sessions, currentSessionId, onNavigate, onDelete, t }) {
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onDelete(s.id) }}
-              className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/40 hover:text-white transition-opacity p-1 ml-1 flex-shrink-0"
+              className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/40 hover:text-white transition-opacity p-2 ml-1 flex-shrink-0"
               aria-label="Delete conversation"
             >
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -52,10 +52,9 @@ function AdvisoryCardInner({ response, messageId, category }) {
   const chipConfig = CROP_CHIP_CONFIG[cleanCat]
   return (
     <div className="bg-white dark:bg-hc-surface rounded-card shadow-sm dark:shadow-none border border-gray-100 dark:border-2 dark:border-hc-border p-4 my-2 w-full max-w-2xl">
+      {/* Orientation row: crop chip + context meta only — no confidence badges */}
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
-          <ConfidenceBadge confidence={response.confidence} />
-          <NLIConfidenceBadge confidence_score={response.confidence_score} />
           {chipConfig && (
             <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${chipConfig.cls}`}>
               {t[chipConfig.key]}
@@ -64,18 +63,11 @@ function AdvisoryCardInner({ response, messageId, category }) {
         </div>
         <ContextMetaBar meta={response.context_meta} />
       </div>
-      <ConfidenceExplainer explanation={response.confidence_explanation} />
-      {/* EscalationCard is gated: when suppressed, SuppressedNotice already shows
-          the escalation contact — don't duplicate it in EscalationCard. */}
-      {!response.suppressed && <EscalationCard escalation={response.escalation} />}
-
-      {response.confidence === 'Low' && <LowConfidenceBanner />}
 
       {response.suppressed ? (
         <SuppressedNotice escalation={response.escalation} />
       ) : response.response_type === 'informational' ? (
         <>
-          <WarningsBanner warnings={response.warnings} />
           <ProblemSummary summary={response.problem_summary} />
           {response.detailed_explanation && (
             <DetailSection heading={t.detailedExplanation}>
@@ -94,14 +86,33 @@ function AdvisoryCardInner({ response, messageId, category }) {
             </DetailSection>
           )}
           <RecommendedActions actions={response.recommended_actions} />
+          {/* EscalationCard is gated: when suppressed, SuppressedNotice already shows
+              the escalation contact — don't duplicate it in EscalationCard. */}
+          {!response.suppressed && <EscalationCard escalation={response.escalation} />}
+          <WarningsBanner warnings={response.warnings} />
+          <div className="flex items-center gap-2 flex-wrap mt-4">
+            <ConfidenceBadge confidence={response.confidence} />
+            <NLIConfidenceBadge confidence_score={response.confidence_score} />
+          </div>
+          <ConfidenceExplainer explanation={response.confidence_explanation} />
+          {response.confidence === 'Low' && <LowConfidenceBanner />}
         </>
       ) : (
         <>
-          <WarningsBanner warnings={response.warnings} />
           <ProblemSummary summary={response.problem_summary} />
-          <LikelyCauses causes={response.likely_causes} />
           <RecommendedActions actions={response.recommended_actions} />
           <ProductsRates products={response.products_rates} />
+          <LikelyCauses causes={response.likely_causes} />
+          {/* EscalationCard is gated: when suppressed, SuppressedNotice already shows
+              the escalation contact — don't duplicate it in EscalationCard. */}
+          {!response.suppressed && <EscalationCard escalation={response.escalation} />}
+          <WarningsBanner warnings={response.warnings} />
+          <div className="flex items-center gap-2 flex-wrap mt-4">
+            <ConfidenceBadge confidence={response.confidence} />
+            <NLIConfidenceBadge confidence_score={response.confidence_score} />
+          </div>
+          <ConfidenceExplainer explanation={response.confidence_explanation} />
+          {response.confidence === 'Low' && <LowConfidenceBanner />}
         </>
       )}
       <CitationsSection citations={response.citations} />

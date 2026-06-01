@@ -105,7 +105,7 @@ export default function ChatInput({ onSubmit, disabled, prefill = '' }) {
           data-testid="chat-send"
           onClick={submit}
           disabled={disabled || !text.trim() || text.length > MAX_CHARS}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-field text-white
+          className="w-11 h-11 flex items-center justify-center rounded-full bg-field text-white
             hover:bg-field-dark active:bg-field-dark transition-colors flex-shrink-0 mb-0.5
             disabled:opacity-40 disabled:cursor-not-allowed
             dark:bg-hc-accent dark:text-hc-accent-fg dark:border-2 dark:border-hc-border dark:hover:bg-hc-fg"
