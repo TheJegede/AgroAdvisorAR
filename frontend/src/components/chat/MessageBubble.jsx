@@ -1,8 +1,16 @@
-export default function MessageBubble({ role, content, id }) {
+export default function MessageBubble({ role, content, id, createdAt }) {
   const isUser = role === 'user'
-  const time = id
-    ? new Date(id).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : ''
+  let time = ''
+  const dateInput = createdAt || id
+  if (dateInput) {
+    const isUuid = typeof dateInput === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(dateInput)
+    if (!isUuid) {
+      const d = new Date(dateInput)
+      if (!isNaN(d.getTime())) {
+        time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    }
+  }
 
   return (
     <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} my-2`}>

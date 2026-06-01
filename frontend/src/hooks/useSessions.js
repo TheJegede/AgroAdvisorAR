@@ -68,6 +68,7 @@ export function useSessions() {
       role: m.role,
       type: m.content_type,
       content: m.content_type === 'advisory' ? getParsedAdvisory(m) : m.content,
+      createdAt: m.created_at,
     }))
 
     const sessionHistory = raw.slice(-20).map((m) => ({

@@ -13,7 +13,14 @@ import AlertBanner from '../components/AlertBanner'
 const TECHNICAL_ERROR_RE = /pydantic|langchain|structured output|validation|failed|parsing|request failed|error code|failed_generation|tool_use_failed/i
 
 function makeMessage(role, type, content, extras = {}) {
-  return { id: crypto.randomUUID(), role, type, content, ...extras }
+  return {
+    id: crypto.randomUUID(),
+    role,
+    type,
+    content,
+    createdAt: new Date().toISOString(),
+    ...extras,
+  }
 }
 
 export default function ChatPage() {

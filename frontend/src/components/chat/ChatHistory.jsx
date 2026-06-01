@@ -15,7 +15,7 @@ export default function ChatHistory({ messages, streaming }) {
     <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col">
       {messages.map((msg) => {
         if (msg.type === 'text') {
-          return <MessageBubble key={msg.id} role={msg.role} content={msg.content} id={msg.id} />
+          return <MessageBubble key={msg.id} role={msg.role} content={msg.content} id={msg.id} createdAt={msg.createdAt} />
         }
         if (msg.type === 'advisory') {
           return (
@@ -38,7 +38,7 @@ export default function ChatHistory({ messages, streaming }) {
         }
         if (msg.type === 'error') {
           return (
-            <MessageBubble key={msg.id} role="assistant" content={msg.content} id={msg.id} />
+            <MessageBubble key={msg.id} role="assistant" content={msg.content} id={msg.id} createdAt={msg.createdAt} />
           )
         }
         return null
