@@ -22,7 +22,29 @@ function SidebarNavItem({ to, onClick, children, ariaPressed, ariaLabel }) {
   )
 }
 
-function SessionsList({ sessions, currentSessionId, onNavigate, onDelete, t }) {
+function SessionsList({ sessions, currentSessionId, onNavigate, onDelete, loading, error, onRetry, t }) {
+  if (loading) {
+    return (
+      <div className="flex-1 overflow-y-auto flex flex-col gap-0.5 min-h-0 pb-2 px-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-8 bg-white/10 rounded animate-pulse my-0.5" />
+        ))}
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div className="flex-1 overflow-y-auto flex flex-col gap-0.5 min-h-0 pb-2">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="text-xs text-white/60 hover:text-white px-3 py-1.5 text-left underline"
+        >
+          {t.sessionsLoadError || "Couldn't load conversations. Tap to retry."}
+        </button>
+      </div>
+    )
+  }
   return (
     <div className="flex-1 overflow-y-auto flex flex-col gap-0.5 min-h-0 pb-2">
       {sessions.length === 0 ? (
@@ -62,16 +84,22 @@ function SessionsList({ sessions, currentSessionId, onNavigate, onDelete, t }) {
   )
 }
 
-function SidebarFooter({ initials, fullName, t }) {
+function SidebarFooter({ initials, fullName, profileLoading, profileError, t }) {
   return (
     <div className="px-4 py-3 flex items-center gap-3 flex-shrink-0">
       <div className="w-9 h-9 rounded-full bg-harvest-dark flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
         {initials}
       </div>
       <div className="min-w-0">
-        <p className="text-white text-sm font-medium truncate">
-          {fullName || 'Farmer'}
-        </p>
+        {profileError ? (
+          <p className="text-white/50 text-sm truncate">Profile unavailable</p>
+        ) : profileLoading && !fullName ? (
+          <div className="w-24 h-3 bg-white/10 rounded animate-pulse" />
+        ) : (
+          <p className="text-white text-sm font-medium truncate">
+            {fullName || 'Farmer'}
+          </p>
+        )}
         <p className="text-white/70 text-xs">{t.farmer}</p>
       </div>
     </div>
@@ -84,16 +112,19 @@ export default function Sidebar({ open, onClose }) {
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
-  const { listSessions, deleteSession } = useSessions()
-  const { profile } = useProfile()
+  const { listSessions, deleteSession, sessionsLoading, sessionsError } = useSessions()
+  const { profile, loading: profileLoading, error: profileError } = useProfile()
   const [sessions, setSessions] = useState([])
+
+  async function loadSessions() {
+    const data = await listSessions()
+    setSessions(data)
+  }
 
   // Reload sessions on every navigation so new sessions appear
   useEffect(() => {
-    listSessions()
-      .then(setSessions)
-      .catch(() => {})
-  }, [listSessions, location.key])
+    loadSessions()
+  }, [listSessions, location.key]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleLogout() {
     logout()
@@ -180,6 +211,9 @@ export default function Sidebar({ open, onClose }) {
             currentSessionId={currentSessionId}
             onNavigate={(id) => { navigate(`/?session=${id}`); onClose?.() }}
             onDelete={handleDeleteSession}
+            loading={sessionsLoading}
+            error={sessionsError}
+            onRetry={loadSessions}
             t={t}
           />
         </nav>
@@ -242,7 +276,13 @@ export default function Sidebar({ open, onClose }) {
           </SidebarNavItem>
         </div>
 
-        <SidebarFooter initials={initials} fullName={profile?.full_name} t={t} />
+        <SidebarFooter
+          initials={initials}
+          fullName={profile?.full_name}
+          profileLoading={profileLoading}
+          profileError={profileError}
+          t={t}
+        />
       </aside>
     </>
   )

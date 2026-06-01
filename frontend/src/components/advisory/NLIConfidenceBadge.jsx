@@ -14,7 +14,7 @@ function scoreColor(score) {
 
 export default function NLIConfidenceBadge({ confidence_score }) {
   const { t } = useLang()
-  if (confidence_score == null) return null
+  if (confidence_score == null || confidence_score === 0) return null
   const color = scoreColor(confidence_score)
   return (
     <span
