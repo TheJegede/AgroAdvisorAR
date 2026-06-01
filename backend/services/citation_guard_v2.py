@@ -11,10 +11,10 @@ from typing import Optional
 
 import numpy as np
 from langchain_core.messages import HumanMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 import config
 from models.advisory import ClaimResult
+from utils.llm import _providers
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,8 @@ CONTRADICTION_MIN_PROB = 0.55
 # CONTRADICTED label — it is the NLI's systematic false positive on grounded
 # paraphrase / technical claims.
 LEXICAL_CONTRADICTION_GUARD = 0.6
+# Preview length (chars) passed to the LLM judge per evidence chunk.
+CHUNK_PREVIEW_LENGTH = 800
 
 _NLI_LABELS = ["CONTRADICTED", "ENTAILED", "NEUTRAL"]
 
@@ -38,7 +40,6 @@ _AGENTS_PATH = str(Path(__file__).parent.parent / "data" / "county_agents.json")
 _agents_cache: Optional[dict] = None
 
 _nli_model = None
-_gemini_llm = None
 
 
 def _get_nli_model():
@@ -47,40 +48,6 @@ def _get_nli_model():
         from sentence_transformers import CrossEncoder
         _nli_model = CrossEncoder("cross-encoder/nli-MiniLM2-L6-H768")
     return _nli_model
-
-
-def _get_gemini():
-    global _gemini_llm
-    if _gemini_llm is None:
-        _gemini_llm = ChatGoogleGenerativeAI(
-            model=config.GEMINI_CLASSIFIER_MODEL,
-            google_api_key=config.GOOGLE_API_KEY,
-            temperature=0,
-        )
-    return _gemini_llm
-
-
-_groq_llm = None
-
-
-def _get_groq():
-    global _groq_llm
-    if _groq_llm is None and config.GROQ_API_KEY:
-        from langchain_groq import ChatGroq
-        _groq_llm = ChatGroq(
-            model=config.GROQ_FAST_MODEL,  # claim extraction is light
-            api_key=config.GROQ_API_KEY,
-            temperature=0,
-        )
-    return _groq_llm
-
-
-def _decompose_providers():
-    if config.LLM_PRIMARY == "local":
-        from services.local_llm import get_local_chat
-        return [get_local_chat()]
-    return ([_get_groq(), _get_gemini()] if config.LLM_PRIMARY == "groq"
-            else [_get_gemini(), _get_groq()])
 
 
 def _load_agents() -> dict:
@@ -108,7 +75,7 @@ async def decompose_claims(answer: str) -> list[str]:
     """Break answer prose into atomic factual claims (Groq primary, Gemini
     fallback, then sentence-split)."""
     prompt = _DECOMPOSE_PROMPT.format(text=answer[:2000])
-    for llm in _decompose_providers():
+    for llm in _providers():
         if llm is None:
             continue
         try:
@@ -146,15 +113,15 @@ def _lexical_support(claim: str, chunks: list[str]) -> float:
     """Fraction of the claim's content tokens (incl. numbers/units) found in the
     best-matching chunk. Credits paraphrase and specific rates/products that NLI
     entailment misses because they are not stated verbatim. Range [0, 1]."""
-    ct = _content_tokens(claim)
-    if not ct:
+    claim_tokens = _content_tokens(claim)
+    if not claim_tokens:
         return 0.0
-    best = 0.0
-    for ch in chunks:
-        cht = _content_tokens(ch)
-        if cht:
-            best = max(best, len(ct & cht) / len(ct))
-    return best
+    best_overlap = 0.0
+    for chunk in chunks:
+        chunk_tokens = _content_tokens(chunk)
+        if chunk_tokens:
+            best_overlap = max(best_overlap, len(claim_tokens & chunk_tokens) / len(claim_tokens))
+    return best_overlap
 
 
 _JUDGE_PROMPT = """You are auditing an agricultural advisory for groundedness.
@@ -174,11 +141,6 @@ CLAIMS:
 """
 
 
-def _judge_providers():
-    # Same ordering as decomposition: reuse the configured provider chain.
-    return _decompose_providers()
-
-
 async def judge_claims_llm(claims: list[str], chunks: list[str]) -> list[ClaimResult]:
     """Score claims for groundedness with an LLM judge (provider chain), with a
     lexical backstop so specific grounded numbers/products are never under-scored."""
@@ -186,10 +148,10 @@ async def judge_claims_llm(claims: list[str], chunks: list[str]) -> list[ClaimRe
         return []
     if not chunks:
         return [ClaimResult(claim=c, label="NEUTRAL", score=0.0) for c in claims]
-    evidence = "\n---\n".join(ch[:800] for ch in chunks[:3])
+    evidence = "\n---\n".join(chunk[:CHUNK_PREVIEW_LENGTH] for chunk in chunks[:3])
     claims_block = "\n".join(f"{i+1}. {c}" for i, c in enumerate(claims))
     prompt = _JUDGE_PROMPT.format(evidence=evidence, claims=claims_block)
-    for llm in _judge_providers():
+    for llm in _providers():
         if llm is None:
             continue
         try:

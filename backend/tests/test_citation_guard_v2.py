@@ -467,7 +467,7 @@ def test_judge_claims_llm_parses_labels_and_scores(monkeypatch):
         async def ainvoke(self, messages):
             return FakeResp()
 
-    monkeypatch.setattr(mod, "_judge_providers", lambda: [FakeLLM()])
+    monkeypatch.setattr(mod, "_providers", lambda: [FakeLLM()])
     import asyncio
     results = asyncio.run(mod.judge_claims_llm(
         ["GPM = D x D x L estimates flow.", "Apply 999 lb N/ac."],

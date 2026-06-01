@@ -22,6 +22,62 @@ function SidebarNavItem({ to, onClick, children, ariaPressed, ariaLabel }) {
   )
 }
 
+function SessionsList({ sessions, currentSessionId, onNavigate, onDelete, t }) {
+  return (
+    <div className="flex-1 overflow-y-auto flex flex-col gap-0.5 min-h-0 pb-2">
+      {sessions.length === 0 ? (
+        <p className="text-xs text-white/60 px-3 py-1.5">{t.noSessions}</p>
+      ) : (
+        sessions.slice(0, 12).map((s) => (
+          <div
+            key={s.id}
+            className={[
+              'group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ml-1 mr-2',
+              currentSessionId === s.id
+                ? 'bg-white/15 text-white'
+                : 'text-white/60 hover:bg-white/10 hover:text-white/90',
+            ].join(' ')}
+          >
+            <button
+              type="button"
+              onClick={() => onNavigate(s.id)}
+              className="flex-1 text-left truncate min-w-0"
+            >
+              {s.preview || t.newChat}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(s.id) }}
+              className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/40 hover:text-white transition-opacity p-1 ml-1 flex-shrink-0"
+              aria-label="Delete conversation"
+            >
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+  )
+}
+
+function SidebarFooter({ initials, fullName, t }) {
+  return (
+    <div className="px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      <div className="w-9 h-9 rounded-full bg-harvest-dark flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+        {initials}
+      </div>
+      <div className="min-w-0">
+        <p className="text-white text-sm font-medium truncate">
+          {fullName || 'Farmer'}
+        </p>
+        <p className="text-white/70 text-xs">{t.farmer}</p>
+      </div>
+    </div>
+  )
+}
+
 export default function Sidebar({ open, onClose }) {
   const { logout } = useAuth()
   const { lang, setLang, resetLang, t } = useLang()
@@ -52,7 +108,9 @@ export default function Sidebar({ open, onClose }) {
     try {
       await deleteSession(sessionId)
       setSessions((prev) => prev.filter((s) => s.id !== sessionId))
-      if (currentSessionId === sessionId) {
+      // Read active session from location at delete time to avoid stale closure.
+      const activeSessionId = new URLSearchParams(location.search).get('session')
+      if (activeSessionId === sessionId) {
         navigate('/')
       }
     } catch (err) {
@@ -117,45 +175,13 @@ export default function Sidebar({ open, onClose }) {
             </span>
           </div>
 
-          {/* Sessions list */}
-          <div className="flex-1 overflow-y-auto flex flex-col gap-0.5 min-h-0 pb-2">
-            {sessions.length === 0 ? (
-              <p className="text-xs text-white/60 px-3 py-1.5">{t.noSessions}</p>
-            ) : (
-              sessions.slice(0, 12).map((s) => (
-                <div
-                  key={s.id}
-                  className={[
-                    'group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ml-1 mr-2',
-                    currentSessionId === s.id
-                      ? 'bg-white/15 text-white'
-                      : 'text-white/60 hover:bg-white/10 hover:text-white/90',
-                  ].join(' ')}
-                >
-                  <button
-                    type="button"
-                    onClick={() => { navigate(`/?session=${s.id}`); onClose?.() }}
-                    className="flex-1 text-left truncate min-w-0"
-                  >
-                    {s.preview || t.newChat}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteSession(s.id)
-                    }}
-                    className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-white/40 hover:text-white transition-opacity p-1 ml-1 flex-shrink-0"
-                    aria-label="Delete conversation"
-                  >
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
+          <SessionsList
+            sessions={sessions}
+            currentSessionId={currentSessionId}
+            onNavigate={(id) => { navigate(`/?session=${id}`); onClose?.() }}
+            onDelete={handleDeleteSession}
+            t={t}
+          />
         </nav>
 
         {/* Bottom navigation items */}
@@ -216,18 +242,7 @@ export default function Sidebar({ open, onClose }) {
           </SidebarNavItem>
         </div>
 
-        {/* User profile footer */}
-        <div className="px-4 py-3 flex items-center gap-3 flex-shrink-0">
-          <div className="w-9 h-9 rounded-full bg-harvest-dark flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-            {initials}
-          </div>
-          <div className="min-w-0">
-            <p className="text-white text-sm font-medium truncate">
-              {profile?.full_name || 'Farmer'}
-            </p>
-            <p className="text-white/70 text-xs">{t.farmer}</p>
-          </div>
-        </div>
+        <SidebarFooter initials={initials} fullName={profile?.full_name} t={t} />
       </aside>
     </>
   )

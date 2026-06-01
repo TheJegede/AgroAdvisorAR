@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+LOGIN_RATE_WINDOW = 900
+
 _anon_client: Client | None = None
 
 
@@ -83,7 +85,7 @@ async def forgot_password(body: ForgotPasswordRequest):
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
 async def reset_password(body: ResetPasswordRequest):
     """Apply a new password using the recovery tokens from the magic link."""
-    client = create_client(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
+    client = _get_anon_client()
     try:
         client.auth.set_session(body.access_token, body.refresh_token)
         client.auth.update_user({"password": body.new_password})
@@ -99,12 +101,12 @@ async def reset_password(body: ResetPasswordRequest):
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest):
     email_key = hashlib.sha256(body.email.lower().encode()).hexdigest()[:24]
-    allowed, _ = rate_limit_hit(f"login_throttle:{email_key}", 10, 900)
+    allowed, _ = rate_limit_hit(f"login_throttle:{email_key}", 10, LOGIN_RATE_WINDOW)
     if not allowed:
         raise HTTPException(
             status_code=429,
             detail="Too many login attempts. Please try again in 15 minutes.",
-            headers={"Retry-After": "900"},
+            headers={"Retry-After": str(LOGIN_RATE_WINDOW)},
         )
 
     client = _get_anon_client()

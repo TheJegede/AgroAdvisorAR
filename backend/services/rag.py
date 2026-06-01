@@ -15,6 +15,7 @@ from utils.crops import CROP_NAMESPACES
 from services import citation_guard_v2
 from utils.prompt import build_system_prompt
 from utils.counties import get_county_info
+from utils.llm import _is_quota_error
 import config
 
 logger = logging.getLogger(__name__)
@@ -39,17 +40,6 @@ def _strip_scaffolding(text: str) -> str:
     """Remove prompt scaffolding the LLM copies verbatim: 'Document N:' prefixes and
     the '[RETRIEVED DOCUMENT CONTEXT]' context header."""
     return _PLACEHOLDER_RE.sub("", _DOC_PREFIX_RE.sub("", text or "")).strip()
-
-
-def _is_quota_error(e: Exception) -> bool:
-    """True for rate-limit / quota-exhaustion errors that warrant a provider
-    fallback. Other errors (auth, schema, bugs) should surface, not be masked by
-    silently trying the next provider."""
-    s = str(e).lower()
-    return any(t in s for t in (
-        "resource_exhausted", "429", "rate limit", "rate_limit",
-        "tokens per day", "quota",
-    ))
 
 
 _vectorstore: PineconeVectorStore | None = None

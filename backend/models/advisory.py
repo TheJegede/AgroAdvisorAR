@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import List, Optional, Literal
+from typing import Literal
+from pydantic import BaseModel, Field
 
 
 class Cause(BaseModel):
@@ -11,13 +11,13 @@ class Product(BaseModel):
     product: str
     rate: str
     application_method: str
-    pre_harvest_interval: Optional[str] = None
+    pre_harvest_interval: str | None = None
 
 
 class Citation(BaseModel):
     document_title: str
     section: str
-    url: Optional[str] = None
+    url: str | None = None
 
 
 class ContextMeta(BaseModel):
@@ -29,7 +29,7 @@ class ContextMeta(BaseModel):
 class ClaimResult(BaseModel):
     claim: str
     label: Literal['ENTAILED', 'NEUTRAL', 'CONTRADICTED']
-    score: float
+    score: float = Field(ge=0, le=1)
 
 
 class AdvisoryDraft(BaseModel):
@@ -44,13 +44,13 @@ class AdvisoryDraft(BaseModel):
     """
     response_type: Literal["diagnostic", "informational"] = "diagnostic"
     problem_summary: str
-    detailed_explanation: Optional[str] = None
-    key_points: List[str] = []
-    likely_causes: List[Cause] = []
-    recommended_actions: List[str] = []
-    products_rates: List[Product] = []
-    warnings: List[str] = []
-    citations: List[Citation] = []
+    detailed_explanation: str | None = None
+    key_points: list[str] = []
+    likely_causes: list[Cause] = []
+    recommended_actions: list[str] = []
+    products_rates: list[Product] = []
+    warnings: list[str] = []
+    citations: list[Citation] = []
     confidence: Literal["High", "Medium", "Low"]
     confidence_explanation: str
     language: Literal["en", "es"]
@@ -60,7 +60,7 @@ class AdvisoryDraft(BaseModel):
 class AdvisoryResponse(AdvisoryDraft):
     # F2 guard-computed fields — filled by the citation guard, NOT the LLM.
     # Optional for backwards compat with stored messages.
-    confidence_score: Optional[float] = None
-    claim_verification: Optional[List[ClaimResult]] = None
-    escalation: Optional[str] = None
+    confidence_score: float | None = None
+    claim_verification: list[ClaimResult] | None = None
+    escalation: str | None = None
     suppressed: bool = False  # True when the guard blanked the body (score < SUPPRESSION)

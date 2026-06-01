@@ -2,6 +2,7 @@
 Always filter by user_id manually in read operations to prevent cross-user data leaks."""
 from datetime import datetime, timezone
 from services.user import _get_service_client
+from utils.db import _assert_insert
 
 
 def create_session(user_id: str, preview: str) -> dict:
@@ -9,8 +10,7 @@ def create_session(user_id: str, preview: str) -> dict:
         "user_id": user_id,
         "preview": preview[:100].strip(),
     }).execute()
-    if not result.data:
-        raise RuntimeError(f"Session insert returned no data for user {user_id}")
+    _assert_insert(result, f"session (user {user_id})")
     return result.data[0]
 
 
@@ -52,8 +52,7 @@ def add_message(
     if escalated is not None:
         row["escalated"] = escalated
     result = client.table("chat_messages").insert(row).execute()
-    if not result.data:
-        raise RuntimeError(f"Message insert returned no data for session {session_id}")
+    _assert_insert(result, f"message (session {session_id})")
     now = datetime.now(timezone.utc).isoformat()
     client.table("chat_sessions").update({
         "last_message_at": now,

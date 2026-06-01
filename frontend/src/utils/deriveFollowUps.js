@@ -5,8 +5,8 @@ function truncate(str) {
   return str.slice(0, TRUNCATE_AT - 1).trimEnd() + '…'
 }
 
-function pickRandom(arr) {
-  return arr[Math.floor(Math.random() * arr.length)]
+function pickRandom(array) {
+  return array[Math.floor(Math.random() * array.length)]
 }
 
 /**

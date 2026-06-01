@@ -26,29 +26,28 @@ If context is insufficient to answer, set confidence to "Low" and explain why.
 Always include a warnings array — use an empty array if no warnings apply.
 citations must contain at least one entry from the retrieved documents."""
 
-OUTPUT_INSTRUCTIONS = OUTPUT_INSTRUCTIONS_DIAG
-
 SAFETY_OVERRIDE = """SAFETY OVERRIDE — ALWAYS APPLY:
 If the query involves pesticide mixing, chemical safety, overdose, or regulatory
 compliance, prepend a safety warning to the warnings array regardless of other content:
 "WARNING: Chemical handling errors can cause serious injury. Consult product label and
 your county extension agent before mixing or applying any pesticide." """
 
-OUT_OF_SCOPE_MESSAGE = (
-    "AgroAdvisor AR is specialized for rice, soybean, and poultry questions in Arkansas. "
-    "For general questions, please use a general-purpose assistant."
-)
-
-OUT_OF_SCOPE_MESSAGE_ES = (
-    "AgroAdvisor AR está especializado en preguntas sobre arroz, soya y aves de "
-    "corral en Arkansas. Para preguntas generales, utilice un asistente de "
-    "propósito general."
-)
+OUT_OF_SCOPE_MESSAGES = {
+    "en": (
+        "AgroAdvisor AR is specialized for rice, soybean, and poultry questions in Arkansas. "
+        "For general questions, please use a general-purpose assistant."
+    ),
+    "es": (
+        "AgroAdvisor AR está especializado en preguntas sobre arroz, soya y aves de "
+        "corral en Arkansas. Para preguntas generales, utilice un asistente de "
+        "propósito general."
+    ),
+}
 
 
 def out_of_scope_message(language: str) -> str:
     """Out-of-scope reply in the user's language (static — no LLM call)."""
-    return OUT_OF_SCOPE_MESSAGE_ES if language == "es" else OUT_OF_SCOPE_MESSAGE
+    return OUT_OF_SCOPE_MESSAGES.get(language, OUT_OF_SCOPE_MESSAGES["en"])
 
 
 def build_system_prompt(

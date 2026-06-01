@@ -1,32 +1,8 @@
 """Query classifier — routes to correct RAG namespace or short-circuits out-of-scope."""
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 import config
 from utils.crops import CROP_NAMESPACES, CROP_POULTRY, CROP_RICE, CROP_SOYBEANS
-
-_groq_llm = None
-
-
-def _is_quota_error(e: Exception) -> bool:
-    """True for rate-limit / quota errors (warrant provider fallback). Other
-    errors should surface, not silently degrade routing to IN_SCOPE_GENERAL_AG."""
-    s = str(e).lower()
-    return any(t in s for t in (
-        "resource_exhausted", "429", "rate limit", "rate_limit",
-        "tokens per day", "quota",
-    ))
-
-
-def _get_groq_llm():
-    global _groq_llm
-    if _groq_llm is None and config.GROQ_API_KEY:
-        from langchain_groq import ChatGroq
-        _groq_llm = ChatGroq(
-            model=config.GROQ_FAST_MODEL,  # classification is light — use the fast 8b
-            api_key=config.GROQ_API_KEY,
-            temperature=0,
-        )
-    return _groq_llm
+from utils.llm import _is_quota_error, _get_groq, _get_gemini
 
 CATEGORIES = {
     "IN_SCOPE_RICE:DIAG",
@@ -69,20 +45,6 @@ OUT_OF_SCOPE: any non-agricultural topic.
 Query: {message}
 Return ONLY the category string (e.g. IN_SCOPE_RICE:INFO). No explanation."""
 
-_llm: ChatGoogleGenerativeAI | None = None
-
-
-def _get_llm() -> ChatGoogleGenerativeAI:
-    global _llm
-    if _llm is None:
-        _llm = ChatGoogleGenerativeAI(
-            model=config.GEMINI_CLASSIFIER_MODEL,
-            google_api_key=config.GOOGLE_API_KEY,
-            temperature=0,
-        )
-    return _llm
-
-
 # Maps classifier output → Pinecone namespace.
 # IN_SCOPE_GENERAL_AG → None is resolved by rag._namespaces_for() into a fan-out
 # across every crop namespace (the corpus has no `general` namespace). Do NOT read
@@ -107,8 +69,8 @@ async def classify_query(message: str, last_category: str | None = None) -> str:
         from services.local_llm import get_local_chat
         ordered = [get_local_chat()]
     else:
-        ordered = ([_get_groq_llm(), _get_llm()] if config.LLM_PRIMARY == "groq"
-                   else [_get_llm(), _get_groq_llm()])
+        ordered = ([_get_groq(), _get_gemini()] if config.LLM_PRIMARY == "groq"
+                   else [_get_gemini(), _get_groq()])
     category = "IN_SCOPE_GENERAL_AG:DIAG"
     for llm in ordered:
         if llm is None:

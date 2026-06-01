@@ -1,6 +1,7 @@
 """Farmer profile CRUD against Supabase using the service-role client."""
 from supabase import create_client, Client
 from utils.counties import AR_COUNTIES
+from utils.db import _assert_insert
 import config
 
 _service_client: Client | None = None
@@ -33,8 +34,7 @@ def create_profile(
         "language": language,
         "rice_fields": rice_fields or [],
     }).execute()
-    if not result.data:
-        raise RuntimeError(f"Profile insert returned no data for user {user_id}")
+    _assert_insert(result, f"profile (user {user_id})")
     return result.data[0]
 
 
@@ -63,7 +63,7 @@ def update_profile(user_id: str, updates: dict) -> dict:
     if result.data:
         return result.data[0]
     # No existing row (user created outside /register) — create with defaults
-    default_fips = updates.get("county_fips") or "05055"
+    default_fips = updates.get("county_fips") or config.DEFAULT_COUNTY_FIPS
     row = {
         "id": user_id,
         "full_name": updates.get("full_name", ""),
@@ -74,6 +74,5 @@ def update_profile(user_id: str, updates: dict) -> dict:
         "rice_fields": updates.get("rice_fields", []),
     }
     result2 = client.table("farmer_profiles").insert(row).execute()
-    if not result2.data:
-        raise RuntimeError(f"Profile insert returned no data for user {user_id}")
+    _assert_insert(result2, f"profile (user {user_id})")
     return result2.data[0]

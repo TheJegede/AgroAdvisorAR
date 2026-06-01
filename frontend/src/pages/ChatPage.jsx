@@ -10,6 +10,12 @@ import Alert from '../components/ui/Alert'
 import Spinner from '../components/ui/Spinner'
 import AlertBanner from '../components/AlertBanner'
 
+const TECHNICAL_ERROR_RE = /pydantic|langchain|structured output|validation|failed|parsing|request failed|error code|failed_generation|tool_use_failed/i
+
+function makeMessage(role, type, content, extras = {}) {
+  return { id: crypto.randomUUID(), role, type, content, ...extras }
+}
+
 export default function ChatPage() {
   const { lang, t } = useLang()
   const { sendQuery, streaming } = useSSEQuery()
@@ -28,13 +34,12 @@ export default function ChatPage() {
   const sessionParam = searchParams.get('session')
 
   // 3 random chips from the 15-item pool, stable per mount + re-localizes on language
-  // toggle, re-randomizes on New Chat (remount). Depends on `lang` so the chips follow
-  // the active language instead of freezing to whatever was active at mount.
+  // toggle, re-randomizes on New Chat (remount).
   const welcomeChips = useMemo(() => {
     const pool = t.questionPool || t.exampleQuestions || []
     if (pool.length <= 3) return pool
     return [...pool].sort(() => Math.random() - 0.5).slice(0, 3)
-  }, [lang]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [t])
 
   // Context-aware chips after first advisory; fall back to welcome pool otherwise
   const midChatChips = useMemo(() => {
@@ -43,7 +48,10 @@ export default function ChatPage() {
     return derived.length >= 2 ? derived : welcomeChips
   }, [lastAdvisory, t, welcomeChips])
 
-  // Load past session from URL param on mount
+  // Load past session from URL param on mount.
+  // intentional empty deps: load once at mount; navigating to a new session
+  // remounts the component via React Router, so sessionParam changes don't
+  // cause double-loads here.
   useEffect(() => {
     if (!sessionParam) return
     setLoadingSession(true)
@@ -59,7 +67,7 @@ export default function ChatPage() {
 
   async function handleSubmit(message) {
     setPrefill('')
-    const userMsg = { id: Date.now(), role: 'user', type: 'text', content: message }
+    const userMsg = makeMessage('user', 'text', message)
     setMessages((prev) => [...prev, userMsg])
 
     let activeSessionId = sessionId
@@ -85,14 +93,7 @@ export default function ChatPage() {
       onResult: (advisory, messageId, category) => {
         setMessages((prev) => [
           ...prev,
-          {
-            id: Date.now() + 1,
-            messageId,
-            role: 'assistant',
-            type: 'advisory',
-            content: advisory,
-            category,
-          },
+          makeMessage('assistant', 'advisory', advisory, { messageId, category }),
         ])
         setSessionHistory((h) => [
           ...h,
@@ -104,20 +105,14 @@ export default function ChatPage() {
       onOOS: (msg, messageId) => {
         setMessages((prev) => [
           ...prev,
-          {
-            id: Date.now() + 1,
-            messageId,
-            role: 'assistant',
-            type: 'oos',
-            content: msg,
-          },
+          makeMessage('assistant', 'oos', msg, { messageId }),
         ])
       },
       onError: (errMsg) => {
-        const isTechnical = /pydantic|langchain|structured output|validation|failed|parsing|request failed|error code|failed_generation|tool_use_failed/i.test(errMsg)
+        const isTechnical = TECHNICAL_ERROR_RE.test(errMsg)
         setMessages((prev) => [
           ...prev,
-          { id: Date.now() + 1, role: 'assistant', type: 'error', content: isTechnical ? t.errorGeneric : errMsg },
+          makeMessage('assistant', 'error', isTechnical ? t.errorGeneric : errMsg),
         ])
       },
     })

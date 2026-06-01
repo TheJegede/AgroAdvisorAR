@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-05-31 (session 2)
+> **Last updated:** 2026-05-31 (session 3 — codebase review cleanup)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -21,6 +21,7 @@
   is killed at the prompt source. **Effect (local-Qwen gen + Gemini judge, gte, n=9): suppression
   11% (was ~67% on the broken NLI), faithfulness 88.9%, confidence_score 0.64–1.00 mean.** Full
   backend suite 93 pass / 1 pre-existing stale fail.
+- **CODEBASE REVIEW CLEANUP = DONE 2026-05-31 (session 3).** 4-phase cleanup from `/review-code` full-pass: (P1) `utils/llm.py` shared provider singletons — `_is_quota_error` + `_get_groq/_get_gemini/_providers` de-duped across classifier/guard/translation; `utils/db.py` `_assert_insert` helper kills 3× duplicated error pattern; dead `import json` + `OUTPUT_INSTRUCTIONS` alias removed. (P2) renames: `_lexical_support` vars clarified, `_call` → `_call_llm`, `CHUNK_PREVIEW_LENGTH/FEET_TO_METERS/LOGIN_RATE_WINDOW/DEFAULT_COUNTY_FIPS` named constants. (P3) simplifications: `OUT_OF_SCOPE_MESSAGES` dict merges EN+ES, `translate_to_en` guard simplified, `create_client()` bypass in `reset_password` → singleton fixed, `NOAA_CONTACT_EMAIL` env var. Advisory model modernized: `Optional[X]`→`X|None`, `List[X]`→`list[X]`, `ClaimResult.score` gets `Field(ge=0,le=1)`. Frontend: `DetailSection` replaces duplicate `DetailedExplanation`/`KeyPoints`, `CropChip` inlined, `makeMessage` factory, `TECHNICAL_ERROR_RE` module constant, `Date.now()+1` removed, arrow fns in useSessions. (P4) `_cached_fetch` extracts 3× cache-check pattern in context.py; USGS defensive chaining simplified; `Sidebar.jsx` split into `SessionsList`+`SidebarFooter`; delete-handler stale closure fixed; `useEffect` deps clarified. Suite: 107/108 backend (1 pre-existing stale), 26/26 frontend, lint clean.
 - **Generation-model upgrade (7B→70B) is now UNBLOCKED** — the guard no longer corrupts correctness
   numbers, so a prod-like 70B eval (Groq Dev/paid tier) is the next real quality lever.
 

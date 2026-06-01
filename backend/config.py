@@ -48,7 +48,10 @@ ADMIN_USER_IDS: set[str] = {
 
 SSURGO_ENDPOINT = "https://sdmdataaccess.sc.egov.usda.gov/tabular/post.rest"
 NOAA_POINTS_URL = "https://api.weather.gov/points/{lat},{lon}"
-NOAA_USER_AGENT = "AgroAdvisor AR (jegedetaiwo95@gmail.com)"
+NOAA_CONTACT_EMAIL = os.environ.get("NOAA_CONTACT_EMAIL", "jegedetaiwo95@gmail.com")
+NOAA_USER_AGENT = f"AgroAdvisor AR ({NOAA_CONTACT_EMAIL})"
+
+DEFAULT_COUNTY_FIPS = "05055"
 
 REDIS_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 RATE_LIMIT_PER_HOUR = 20

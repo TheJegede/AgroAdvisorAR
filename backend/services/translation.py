@@ -12,41 +12,12 @@ from langchain_core.messages import HumanMessage
 
 import config
 from models.advisory import AdvisoryResponse
+from utils.llm import _providers
 
 logger = logging.getLogger(__name__)
 
-_groq = None
-_gemini = None
 
-
-def _get_groq():
-    global _groq
-    if _groq is None and config.GROQ_API_KEY:
-        from langchain_groq import ChatGroq
-        _groq = ChatGroq(model=config.GROQ_FAST_MODEL, api_key=config.GROQ_API_KEY,
-                         temperature=0)
-    return _groq
-
-
-def _get_gemini():
-    global _gemini
-    if _gemini is None:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-        _gemini = ChatGoogleGenerativeAI(model=config.GEMINI_CLASSIFIER_MODEL,
-                                         google_api_key=config.GOOGLE_API_KEY,
-                                         temperature=0)
-    return _gemini
-
-
-def _providers():
-    if config.LLM_PRIMARY == "local":
-        from services.local_llm import get_local_chat
-        return [get_local_chat()]
-    return ([_get_groq(), _get_gemini()] if config.LLM_PRIMARY == "groq"
-            else [_get_gemini(), _get_groq()])
-
-
-async def _call(prompt: str) -> str | None:
+async def _call_llm(prompt: str) -> str | None:
     """Call the first working provider; return stripped text or None on total failure."""
     for llm in _providers():
         if llm is None:
@@ -62,13 +33,13 @@ async def _call(prompt: str) -> str | None:
 async def translate_to_en(text: str) -> str:
     """Translate a Spanish farmer query to English. Falls back to the original
     text on failure (degraded retrieval; the citation guard catches bad results)."""
-    if not text or not text.strip():
+    if not (text and text.strip()):
         return text
     prompt = (
         "Translate this Arkansas farmer's question to English. Output ONLY the "
         "English translation — no quotes, no preamble.\n\n" + text
     )
-    out = await _call(prompt)
+    out = await _call_llm(prompt)
     return out or text
 
 
@@ -112,7 +83,7 @@ async def translate_advisory_to_es(advisory: AdvisoryResponse) -> AdvisoryRespon
         "unchanged. Preserve the array length and order exactly. Return ONLY a "
         "JSON array of strings.\n\n" + json.dumps(strings, ensure_ascii=False)
     )
-    translated = _parse_str_array(await _call(prompt), len(strings))
+    translated = _parse_str_array(await _call_llm(prompt), len(strings))
     if translated is None:
         logger.warning("advisory translation failed — returning English advisory")
         return advisory

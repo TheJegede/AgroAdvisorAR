@@ -37,54 +37,30 @@ const CROP_CHIP_CONFIG = {
   SAFETY_CRITICAL:    { key: 'cropChipSafety',   cls: 'bg-arred/10 text-arred border-arred/30' },
 }
 
-function CropChip({ category }) {
-  const { t } = useLang()
-  const cleanCat = category ? category.split(':')[0] : category
-  const config = CROP_CHIP_CONFIG[cleanCat]
-  if (!config) return null
-  return (
-    <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${config.cls}`}>
-      {t[config.key]}
-    </span>
-  )
-}
-
-function DetailedExplanation({ explanation }) {
-  const { t } = useLang()
-  if (!explanation) return null
+function DetailSection({ heading, children }) {
   return (
     <div className="mt-4 border-t border-gray-100 dark:border-hc-border pt-4">
-      <h4 className="text-sm font-semibold text-charcoal dark:text-hc-fg">{t.detailedExplanation}</h4>
-      <p className="text-sm text-charcoal-light dark:text-hc-fg mt-2 leading-relaxed whitespace-pre-wrap">{explanation}</p>
-    </div>
-  )
-}
-
-function KeyPoints({ points }) {
-  const { t } = useLang()
-  if (!points || !points.length) return null
-  return (
-    <div className="mt-4 border-t border-gray-100 dark:border-hc-border pt-4">
-      <h4 className="text-sm font-semibold text-charcoal dark:text-hc-fg">{t.keyPoints}</h4>
-      <ul className="list-disc pl-5 mt-2 space-y-1">
-        {points.map((p, idx) => (
-          <li key={idx} className="text-sm text-charcoal-light dark:text-hc-fg leading-relaxed">
-            {p}
-          </li>
-        ))}
-      </ul>
+      <h4 className="text-sm font-semibold text-charcoal dark:text-hc-fg">{heading}</h4>
+      {children}
     </div>
   )
 }
 
 function AdvisoryCardInner({ response, messageId, category }) {
+  const { t } = useLang()
+  const cleanCat = category ? category.split(':')[0] : category
+  const chipConfig = CROP_CHIP_CONFIG[cleanCat]
   return (
     <div className="bg-white dark:bg-hc-surface rounded-card shadow-sm dark:shadow-none border border-gray-100 dark:border-2 dark:border-hc-border p-4 my-2 w-full max-w-2xl">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
           <ConfidenceBadge confidence={response.confidence} />
           <NLIConfidenceBadge confidence_score={response.confidence_score} />
-          <CropChip category={category} />
+          {chipConfig && (
+            <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${chipConfig.cls}`}>
+              {t[chipConfig.key]}
+            </span>
+          )}
         </div>
         <ContextMetaBar meta={response.context_meta} />
       </div>
@@ -101,8 +77,22 @@ function AdvisoryCardInner({ response, messageId, category }) {
         <>
           <WarningsBanner warnings={response.warnings} />
           <ProblemSummary summary={response.problem_summary} />
-          <DetailedExplanation explanation={response.detailed_explanation} />
-          <KeyPoints points={response.key_points} />
+          {response.detailed_explanation && (
+            <DetailSection heading={t.detailedExplanation}>
+              <p className="text-sm text-charcoal-light dark:text-hc-fg mt-2 leading-relaxed whitespace-pre-wrap">
+                {response.detailed_explanation}
+              </p>
+            </DetailSection>
+          )}
+          {response.key_points?.length > 0 && (
+            <DetailSection heading={t.keyPoints}>
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                {response.key_points.map((p, idx) => (
+                  <li key={idx} className="text-sm text-charcoal-light dark:text-hc-fg leading-relaxed">{p}</li>
+                ))}
+              </ul>
+            </DetailSection>
+          )}
           <RecommendedActions actions={response.recommended_actions} />
         </>
       ) : (

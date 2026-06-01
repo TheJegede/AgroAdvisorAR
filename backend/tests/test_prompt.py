@@ -6,7 +6,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from langchain_core.documents import Document
-from utils.prompt import build_system_prompt, OUTPUT_INSTRUCTIONS
+from utils.prompt import build_system_prompt, OUTPUT_INSTRUCTIONS_DIAG as OUTPUT_INSTRUCTIONS
 
 
 def _doc(title, section, content):

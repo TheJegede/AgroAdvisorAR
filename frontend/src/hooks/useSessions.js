@@ -25,12 +25,12 @@ export function parseAdvisory(content) {
 }
 
 export function useSessions() {
-  const listSessions = useCallback(async function listSessions() {
+  const listSessions = useCallback(async () => {
     const res = await api.get('/sessions')
     return res.data.sessions // SessionResponse[]
   }, [])
 
-  const createSession = useCallback(async function createSession(preview = '') {
+  const createSession = useCallback(async (preview = '') => {
     const res = await api.post('/sessions', { preview: String(preview).slice(0, 100) })
     return res.data // { id, preview, message_count, created_at, last_message_at }
   }, [])
@@ -38,16 +38,16 @@ export function useSessions() {
   // Returns { messages, sessionHistory } in the format ChatPage expects.
   // messages: { id, role, type, content }[]  (content is parsed for advisory)
   // sessionHistory: { role, content }[]  (last 20 raw turns for RAG context)
-  const loadSession = useCallback(async function loadSession(sessionId) {
+  const loadSession = useCallback(async (sessionId) => {
     const res = await api.get(`/sessions/${sessionId}/messages`)
     const raw = res.data.messages
 
     const parsedAdvisories = new Map()
-    const getParsedAdvisory = (m) => {
-      if (!parsedAdvisories.has(m.id)) {
-        parsedAdvisories.set(m.id, parseAdvisory(m.content))
+    const getParsedAdvisory = (message) => {
+      if (!parsedAdvisories.has(message.id)) {
+        parsedAdvisories.set(message.id, parseAdvisory(message.content))
       }
-      return parsedAdvisories.get(m.id)
+      return parsedAdvisories.get(message.id)
     }
 
     const messages = raw.map((m) => ({
@@ -69,7 +69,7 @@ export function useSessions() {
     return { messages, sessionHistory }
   }, [])
 
-  const deleteSession = useCallback(async function deleteSession(sessionId) {
+  const deleteSession = useCallback(async (sessionId) => {
     await api.delete(`/sessions/${sessionId}`)
   }, [])
 

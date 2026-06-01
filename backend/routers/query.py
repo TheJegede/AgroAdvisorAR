@@ -76,7 +76,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail=str(e))
 
     profile = get_profile(user["sub"])
-    county_fips = (profile or {}).get("county_fips") or "05055"
+    county_fips = (profile or {}).get("county_fips") or config.DEFAULT_COUNTY_FIPS
     rice_fields = (profile or {}).get("rice_fields") or []
     language = req.language
 
@@ -86,7 +86,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
 
     if category == "OUT_OF_SCOPE":
         oos_message = out_of_scope_message(language)
-        oos_message_id: str | None = None
+        out_of_scope_message_id: str | None = None
         if req.session_id:
             try:
                 save_message(req.session_id, user["sub"], "user", req.message, "text")
@@ -94,13 +94,13 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                     req.session_id, user["sub"], "assistant",
                     oos_message, "oos",
                 )
-                oos_message_id = oos_row["id"]
+                out_of_scope_message_id = oos_row["id"]
             except Exception:
                 logger.exception("Failed to persist out-of-scope query response")
         return OutOfScopeResponse(
             message=oos_message,
             category=category,
-            message_id=oos_message_id,
+            message_id=out_of_scope_message_id,
         )
 
     async def event_stream():
