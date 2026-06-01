@@ -18,7 +18,7 @@ function makeMessage(role, type, content, extras = {}) {
 
 export default function ChatPage() {
   const { lang, t } = useLang()
-  const { sendQuery, streaming } = useSSEQuery()
+  const { sendQuery, streaming, retry, retryable } = useSSEQuery()
   const { createSession, loadSession } = useSessions()
   const [searchParams] = useSearchParams()
 
@@ -185,6 +185,18 @@ export default function ChatPage() {
               {q}
             </button>
           ))}
+        </div>
+      )}
+
+      {retryable && !streaming && (
+        <div className="flex justify-center flex-shrink-0 pb-2">
+          <button
+            type="button"
+            onClick={retry}
+            className="text-sm text-field dark:text-hc-accent border border-field/30 dark:border-hc-border rounded-full px-4 py-1.5 hover:bg-field/5 transition-colors"
+          >
+            {t.retry || 'Retry'}
+          </button>
         </div>
       )}
 

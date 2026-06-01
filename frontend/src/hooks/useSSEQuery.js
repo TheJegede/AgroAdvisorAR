@@ -11,7 +11,9 @@ export function parseSSEPayload(payload) {
 export function useSSEQuery() {
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState(null)
+  const [retryable, setRetryable] = useState(false)
   const abortRef = useRef(null)
+  const lastQueryRef = useRef(null)
 
   const sendQuery = useCallback(async ({
     message,
@@ -26,6 +28,8 @@ export function useSSEQuery() {
   }) => {
     setStreaming(true)
     setError(null)
+    setRetryable(false)
+    lastQueryRef.current = { message, language, sessionHistory, sessionId, lastCategory, onResult, onOOS, onError, onCategory }
 
     const controller = new AbortController()
     abortRef.current = controller
@@ -97,6 +101,7 @@ export function useSSEQuery() {
       if (err.name === 'AbortError') return
       const msg = err.message || 'Something went wrong.'
       setError(msg)
+      setRetryable(true)
       onError?.(msg)
     } finally {
       setStreaming(false)
@@ -108,5 +113,9 @@ export function useSSEQuery() {
     setStreaming(false)
   }, [])
 
-  return { sendQuery, streaming, error, cancel }
+  const retry = useCallback(() => {
+    if (lastQueryRef.current) sendQuery(lastQueryRef.current)
+  }, [sendQuery])
+
+  return { sendQuery, streaming, error, cancel, retry, retryable }
 }

@@ -21,7 +21,7 @@ export default function CitationsSection({ citations }) {
       {open && (
         <ul className="mt-2 flex flex-col gap-1.5">
           {citations.map((c, i) => (
-            <li key={i} className="text-xs text-gray-600 dark:text-hc-fg leading-relaxed">
+            <li key={i} className="text-xs text-gray-700 dark:text-hc-fg leading-relaxed">
               {c.url ? (
                 <a href={c.url} target="_blank" rel="noopener noreferrer"
                   className="text-field dark:text-hc-accent underline font-bold">
@@ -30,7 +30,7 @@ export default function CitationsSection({ citations }) {
               ) : (
                 <span className="font-medium">{c.document_title}</span>
               )}
-              {c.section && <span className="text-gray-600 dark:text-hc-fg"> — {c.section}</span>}
+              {c.section && <span className="text-gray-700 dark:text-hc-fg"> — {c.section}</span>}
             </li>
           ))}
         </ul>

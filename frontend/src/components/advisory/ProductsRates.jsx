@@ -13,7 +13,7 @@ export default function ProductsRates({ products }) {
           <div key={i} className="rounded-lg border border-gray-200 dark:border-2 dark:border-hc-border p-4 bg-white dark:bg-hc-bg">
             <p className="font-semibold text-sm text-charcoal dark:text-hc-fg mb-2">{p.product}</p>
             <div className="flex flex-col gap-1 text-sm text-gray-700 dark:text-hc-fg">
-              <div><span className="font-medium">{t.rate}:</span> {p.rate}</div>
+              <div><span className="font-medium">{t.rate}:</span> <span className="font-mono">{p.rate}</span></div>
               <div><span className="font-medium">{t.appMethod}:</span> {p.application_method}</div>
               {p.pre_harvest_interval && (
                 <div><span className="font-medium">{t.phi}:</span> {p.pre_harvest_interval}</div>
@@ -38,7 +38,7 @@ export default function ProductsRates({ products }) {
             {products.map((p, i) => (
               <tr key={i} className="border-b border-gray-100 dark:border-b-2 dark:border-hc-border hover:bg-gray-50 dark:hover:bg-hc-muted">
                 <td className="px-4 py-3 font-medium text-charcoal dark:text-hc-fg">{p.product}</td>
-                <td className="px-4 py-3 text-gray-700 dark:text-hc-fg">{p.rate}</td>
+                <td className="px-4 py-3 text-gray-700 dark:text-hc-fg font-mono">{p.rate}</td>
                 <td className="px-4 py-3 text-gray-700 dark:text-hc-fg">{p.application_method}</td>
                 <td className="px-4 py-3 text-gray-700 dark:text-hc-fg">{p.pre_harvest_interval || '—'}</td>
               </tr>

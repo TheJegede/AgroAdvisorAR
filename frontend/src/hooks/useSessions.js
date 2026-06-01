@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import api from '../lib/api'
 
 export function parseAdvisory(content) {
@@ -25,9 +25,21 @@ export function parseAdvisory(content) {
 }
 
 export function useSessions() {
+  const [sessionsLoading, setSessionsLoading] = useState(false)
+  const [sessionsError, setSessionsError] = useState(null)
+
   const listSessions = useCallback(async () => {
-    const res = await api.get('/sessions')
-    return res.data.sessions // SessionResponse[]
+    setSessionsLoading(true)
+    setSessionsError(null)
+    try {
+      const data = await api.get('/sessions').then((r) => r.data.sessions)
+      return data
+    } catch {
+      setSessionsError(true)
+      return []
+    } finally {
+      setSessionsLoading(false)
+    }
   }, [])
 
   const createSession = useCallback(async (preview = '') => {
@@ -73,5 +85,5 @@ export function useSessions() {
     await api.delete(`/sessions/${sessionId}`)
   }, [])
 
-  return { listSessions, createSession, loadSession, deleteSession }
+  return { listSessions, createSession, loadSession, deleteSession, sessionsLoading, sessionsError }
 }
