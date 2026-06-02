@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Playwright test assets
+test-results/
+playwright-report/
