@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-01 (session 6 — Phase 3 UX: i18n completeness, AlertBanner resilience, visual polish)
+> **Last updated:** 2026-06-01 (session 7 — Cartoonish Tractor Loader Animation)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -14,6 +14,7 @@
 
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
+- **TRACTOR LOADER ANIMATION = SHIPPED 2026-06-01 (session 7).** Replaced standard three-dot TypingIndicator with a theme-adaptive, CSS-animated SVG tractor driving past crops. Fully integrated with Tailwind data-theme styling for Light and High Contrast modes. Verified 26/26 frontend tests pass, 0 lint errors, and 108/108 backend tests pass.
 - **CITATION GUARD OVERHAUL = SHIPPED + merged to `main` 2026-05-31.** Backend redeployed to HF.
 - **RESPONSE RENDERING DEFECTS (M1+M2+M3) = SHIPPED 2026-05-31 (session 2).** `suppressed` flag + confidence label reconciliation + `_strip_scaffolding` + prompt unbracket + `SuppressedNotice` + AdvisoryCard branch. Backend 100/101 (1 pre-existing stale), frontend 26/26, lint clean. Pushed to `main` → Vercel auto-deployed. (`685a202`..`1a196db`)
   The broken MiniLM NLI judge is retired from the hot path; an **LLM-as-judge** (provider chain)
@@ -113,6 +114,7 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 
 ## ✅ Recently shipped (earlier this arc)
 
+- **Cartoonish Tractor Loader Animation**: Replaced default three-dot bouncing typing indicator with a custom CSS-animated SVG tractor in `TypingIndicator.jsx`. Configured dynamic color mappings for Light and High Contrast modes. All frontend (26/26) and backend (108/108) unit tests pass. 2026-06-01
 - `f553863` GENERAL_AG zero-retrieval fix — fan-out across crop namespaces (prod-verified 0→5 docs)
 - `fe25f28` (1A) title-match guard skips titleless gte index → defers to NLI (un-floors confidence)
 - `85986c9` split `AdvisoryDraft` (LLM) vs `AdvisoryResponse` (guard fields) — fixed hallucinated

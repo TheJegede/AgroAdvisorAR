@@ -263,7 +263,7 @@ def test_verifiable_text_includes_all_advisory_fields():
     assert "Scout the field." in text
     assert "Product A" in text
     assert "1 qt/ac" in text
-    assert "Follow label restrictions." in text
+    assert "Follow label restrictions." not in text
 
 
 def test_postprocess_skips_nli_when_disabled(monkeypatch):
