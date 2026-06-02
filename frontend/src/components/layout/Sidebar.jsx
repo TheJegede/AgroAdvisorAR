@@ -87,7 +87,7 @@ function SessionsList({ sessions, currentSessionId, onNavigate, onDelete, loadin
 function SidebarFooter({ initials, fullName, profileLoading, profileError, t }) {
   return (
     <div className="px-4 py-3 flex items-center gap-3 flex-shrink-0">
-      <div className="w-9 h-9 rounded-full bg-harvest-dark flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+      <div className="w-9 h-9 rounded-full bg-white dark:bg-hc-fg flex items-center justify-center text-field-dark dark:text-hc-bg text-xs font-bold flex-shrink-0">
         {initials}
       </div>
       <div className="min-w-0">

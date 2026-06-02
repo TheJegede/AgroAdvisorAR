@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
               'px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 transition-colors',
               activeTab === tab
                 ? 'border-field text-field dark:border-hc-accent dark:text-hc-accent'
-                : 'border-transparent text-gray-500 hover:text-charcoal dark:text-hc-fg',
+                : 'border-transparent text-gray-600 hover:text-charcoal dark:text-hc-fg',
             ].join(' ')}
           >
             {tab === 'overview' ? 'Overview' : 'Drift Reports'}
@@ -293,10 +293,10 @@ export default function AdminDashboardPage() {
             <p className="text-sm text-gray-500 dark:text-hc-fg">No data yet.</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
+              <PieChart role="img" aria-label="Language split chart">
                 <Pie data={languageData} dataKey="value" nameKey="name" outerRadius={80} label>
                   {languageData.map((d) => (
-                    <Cell key={d.name} fill={d.color} />
+                    <Cell key={d.name} fill={d.color} role="presentation" />
                   ))}
                 </Pie>
                 <Tooltip />

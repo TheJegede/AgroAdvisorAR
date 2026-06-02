@@ -59,6 +59,8 @@ export default function ARCountyMap({ countyData = [], dataLayer = 'queries', dr
         projection="geoAlbersUsa"
         projectionConfig={{ scale: 4800, center: [-92.4, 34.75] }}
         style={{ width: '100%', height: 'auto' }}
+        role="img"
+        aria-label="Arkansas county map"
       >
         <Geographies geography={GEO_URL}>
           {({ geographies }) =>
