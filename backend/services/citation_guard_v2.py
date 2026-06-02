@@ -71,7 +71,7 @@ Text:
 Return ONLY a JSON array, e.g. ["Claim one.", "Claim two."]"""
 
 
-async def decompose_claims(answer: str) -> list[str]:
+async def decompose_claims(answer: str, run_config: dict | None = None) -> list[str]:
     """Break answer prose into atomic factual claims (Groq primary, Gemini
     fallback, then sentence-split)."""
     prompt = _DECOMPOSE_PROMPT.format(text=answer[:2000])
@@ -79,7 +79,7 @@ async def decompose_claims(answer: str) -> list[str]:
         if llm is None:
             continue
         try:
-            response = await llm.ainvoke([HumanMessage(content=prompt)])
+            response = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
             raw = response.content.strip()
             # Strip markdown code fences if present
             raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
@@ -141,7 +141,7 @@ CLAIMS:
 """
 
 
-async def judge_claims_llm(claims: list[str], chunks: list[str]) -> list[ClaimResult]:
+async def judge_claims_llm(claims: list[str], chunks: list[str], run_config: dict | None = None) -> list[ClaimResult]:
     """Score claims for groundedness with an LLM judge (provider chain), with a
     lexical backstop so specific grounded numbers/products are never under-scored."""
     if not claims:
@@ -155,7 +155,7 @@ async def judge_claims_llm(claims: list[str], chunks: list[str]) -> list[ClaimRe
         if llm is None:
             continue
         try:
-            resp = await llm.ainvoke([HumanMessage(content=prompt)])
+            resp = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
             raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", resp.content.strip(), flags=re.MULTILINE).strip()
             parsed = json.loads(raw)
             out: list[ClaimResult] = []
@@ -273,7 +273,7 @@ def escalation_cue(county_fips: str) -> Optional[str]:
     return " — ".join(parts)
 
 
-async def verify_answer(answer: str, chunks: list[dict]) -> dict:
+async def verify_answer(answer: str, chunks: list[dict], run_config: dict | None = None) -> dict:
     """Orchestrate claim decomposition, groundedness scoring (LLM judge or NLI
     per config), and escalation lookup.
 
@@ -287,13 +287,13 @@ async def verify_answer(answer: str, chunks: list[dict]) -> dict:
     """
     chunk_texts = [c.get("snippet", "") for c in chunks if c.get("snippet")]
 
-    claims_text = await decompose_claims(answer)
+    claims_text = await decompose_claims(answer, run_config)
 
     if not claims_text:
         return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
 
     if config.GROUNDEDNESS_JUDGE == "llm":
-        results = await judge_claims_llm(claims_text, chunk_texts)
+        results = await judge_claims_llm(claims_text, chunk_texts, run_config)
     else:
         results = await asyncio.to_thread(
             lambda: [verify_claim(c, chunk_texts) for c in claims_text]

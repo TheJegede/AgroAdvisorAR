@@ -62,7 +62,7 @@ CATEGORY_TO_NAMESPACE = {
 }
 
 
-async def classify_query(message: str, last_category: str | None = None) -> str:
+async def classify_query(message: str, last_category: str | None = None, user_id: str | None = None) -> str:
     prompt = CLASSIFIER_PROMPT.format(message=message)
     # Provider order from config (default Groq primary — Gemini free is 20/day).
     if config.LLM_PRIMARY == "local":
@@ -71,12 +71,19 @@ async def classify_query(message: str, last_category: str | None = None) -> str:
     else:
         ordered = ([_get_groq(), _get_gemini()] if config.LLM_PRIMARY == "groq"
                    else [_get_gemini(), _get_groq()])
+    
+    run_config = {
+        "metadata": {
+            "user_id": user_id,
+            "stage": "classifier",
+        }
+    }
     category = "IN_SCOPE_GENERAL_AG:DIAG"
     for llm in ordered:
         if llm is None:
             continue
         try:
-            response = await llm.ainvoke([HumanMessage(content=prompt)])
+            response = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
             category = response.content.strip().upper()
             if category not in CATEGORIES:
                 # If category is valid but missing suffix, default to DIAG

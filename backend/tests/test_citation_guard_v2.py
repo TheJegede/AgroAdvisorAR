@@ -209,7 +209,7 @@ def test_postprocess_stamps_confidence_score(monkeypatch):
     rag = importlib.import_module("services.rag")
     guard = importlib.import_module("services.citation_guard_v2")
 
-    async def fake_verify_answer(answer, chunks):
+    async def fake_verify_answer(answer, chunks, *args, **kwargs):
         return {
             "confidence_score": 0.82,
             "claim_verification": [],
@@ -422,7 +422,7 @@ def test_postprocess_suppresses_body_below_threshold(monkeypatch):
     rag = importlib.import_module("services.rag")
     guard = importlib.import_module("services.citation_guard_v2")
 
-    async def fake_verify_low(answer, chunks):
+    async def fake_verify_low(answer, chunks, *args, **kwargs):
         return {"confidence_score": 0.10, "claim_verification": [], "escalation": None}
 
     monkeypatch.setattr(guard, "verify_answer", fake_verify_low)
@@ -464,7 +464,7 @@ def test_judge_claims_llm_parses_labels_and_scores(monkeypatch):
         )
 
     class FakeLLM:
-        async def ainvoke(self, messages):
+        async def ainvoke(self, messages, *args, **kwargs):
             return FakeResp()
 
     monkeypatch.setattr(mod, "_providers", lambda: [FakeLLM()])
@@ -481,10 +481,10 @@ def test_verify_answer_uses_llm_judge_when_configured(monkeypatch):
     mod = importlib.import_module("services.citation_guard_v2")
     import asyncio
 
-    async def fake_decompose(answer):
+    async def fake_decompose(answer, *args, **kwargs):
         return ["claim one"]
 
-    async def fake_judge(claims, chunks):
+    async def fake_judge(claims, chunks, *args, **kwargs):
         from models.advisory import ClaimResult
         return [ClaimResult(claim="claim one", label="ENTAILED", score=0.88)]
 

@@ -17,20 +17,28 @@ from utils.llm import _providers
 logger = logging.getLogger(__name__)
 
 
-async def _call_llm(prompt: str) -> str | None:
+async def _call_llm(prompt: str, user_id: str | None = None, stage: str | None = None) -> str | None:
     """Call the first working provider; return stripped text or None on total failure."""
+    run_config = {}
+    if user_id or stage:
+        run_config["metadata"] = {}
+        if user_id:
+            run_config["metadata"]["user_id"] = user_id
+        if stage:
+            run_config["metadata"]["stage"] = stage
+
     for llm in _providers():
         if llm is None:
             continue
         try:
-            resp = await llm.ainvoke([HumanMessage(content=prompt)])
+            resp = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
             return (resp.content or "").strip()
         except Exception as e:  # quota or transient; try next provider
             logger.warning("translation provider failed: %s", str(e)[:150])
     return None
 
 
-async def translate_to_en(text: str) -> str:
+async def translate_to_en(text: str, user_id: str | None = None) -> str:
     """Translate a Spanish farmer query to English. Falls back to the original
     text on failure (degraded retrieval; the citation guard catches bad results)."""
     if not (text and text.strip()):
@@ -39,7 +47,7 @@ async def translate_to_en(text: str) -> str:
         "Translate this Arkansas farmer's question to English. Output ONLY the "
         "English translation — no quotes, no preamble.\n\n" + text
     )
-    out = await _call_llm(prompt)
+    out = await _call_llm(prompt, user_id=user_id, stage="translate_query")
     return out or text
 
 
@@ -61,7 +69,7 @@ def _parse_str_array(raw: str | None, n: int) -> list[str] | None:
     return arr
 
 
-async def translate_advisory_to_es(advisory: AdvisoryResponse) -> AdvisoryResponse:
+async def translate_advisory_to_es(advisory: AdvisoryResponse, user_id: str | None = None) -> AdvisoryResponse:
     """Translate the advisory's user-facing prose to Spanish, preserving products,
     rates, citations, escalation, and confidence fields. Falls back to the
     untranslated English advisory on failure."""
@@ -83,7 +91,7 @@ async def translate_advisory_to_es(advisory: AdvisoryResponse) -> AdvisoryRespon
         "unchanged. Preserve the array length and order exactly. Return ONLY a "
         "JSON array of strings.\n\n" + json.dumps(strings, ensure_ascii=False)
     )
-    translated = _parse_str_array(await _call_llm(prompt), len(strings))
+    translated = _parse_str_array(await _call_llm(prompt, user_id=user_id, stage="translate_response"), len(strings))
     if translated is None:
         logger.warning("advisory translation failed — returning English advisory")
         return advisory

@@ -36,11 +36,11 @@ class OutOfScopeResponse(BaseModel):
     message_id: str | None = None  # populated when session_id provided
 
 
-async def maybe_translate_query(message: str, language: str) -> str:
+async def maybe_translate_query(message: str, language: str, user_id: str | None = None) -> str:
     """ES bridge: translate the query to English so the all-English pipeline runs.
     EN passes through unchanged."""
     if language == "es":
-        return await translate_to_en(message)
+        return await translate_to_en(message, user_id=user_id)
     return message
 
 
@@ -81,8 +81,8 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     language = req.language
 
     # Translate-bridge: ES query -> EN so the whole RAG pipeline runs in English.
-    en_message = await maybe_translate_query(req.message, language)
-    category = await classify_query(en_message, last_category=req.last_category)
+    en_message = await maybe_translate_query(req.message, language, user_id=user["sub"])
+    category = await classify_query(en_message, last_category=req.last_category, user_id=user["sub"])
 
     if category == "OUT_OF_SCOPE":
         oos_message = out_of_scope_message(language)
@@ -112,9 +112,10 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 category=category,
                 session_history=req.session_history,
                 rice_fields=rice_fields,
+                user_id=user["sub"],
             )
             if language == "es":
-                result = await translate_advisory_to_es(result)
+                result = await translate_advisory_to_es(result, user_id=user["sub"])
 
             assistant_message_id: str | None = None
             if req.session_id:

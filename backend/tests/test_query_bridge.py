@@ -7,7 +7,7 @@ def test_es_request_translates_in(monkeypatch):
     q = importlib.import_module("routers.query")
     calls = {"to_en": 0}
 
-    async def fake_to_en(text):
+    async def fake_to_en(text, *args, **kwargs):
         calls["to_en"] += 1
         return "EN: " + text
 

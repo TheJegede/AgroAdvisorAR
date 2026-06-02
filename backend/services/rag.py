@@ -164,6 +164,7 @@ async def _postprocess_async(
     soil: dict,
     weather: dict,
     county_fips: str,
+    run_config: dict | None = None,
 ) -> AdvisoryResponse:
     """Apply citation guard (title-match + NLI) and stamp context_meta.
 
@@ -243,7 +244,7 @@ async def _postprocess_async(
         for doc in docs
     ]
 
-    nli_result = await citation_guard_v2.verify_answer(answer_prose, retrieved_chunks)
+    nli_result = await citation_guard_v2.verify_answer(answer_prose, retrieved_chunks, run_config=run_config)
     confidence_score: float = nli_result["confidence_score"]
     claim_verification = nli_result["claim_verification"]
 
@@ -289,8 +290,17 @@ async def run_rag_query(
     category: str,
     session_history: list[dict],
     rice_fields: list[dict] | None = None,
+    user_id: str | None = None,
 ) -> tuple[AdvisoryResponse, list[dict]]:
     """Returns (advisory, retrieved_chunks)."""
+    run_config = {
+        "metadata": {
+            "user_id": user_id,
+            "county_fips": county_fips,
+            "language": language,
+            "category": category,
+        }
+    }
     context_task = asyncio.create_task(get_context(county_fips))
 
     vectorstore = _get_vectorstore()
@@ -393,7 +403,7 @@ async def run_rag_query(
         if llm is None:
             continue
         try:
-            result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages)
+            result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
             break
         except Exception as e:
             last_err = e
@@ -406,7 +416,7 @@ async def run_rag_query(
     if result is None:
         raise RuntimeError(f"RAG generation failed (all providers): {last_err}") from last_err
 
-    advisory = await _postprocess_async(result, docs, soil, weather, county_fips)
+    advisory = await _postprocess_async(result, docs, soil, weather, county_fips, run_config=run_config)
     retrieved_chunks = [
         {
             "document_title": d.metadata.get("document_title", ""),

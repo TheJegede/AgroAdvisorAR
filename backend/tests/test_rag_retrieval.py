@@ -140,7 +140,7 @@ def _patch_guard(rag, monkeypatch, score):
     """Force the NLI guard on and stub verify_answer to a fixed score."""
     monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", True)
 
-    async def _fake(answer, chunks):
+    async def _fake(answer, chunks, *args, **kwargs):
         return {"confidence_score": score, "claim_verification": [], "escalation": None}
 
     monkeypatch.setattr(rag.citation_guard_v2, "verify_answer", _fake)

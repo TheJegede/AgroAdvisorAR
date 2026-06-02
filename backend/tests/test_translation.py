@@ -10,7 +10,7 @@ def _patch_providers(monkeypatch, reply):
         def __init__(self, c): self.content = c
 
     class _LLM:
-        async def ainvoke(self, messages):
+        async def ainvoke(self, messages, *args, **kwargs):
             return _Resp(reply)
 
     monkeypatch.setattr(mod, "_providers", lambda: [_LLM()])
@@ -53,7 +53,7 @@ def test_translate_advisory_translates_prose_preserves_products(monkeypatch):
         def __init__(self, c): self.content = c
 
     class _LLM:
-        async def ainvoke(self, messages):
+        async def ainvoke(self, messages, *args, **kwargs):
             arr = json.loads(messages[0].content.split("\n\n", 1)[1])
             return _Resp(json.dumps(["ES:" + s for s in arr], ensure_ascii=False))
 
