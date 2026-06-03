@@ -14,6 +14,7 @@
 
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
+- **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.
 - **TRACTOR LOADER ANIMATION = SHIPPED 2026-06-01 (session 7).** Replaced standard three-dot TypingIndicator with a theme-adaptive, CSS-animated SVG tractor driving past crops. Fully integrated with Tailwind data-theme styling for Light and High Contrast modes. Verified 26/26 frontend tests pass, 0 lint errors, and 108/108 backend tests pass.
 - **CITATION GUARD OVERHAUL = SHIPPED + merged to `main` 2026-05-31.** Backend redeployed to HF.
 - **RESPONSE RENDERING DEFECTS (M1+M2+M3) = SHIPPED 2026-05-31 (session 2).** `suppressed` flag + confidence label reconciliation + `_strip_scaffolding` + prompt unbracket + `SuppressedNotice` + AdvisoryCard branch. Backend 100/101 (1 pre-existing stale), frontend 26/26, lint clean. Pushed to `main` → Vercel auto-deployed. (`685a202`..`1a196db`)
@@ -60,13 +61,11 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 
 ### ▶▶ RESUME HERE (next session)
 1. **⚠️ OWNER ACTION — verify HF Space env** (couldn't check from local; not authed to the Space).
-   HF Space → Settings → Variables/Secrets: confirm `PINECONE_INDEX_NAME=agroar-prod-gte` and
-   `EMBEDDING_MODEL_PATH=thenlper/gte-base`. (Owner confirmed both keys present and values verified.)
-2. **Prod-like 70B answer eval** (now unblocked) when Groq Dev/paid tier is available — the real next lever.
-3. **Re-ingest / cut over gte WITH title+section metadata** so the title-match guard validates real
-   citations (the live `agroar-prod-gte` index stores only `{text, namespace}` → `(no title meta)`).
-4. **Known calibration item:** `_SAFETY_CRITICAL_RE` matches a bare digit, so a CONTRADICTED claim
-   mentioning a growth stage (V3/R5) full-suppresses (fail-safe but conservative) — tighten with data if it fires.
+   HF Space → Settings → Variables/Secrets: confirm `PINECONE_INDEX_NAME=agroar-prod-gte-v2` and
+   `EMBEDDING_MODEL_PATH=thenlper/gte-base`.
+2. **DeepInfra 70B Integration**: Completed (2026-06-03). Added DeepInfra as alternative/fallback 70B provider to bypass Groq Developer tier limits, upgraded fallback Gemini models, and implemented JSON mode parsing pipeline for structured output correctness.
+3. **Re-ingest / cut over gte WITH title+section metadata**: Completed (2026-06-03). Switched active index in `.env` to `agroar-prod-gte-v2` (which already has titles/sections), verified metrics and citation guard end-to-end.
+4. **Calibration item:** `_SAFETY_CRITICAL_RE` calibrated to ignore crop growth stages (`V3`/`R5`/`V3.5`/`R 5`/`R-1`) and focus only on true chemical/rate numbers (completed 2026-06-03).
 
 ---
 
@@ -76,16 +75,16 @@ Best of everything tested (`answer_eval_full --provider local`):
 
 | Knob | Value | Note |
 |---|---|---|
-| Index | `agroar-prod-gte` | gte-base 768-dim, ~20,546 vectors |
+| Index | `agroar-prod-gte-v2` | gte-base 768-dim, ~20,546 vectors, includes titles & sections |
 | Chunking | **512 CHARACTERS** (`ingestion/chunker.py`, `length_function=len`) | NOT tokens (token-chunking regressed — see rejected table) |
 | Retrieval | dense-only, top-5 | |
 | Reranker | **OFF** | |
 | Embedder | `thenlper/gte-base` | `EMBEDDING_MODEL_PATH` env |
-| Generation | Groq `llama-3.3-70b` (prod) / local Qwen-7B (free eval) | |
+| Generation | Groq `llama-3.3-70b` / DeepInfra Llama 3.3 70B (prod) | |
 | Groundedness judge | LLM-as-judge (`GROUNDEDNESS_JUDGE=llm`) | NLI offline fallback only |
 
 Run prod-config eval:
-`EMBEDDING_MODEL_PATH=thenlper/gte-base PINECONE_INDEX_NAME=agroar-prod-gte python evals/{eval_runner,answer_eval}.py`
+`EMBEDDING_MODEL_PATH=thenlper/gte-base PINECONE_INDEX_NAME=agroar-prod-gte-v2 python evals/{eval_runner,answer_eval}.py`
 
 ---
 
@@ -114,6 +113,7 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 
 ## ✅ Recently shipped (earlier this arc)
 
+- **Sidebar Sessions Auto-Refresh**: Fixed new chat sessions not appearing in the sidebar until manual page refresh. Removed forced key remounting on `ChatPageWrapper` in `App.jsx`, updated `ChatPage` to push the new session ID to the URL on session creation, and implemented synchronized active session state in `useEffect` using `useRef`. All unit tests and lint checks pass clean. 2026-06-02
 - **Cartoonish Tractor Loader Animation**: Replaced default three-dot bouncing typing indicator with a custom CSS-animated SVG tractor in `TypingIndicator.jsx`. Configured dynamic color mappings for Light and High Contrast modes. All frontend (26/26) and backend (108/108) unit tests pass. 2026-06-01
 - `f553863` GENERAL_AG zero-retrieval fix — fan-out across crop namespaces (prod-verified 0→5 docs)
 - `fe25f28` (1A) title-match guard skips titleless gte index → defers to NLI (un-floors confidence)

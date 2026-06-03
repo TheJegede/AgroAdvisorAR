@@ -134,6 +134,21 @@ def test_score_answer_safety_critical_contradiction_suppresses():
     assert mod.score_answer(claims) == 0.0
 
 
+def test_score_answer_growth_stage_contradiction_does_not_suppress():
+    # A contradiction on a growth stage (e.g. V3 or R5) should NOT be treated as
+    # safety-critical and therefore should not fully suppress the answer.
+    mod = importlib.import_module("services.citation_guard_v2")
+    from models.advisory import ClaimResult
+    claims = [
+        ClaimResult(claim="Scout the field weekly.", label="ENTAILED", score=0.9),
+        ClaimResult(claim="Apply at V3 stage.", label="CONTRADICTED", score=0.0),
+        ClaimResult(claim="Avoid application after R5.", label="CONTRADICTED", score=0.0),
+    ]
+    # The contradicted claims are dropped, and the rest is scored.
+    score = mod.score_answer(claims)
+    assert score == 0.9  # not suppressed (would be 0.0 if safety-critical)
+
+
 def test_verify_claim_empty_chunks_ungrounded():
     # P0.2: no retrieved evidence → score 0.0 (was 0.5, which passed the gate).
     mod = importlib.import_module("services.citation_guard_v2")

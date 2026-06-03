@@ -7,6 +7,20 @@ import config
 
 _groq = None
 _gemini = None
+_deepinfra = None
+
+
+def _get_deepinfra():
+    global _deepinfra
+    if _deepinfra is None and config.DEEPINFRA_API_KEY:
+        from langchain_openai import ChatOpenAI
+        _deepinfra = ChatOpenAI(
+            model=config.DEEPINFRA_MODEL,
+            openai_api_key=config.DEEPINFRA_API_KEY,
+            openai_api_base="https://api.deepinfra.com/v1",
+            temperature=0,
+        )
+    return _deepinfra
 
 
 def _is_quota_error(e: Exception) -> bool:
@@ -43,5 +57,14 @@ def _providers():
     if config.LLM_PRIMARY == "local":
         from services.local_llm import get_local_chat
         return [get_local_chat()]
-    return ([_get_groq(), _get_gemini()] if config.LLM_PRIMARY == "groq"
-            else [_get_gemini(), _get_groq()])
+    
+    groq = _get_groq()
+    gemini = _get_gemini()
+    deepinfra = _get_deepinfra()
+    
+    if config.LLM_PRIMARY == "deepinfra":
+        return [deepinfra, groq, gemini]
+    elif config.LLM_PRIMARY == "gemini":
+        return [gemini, groq, deepinfra]
+    else:  # groq
+        return [groq, deepinfra, gemini]

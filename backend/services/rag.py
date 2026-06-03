@@ -46,6 +46,7 @@ _vectorstore: PineconeVectorStore | None = None
 _llm: ChatGoogleGenerativeAI | None = None
 _groq_llm = None
 _groq_fast_llm = None
+_deepinfra_llm = None
 
 
 def _get_groq_llm():
@@ -72,6 +73,19 @@ def _get_groq_fast_llm():
             temperature=0.1,
         )
     return _groq_fast_llm
+
+
+def _get_deepinfra_llm():
+    global _deepinfra_llm
+    if _deepinfra_llm is None and config.DEEPINFRA_API_KEY:
+        from langchain_openai import ChatOpenAI
+        _deepinfra_llm = ChatOpenAI(
+            model=config.DEEPINFRA_MODEL,
+            openai_api_key=config.DEEPINFRA_API_KEY,
+            openai_api_base="https://api.deepinfra.com/v1",
+            temperature=0.1,
+        )
+    return _deepinfra_llm
 
 
 def _get_vectorstore() -> PineconeVectorStore:
@@ -392,10 +406,16 @@ async def run_rag_query(
         ordered = [get_local_chat()]
     else:
         groq = _get_groq_llm()
+        deepinfra = _get_deepinfra_llm()
         groq_fast = _get_groq_fast_llm()
         gemini = _get_llm()
-        ordered = ([groq, groq_fast, gemini] if config.LLM_PRIMARY == "groq"
-                   else [gemini, groq, groq_fast])
+        
+        if config.LLM_PRIMARY == "deepinfra":
+            ordered = [deepinfra, groq, groq_fast, gemini]
+        elif config.LLM_PRIMARY == "gemini":
+            ordered = [gemini, groq, deepinfra, groq_fast]
+        else:  # groq
+            ordered = [groq, deepinfra, groq_fast, gemini]
 
     result = None
     last_err = None
@@ -403,7 +423,22 @@ async def run_rag_query(
         if llm is None:
             continue
         try:
-            result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
+            if llm == _get_deepinfra_llm():
+                from langchain_core.output_parsers import PydanticOutputParser
+                parser = PydanticOutputParser(pydantic_object=AdvisoryDraft)
+                format_instructions = parser.get_format_instructions()
+                
+                di_messages = []
+                for msg in messages:
+                    if msg.type == "system":
+                        di_messages.append(SystemMessage(content=f"{msg.content}\n\n{format_instructions}"))
+                    else:
+                        di_messages.append(msg)
+                
+                runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
+                result = await runnable.ainvoke(di_messages, config=run_config)
+            else:
+                result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
             break
         except Exception as e:
             last_err = e

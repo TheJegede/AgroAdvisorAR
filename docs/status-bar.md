@@ -46,9 +46,7 @@ hybrid BM25 (flat), query rewrite (wash), HyDE (worse), ms-marco reranker (regre
 Real next levers are NOT retrieval technique → see PROGRESS.md. Two confounds make absolute
 numbers unreliable (single-gold metric + local-Qwen eval vs prod Groq-70b).
 
-📌 **PENDING — gte title/section metadata.** The live `agroar-prod-gte` index stores only
-`{text, namespace}` (no `document_title`), so the title-match guard can't validate citations.
-Re-ingest gte WITH title metadata (preserve the winning 512-char chunking) so it can. See PROGRESS.md.
+✅ **GT INDEX WITH METADATA SWITCHED 2026-06-03.** Switched active Pinecone index from `agroar-prod-gte` (which lacked document titles) to `agroar-prod-gte-v2` (contains all `document_title` and `section_heading` metadata). Validated that retrieval metrics are maintained (`MRR@5` `0.1508` -> `0.1533`) and the title-matching citation guard now successfully validates citations end-to-end.
 
 Still open (next levers, evidence-ranked):
 - **Generation model 7B → 70B** — biggest unmeasured correctness lever (eval uses local

@@ -232,13 +232,23 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
 # a wrong chemical or fertilizer rate can harm a crop or flock, so it still forces
 # full suppression rather than being surgically dropped. (Product-name detection
 # is deferred — numeric rates/units are the concrete, testable safety signal.)
+#
+# Calibration: Consume crop growth stages (like V3, R5, V3.5, R-1, R 5) on the left
+# of the alternation (without Group 1 capture) to prevent bare digit matches on them,
+# while capturing true numbers/rates in Group 1.
 _SAFETY_CRITICAL_RE = re.compile(
-    r"\d|\b(?:lb|lbs|oz|qt|qts|gal|gpa|pt|pts|fl\s*oz)\b|/\s*ac", re.IGNORECASE
+    r"\b[VRvr]\s?-?\d+(?:\.\d+)?\b|(\d|\b(?:lb|lbs|oz|qt|qts|gal|gpa|pt|pts|fl\s*oz)\b|/\s*ac)", re.IGNORECASE
 )
 
 
 def _is_safety_critical_contradiction(result: ClaimResult) -> bool:
-    return result.label == "CONTRADICTED" and bool(_SAFETY_CRITICAL_RE.search(result.claim))
+    if result.label != "CONTRADICTED":
+        return False
+    # Check if there is a match that captures Group 1 (which contains the true rate/numbers)
+    for m in _SAFETY_CRITICAL_RE.finditer(result.claim):
+        if m.group(1) is not None:
+            return True
+    return False
 
 
 def score_answer(results: list[ClaimResult]) -> float:
