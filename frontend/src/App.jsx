@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { LangProvider } from './contexts/LangContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -19,13 +19,10 @@ const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
 const EvalQueuePage = lazy(() => import('./pages/EvalQueuePage'))
 const DriftReportPage = lazy(() => import('./pages/DriftReportPage'))
 
-// Remounts ChatPage when ?session param changes OR when navigating to / fresh.
-// sessionParam stabilises the key while viewing a saved session.
-// location.key is unique per navigation, so every trip to / (new chat) remounts.
+// ChatPage wrapper component. State is reset internally inside ChatPage
+// based on changes to the session query parameter.
 function ChatPageWrapper() {
-  const location = useLocation()
-  const sessionParam = new URLSearchParams(location.search).get('session')
-  return <ChatPage key={sessionParam ?? location.key} />
+  return <ChatPage />
 }
 
 export default function App() {

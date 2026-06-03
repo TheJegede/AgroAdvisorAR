@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../contexts/LangContext'
 import { useSSEQuery } from '../hooks/useSSEQuery'
 import { useSessions } from '../hooks/useSessions'
@@ -28,6 +28,7 @@ export default function ChatPage() {
   const { sendQuery, streaming, retry, retryable } = useSSEQuery()
   const { createSession, loadSession } = useSessions()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const [messages, setMessages] = useState([])
   const [sessionHistory, setSessionHistory] = useState([])
@@ -39,6 +40,7 @@ export default function ChatPage() {
   const [prefill, setPrefill] = useState('')
 
   const sessionParam = searchParams.get('session')
+  const activeSessionIdRef = useRef(null)
 
   // 3 random chips from the 15-item pool, stable per mount + re-localizes on language
   // toggle, re-randomizes on New Chat (remount).
@@ -55,22 +57,38 @@ export default function ChatPage() {
     return derived.length >= 2 ? derived : welcomeChips
   }, [lastAdvisory, t, welcomeChips])
 
-  // Load past session from URL param on mount.
-  // intentional empty deps: load once at mount; navigating to a new session
-  // remounts the component via React Router, so sessionParam changes don't
-  // cause double-loads here.
+  // Load past session from URL param when it changes
   useEffect(() => {
-    if (!sessionParam) return
+    if (!sessionParam) {
+      if (activeSessionIdRef.current !== null) {
+        setMessages([])
+        setSessionHistory([])
+        setSessionId(null)
+        setLastCategory(null)
+        setLastAdvisory(null)
+        setLoadError('')
+        activeSessionIdRef.current = null
+      }
+      return
+    }
+
+    // If active session ID already matches sessionParam, avoid re-fetching
+    if (sessionParam === activeSessionIdRef.current) {
+      return
+    }
+
     setLoadingSession(true)
     loadSession(sessionParam)
       .then(({ messages: loaded, sessionHistory: history }) => {
         setMessages(loaded)
         setSessionHistory(history)
+        activeSessionIdRef.current = sessionParam
         setSessionId(sessionParam)
+        setLoadError('')
       })
       .catch(() => setLoadError(t.sessionLoadError))
       .finally(() => setLoadingSession(false))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessionParam, loadSession, t.sessionLoadError])
 
   async function handleSubmit(message) {
     setPrefill('')
@@ -82,7 +100,9 @@ export default function ChatPage() {
       try {
         const session = await createSession(message)
         activeSessionId = session.id
+        activeSessionIdRef.current = activeSessionId
         setSessionId(activeSessionId)
+        navigate(`/?session=${activeSessionId}`, { replace: true })
       } catch {
         // proceed without persistence
       }
