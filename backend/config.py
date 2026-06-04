@@ -28,8 +28,8 @@ SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 SUPABASE_JWT_SECRET = os.environ["SUPABASE_JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 
-GEMINI_PRIMARY_MODEL = "gemini-1.5-flash"
-GEMINI_CLASSIFIER_MODEL = "gemini-1.5-flash"
+GEMINI_PRIMARY_MODEL = "gemini-2.5-flash"
+GEMINI_CLASSIFIER_MODEL = "gemini-2.5-flash-lite"
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_CLASSIFIER_MODEL = "llama-3.3-70b-versatile"
 # Provider order for all LLM calls. Default groq: Gemini free tier is 20 req/day,
