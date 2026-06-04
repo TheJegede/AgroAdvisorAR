@@ -164,7 +164,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | Chat delete functionality — enabled deleting chat sessions and cascading messages in backend services, exposed DELETE route, added trash icon next to each chat item in sidebar with confirmation dialog, added tests | Frontend UI + Core RAG | 2026-05-31 |
 | Cartoonish Tractor Loader Animation — replaced default TypingIndicator with custom CSS-animated SVG tractor driving past crops, fully responsive and styled for High Contrast mode, tests pass | Frontend UI | 2026-06-01 |
 | Sidebar Sessions Auto-Refresh — fixed new chat sessions not appearing in sidebar until manual page refresh by refactoring activeSessionId sync in useEffect and pushing session ID to URL | Frontend UI | 2026-06-02 |
-| DeepInfra 70B Integration & Gemini Fallback Upgrades — added DeepInfra Llama 3.3 70B as primary/fallback provider using Pydantic JSON mode parsing and upgraded deprecated Gemini models to stable gemini-1.5-flash | Core RAG | 2026-06-03 |
+| DeepInfra 70B Integration & Gemini Fallback Upgrades — added DeepInfra Llama 3.3 70B as primary/fallback provider using Pydantic JSON mode parsing and reverted deprecated Gemini models to active gemini-2.5-flash series | Core RAG | 2026-06-03 |
 | Pinecone v2 Index Metadata Cutover & Citation Guard Calibration — cut over to agroar-prod-gte-v2 index (complete with titles/sections), calibrated safety-critical regex to ignore growth stages (V3/R5/V3.5), verified 109 backend tests pass | Core RAG | 2026-06-03 |
 
 
