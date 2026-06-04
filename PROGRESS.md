@@ -60,9 +60,7 @@ Plan (executed): `docs/superpowers/plans/2026-05-31-citation-guard-overhaul.md`.
 Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`, `trace_pipeline_batch.py`.
 
 ### ▶▶ RESUME HERE (next session)
-1. **⚠️ OWNER ACTION — verify HF Space env** (couldn't check from local; not authed to the Space).
-   HF Space → Settings → Variables/Secrets: confirm `PINECONE_INDEX_NAME=agroar-prod-gte-v2` and
-   `EMBEDDING_MODEL_PATH=thenlper/gte-base`.
+1. **HF Space Env Verified**: Verified and updated by owner (2026-06-03) with `PINECONE_INDEX_NAME=agroar-prod-gte-v2` and `EMBEDDING_MODEL_PATH=thenlper/gte-base`.
 2. **DeepInfra 70B Integration**: Completed (2026-06-03). Added DeepInfra as alternative/fallback 70B provider to bypass Groq Developer tier limits, upgraded fallback Gemini models, and implemented JSON mode parsing pipeline for structured output correctness.
 3. **Re-ingest / cut over gte WITH title+section metadata**: Completed (2026-06-03). Switched active index in `.env` to `agroar-prod-gte-v2` (which already has titles/sections), verified metrics and citation guard end-to-end.
 4. **Calibration item:** `_SAFETY_CRITICAL_RE` calibrated to ignore crop growth stages (`V3`/`R5`/`V3.5`/`R 5`/`R-1`) and focus only on true chemical/rate numbers (completed 2026-06-03).

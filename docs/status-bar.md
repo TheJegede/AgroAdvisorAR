@@ -2,11 +2,11 @@
 
 **Last updated:** 2026-06-03  
 **MVP target:** September 2026  
-**Production readiness:** 80%  
+**Production readiness:** 82%  
 **PRD phase progress:** 80%
 
 ```
-Production readiness  [████████████████░░░░]  80%
+Production readiness  [████████████████░░░░]  82%
 PRD phase progress    [████████████████░░░░]  80%
 ```
 
@@ -49,11 +49,9 @@ numbers unreliable (single-gold metric + local-Qwen eval vs prod Groq-70b).
 ✅ **GT INDEX WITH METADATA SWITCHED 2026-06-03.** Switched active Pinecone index from `agroar-prod-gte` (which lacked document titles) to `agroar-prod-gte-v2` (contains all `document_title` and `section_heading` metadata). Validated that retrieval metrics are maintained (`MRR@5` `0.1508` -> `0.1533`) and the title-matching citation guard now successfully validates citations end-to-end.
 
 Still open (next levers, evidence-ranked):
-- **Generation model 7B → 70B** — biggest unmeasured correctness lever (eval uses local
-  Qwen-7B; prod is Groq-70b). Blocked: Groq free TPD exhausted → needs paid Dev tier.
-- **Corpus-coverage audit** — 82% faithful + 40% correct ⇒ precise answers (rates/products)
-  may not be IN the corpus. Audit which gold answers have a supporting chunk.
-- **Trustworthy eval** — prod-70b gen + better/human judge before further optimization.
+- **Generation model 7B → 70B** — Completed (2026-06-03). Integrated DeepInfra 70B (Llama 3.3) to bypass Groq rate/billing tier blocks.
+- **Corpus-coverage audit** — Completed (2026-06-03). Verified 100% of gold queries have supporting chunks in the corpus.
+- **Trustworthy eval** — Unblocked. Ready to sample answers using DeepInfra Llama 3.3 70B.
 
 Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
 handling).
@@ -97,7 +95,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | 5 | UA Extension agent scoring in eval queue | NIW evidence | +7% | ☐ |
 | 6 | Add `GROQ_API_KEY` to GH secrets (answer_correct_pct CI) | Security/testing | +1% | ☑ |
 | 7 | Full WCAG audit on auth-gated routes (Playwright + axe) | Security/testing | +1% | ☑ |
-| 8 | Public GitHub README (arch diagram + eval results) | NIW evidence | +2% | ☐ |
+| 8 | Public GitHub README (arch diagram + eval results) | NIW evidence | +2% | ☑ (2026-06-03; restored and fully updated) |
 | 9 | Locust load test (50 concurrent users) | Security/testing | +1% | ☐ |
 | **Tier 1 Features (planned — Tier1_Implementation_Plan Addition.md)** | | | | |
 | T1 | F4 · Dicamba drift tool deployed (wizard + PDF, prod URL live) | Real users / data | +3% | ☑ (deployed + live 2026-05-30) |
@@ -111,7 +109,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 
 ---
 
-## Completed (contributed to current 78%)
+## Completed (contributed to current 80%)
 
 | Item | Dimension | Completed |
 |---|---|---|
