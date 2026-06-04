@@ -24,8 +24,8 @@ The bilingual interface (EN/ES) extends access to Spanish-speaking agricultural 
 │  Vite + TW   │◄──►│                                           │
 │  (frontend)  │SSE │  classifier → context → retriever → LLM   │
 └──────────────┘    │                                           │
-                    │  • Groq llama-3.3-70b (primary)           │
-                    │  • Gemini 2.5 Flash (fallback)            │
+                    │  • DeepInfra Llama 3.3 70B / Groq (primary)│
+                    │  • Gemini 1.5 Flash (fallback)            │
                     └─────────┬───────────┬───────────┬─────────┘
                               │           │           │
                        ┌──────▼─────┐ ┌───▼────┐ ┌────▼──────┐
@@ -43,13 +43,13 @@ The bilingual interface (EN/ES) extends access to Spanish-speaking agricultural 
 
 ```
 POST /api/v1/query
-  → classify message (one of 6 categories; Groq llama-3.1-8b-instant → Gemini fallback)
+  → classify message (one of 6 categories; Groq / DeepInfra → Gemini fallback)
   → OUT_OF_SCOPE? return static message, no LLM call
   → SAFETY_CRITICAL? proceed with injected safety warning
   → parallel: embed + retrieve (Pinecone, k=5) AND fetch SSURGO + NOAA
   → assemble system prompt (role + conditions + docs + history + instructions)
-  → Groq llama-3.3-70b with_structured_output(AdvisoryResponse)
-       → fallback chain: 70b → llama-3.1-8b-instant → Gemini 2.5 Flash
+  → Primary LLM (DeepInfra / Groq / Gemini) with_structured_output(AdvisoryResponse)
+       → fallback chain: DeepInfra/Groq 70b → llama-3.1-8b-instant → Gemini 1.5 Flash
   → citation guard: title-match + NLI claim verification; low confidence is
     downgraded or the advisory is suppressed (Extension referral)
   → persist user + assistant turn to chat_messages (if session_id)
@@ -126,25 +126,27 @@ Copy `.env.example` to `.env` in the project root and fill in:
 
 | Variable | Purpose |
 |----------|---------|
-| `GROQ_API_KEY` | **Primary** LLM provider (generation, classifier, claim decomposition) |
+| `DEEPINFRA_API_KEY` | **Primary** LLM provider API key |
+| `DEEPINFRA_MODEL` | DeepInfra model; defaults to `meta-llama/Llama-3.3-70B-Instruct` |
+| `GROQ_API_KEY` | Alternative primary / fallback LLM provider |
 | `GOOGLE_API_KEY` | Gemini — optional fallback only (free tier is 20 req/day) |
-| `LLM_PRIMARY` | Provider order; defaults to `groq` (`gemini` to flip) |
+| `LLM_PRIMARY` | Provider order; defaults to `groq` (`deepinfra` | `gemini` | `local` to switch) |
 | `RERANK_ENABLED` | Optional cross-encoder reranking; off by default (heavy for free-tier CPU) |
 | `PINECONE_API_KEY` | Pinecone serverless |
-| `PINECONE_INDEX_NAME` | Defaults to `agroar-prod` (384-dim, cosine, us-east-1) |
+| `PINECONE_INDEX_NAME` | Defaults to `agroar-prod-gte-v2` (768-dim, cosine, us-east-1) |
 | `SUPABASE_URL` | Project URL |
 | `SUPABASE_ANON_KEY` | Public anon key (`sb_publishable_…`) |
 | `SUPABASE_SERVICE_KEY` | Service-role key — bypasses RLS, server-only |
 | `SUPABASE_JWT_SECRET` | Legacy HS256 fallback; ES256 path uses JWKS automatically |
 | `UPSTASH_REDIS_REST_URL` / `_TOKEN` | Optional context cache |
-| `EMBEDDING_MODEL_PATH` | Defaults to `sentence-transformers/all-MiniLM-L6-v2`; set to `./models/agroar-embeddings-v2` for the fine-tuned model |
+| `EMBEDDING_MODEL_PATH` | Defaults to `thenlper/gte-base` (768-dim GTE model) |
 | `NLI_CITATION_GUARD_ENABLED` | Defaults to `1`; set to `0` to disable claim-level NLI verification in constrained runtimes |
 | `SENTRY_DSN` | Optional; enables tracing at sample rate 0.1 |
 
 ## Key design decisions
 
-- **Structured output & Informational routing.** `with_structured_output(AdvisoryResponse)` via Groq tool calling (primary), Gemini `response_schema` as fallback. No regex or JSON post-parsing. The schema supports both `"diagnostic"` and `"informational"` types (`response_type`). Diagnostic responses populate crop-health fields (causes, products/rates). Informational responses (for educational/non-diagnostic queries) leave crop-health fields empty and instead populate `detailed_explanation` and `key_points` to prevent awkward diagnostics.
-- **Groq-primary, provider chain.** `classifier.py`, `rag.py`, and `citation_guard_v2.py` try providers in order (default Groq first, Gemini fallback) and degrade gracefully. Gemini's free tier is 20 req/day, so Groq is primary. Note: Groq's free tier has per-day **token** caps too — generation falls back 70b → 8b-instant to stretch them; a second free provider may be needed for sustained load.
+- **Structured output & Informational routing.** `with_structured_output(AdvisoryResponse)` via tool calling/JSON mode on DeepInfra/Groq (primary), Gemini `response_schema` as fallback. No regex or manual schema post-parsing. The schema supports both `"diagnostic"` and `"informational"` types (`response_type`). Diagnostic responses populate crop-health fields (causes, products/rates). Informational responses (for educational/non-diagnostic queries) leave crop-health fields empty and instead populate `detailed_explanation` and `key_points` to prevent awkward diagnostics.
+- **DeepInfra & Groq-primary, provider chain.** `classifier.py`, `rag.py`, and `citation_guard_v2.py` try providers in order (DeepInfra/Groq primary, Gemini fallback) and degrade gracefully. Gemini's free tier is 20 req/day, so DeepInfra and Groq are primary. Note: LLM calls fall back across DeepInfra 70B, Groq 70B, Groq 8B-instant, and Gemini 1.5 Flash to stretch free tier limits.
 - **County context.** Every query injects county-level soil (SSURGO SDA API) and weather (NOAA NWS API) for the user's `county_fips`. Cached 6h in Upstash Redis. Both APIs must complete in 3s or the response degrades gracefully via `soil_data_available` / `weather_data_available` flags.
 - **Citation guard.** After generation, citations are cross-checked against retrieved chunk titles. Unmatched citations are stripped; if none remain, confidence is downgraded to `Low`.
 - **Pinecone namespaces.** Documents are upserted by crop (`rice`, `soybeans`, `poultry`, `general`). The classifier output selects the namespace at retrieval time.
@@ -173,8 +175,8 @@ Honest measurement is ongoing in `evals/`:
   + `finetune_synth.py`) gives a small but *real* held-out lift, unlike the
   contaminated recipe above.
 
-The **deployed** EN index uses `all-MiniLM-L6-v2` without reranking and scores
-lower than the gte-base + reranker pipeline, which is not yet in production.
+The **deployed** EN index uses `thenlper/gte-base` (`agroar-prod-gte-v2`) without reranking,
+yielding a baseline MRR@5 of 0.1533 and NDCG@5 of 0.1775.
 
 Rollback / model selection via `EMBEDDING_MODEL_PATH`:
 
@@ -215,8 +217,8 @@ See `CLAUDE.md` for `curl` examples.
 ## Tech stack
 
 - **Backend:** FastAPI, LangChain, Pinecone, Supabase, Pydantic v2, Sentry
-- **LLMs:** Groq `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` (primary), Gemini 2.5 Flash (fallback)
-- **Embeddings:** `thenlper/gte-base` (EN retrieval, index `agroar-prod-gte`) + `bge-reranker-v2-m3`; Spanish via translate-bridge (no separate ES embeddings)
+- **LLMs:** DeepInfra `meta-llama/Llama-3.3-70B-Instruct` + Groq `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` (primary), Gemini 1.5 Flash (fallback)
+- **Embeddings:** `thenlper/gte-base` (EN retrieval, index `agroar-prod-gte-v2`) + `bge-reranker-v2-m3`; Spanish via translate-bridge (no separate ES embeddings)
 - **Frontend:** React 19, Vite, TailwindCSS, React Router 7, Axios
 - **Storage:** Pinecone (vectors), Supabase Postgres (users + chat history), Upstash Redis (context cache)
 - **Data sources:** UA Extension PDFs, USDA SSURGO SDA, NOAA NWS
