@@ -1,6 +1,6 @@
 # AgroAdvisor AR — Completion to Production
 
-**Last updated:** 2026-06-03  
+**Last updated:** 2026-06-05  
 **MVP target:** September 2026  
 **Production readiness:** 82%  
 **PRD phase progress:** 80%
@@ -51,7 +51,7 @@ numbers unreliable (single-gold metric + local-Qwen eval vs prod Groq-70b).
 Still open (next levers, evidence-ranked):
 - **Generation model 7B → 70B** — Completed (2026-06-03). Integrated DeepInfra 70B (Llama 3.3) to bypass Groq rate/billing tier blocks.
 - **Corpus-coverage audit** — Completed (2026-06-03). Verified 100% of gold queries have supporting chunks in the corpus.
-- **Trustworthy eval** — Unblocked. Ready to sample answers using DeepInfra Llama 3.3 70B.
+- **Trustworthy eval** — ✅ Done (2026-06-05). DeepInfra 70B gen + judge, n=20, seed=7: correctness **20%**, faithfulness **40%**, suppression **15%**. Poultry leads (50% corr), soybeans lags (43% suppressed). See PROGRESS.md eval section.
 
 Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
 handling).

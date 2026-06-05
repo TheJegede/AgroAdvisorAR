@@ -76,6 +76,27 @@ def _get_judge() -> ChatGroq:
     return _judge_llm
 
 
+_deepinfra_judge_llm = None
+
+
+def _get_deepinfra_judge():
+    global _deepinfra_judge_llm
+    if _deepinfra_judge_llm is None:
+        from langchain_openai import ChatOpenAI
+        _deepinfra_judge_llm = ChatOpenAI(
+            model=os.environ.get("DEEPINFRA_MODEL", "meta-llama/Llama-3.3-70B-Instruct"),
+            openai_api_key=os.environ["DEEPINFRA_API_KEY"],
+            openai_api_base="https://api.deepinfra.com/v1",
+            temperature=0,
+        )
+    return _deepinfra_judge_llm
+
+
+def _is_quota_error(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return any(k in msg for k in ("rate_limit", "rate limit", "429", "quota", "exceeded"))
+
+
 def score_item(query: str, advisory: dict, gold_chunk_text: str) -> tuple[float, str]:
     answer_block = _summarize_advisory(advisory)
     messages = [
@@ -86,7 +107,13 @@ def score_item(query: str, advisory: dict, gold_chunk_text: str) -> tuple[float,
             reference=gold_chunk_text[:2000],
         )),
     ]
-    resp = _get_judge().invoke(messages)
+    try:
+        resp = _get_judge().invoke(messages)
+    except Exception as e:
+        if _is_quota_error(e) and os.environ.get("DEEPINFRA_API_KEY"):
+            resp = _get_deepinfra_judge().invoke(messages)
+        else:
+            raise
     raw = (resp.content or "").strip()
     # Strip code fences if the model wrapped its JSON
     if raw.startswith("```"):

@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-01 (session 7 — Cartoonish Tractor Loader Animation)
+> **Last updated:** 2026-06-05 (70B prod eval — DeepInfra gen + judge, n=20, seed=7)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -28,8 +28,9 @@
 - **PHASE 2 UX = SHIPPED 2026-05-31 (session 5, `4210cb3`).** Resilient State + Data Clarity — 4 parallel sub-phases: (A) `useSessions` exposes `sessionsLoading`/`sessionsError`; Sidebar shows skeleton rows while loading, retry link on error, profile skeleton/`Profile unavailable` text when `useProfile` fails; (B) `useSSEQuery` stores last query + exposes `retry()`+`retryable` (true on non-AbortError); `ChatPage` renders Retry button above input when retryable; (C) `useSyncStatus` + `SyncStatusBar` wired into AppShell — harvest-coloured 28px bar appears only offline (zero layout shift online); (D) NLI badge hidden when `confidence_score===0`; rate values in `ProductsRates` use `font-mono`; `CitationsSection` `text-gray-600`→`text-gray-700` (10.27:1, clears 7:1 outdoor threshold). Lint clean, 26/26 tests pass.
 - **PHASE 3 UX = SHIPPED 2026-06-01 (session 6).** Audit Closeout — 3 parallel sub-phases: (A) i18n completeness: 4 missing keys added to `i18n.js` (EN+ES) — `offline`, `retry`, `sessionsLoadError`, `profileUnavailable`; `SyncStatusBar` uses `useLang`; Sidebar `|| "..."` fallback + hardcoded "Profile unavailable" replaced; ChatPage `t.retry || 'Retry'` → `t.retry`; (B) AlertBanner resilience: optimistic dismiss now restores on PATCH failure via GET /alerts re-fetch; (C) Visual polish: `ChatInput` container `rounded-2xl`→`rounded-card`; `📞` in EscalationCard + `🌾` in OutOfScopeCard replaced with inline Heroicons SVG; citation link contrast `text-field`→`text-field-dark` (3.59:1→meets AA). Lint clean, 26/26 tests pass.
 - **INVALID DATE UI FIX = SHIPPED 2026-06-01.** Fixed "Invalid Date" showing under text messages in ChatHistory. Previously, when message objects were refactored to use UUIDs (`crypto.randomUUID()`), `MessageBubble` still attempted to parse `id` as a date via `new Date(id)`, resulting in "Invalid Date". Fix: (1) Added `createdAt` timestamp parameter to `makeMessage` in `ChatPage.jsx`, (2) Mapped `createdAt: m.created_at` in `useSessions.js` for loaded database messages, (3) Modified `MessageBubble.jsx` to receive and format the `createdAt` prop, defensively skipping date parsing on UUID string formats. Lint clean, 26/26 frontend tests pass, 107/108 backend tests pass.
-- **Generation-model upgrade (7B→70B) is now UNBLOCKED** — the guard no longer corrupts correctness
-  numbers, so a prod-like 70B eval (Groq Dev/paid tier) is the next real quality lever.
+- **70B PROD EVAL DONE (2026-06-05).** DeepInfra Llama-3.3-70B gen + judge, `agroar-prod-gte-v2`,
+  n=20 seed=7: **correctness 20%, faithfulness 40%, suppression 15%**. Per-namespace: poultry 50%/50%
+  (n=4), rice 11%/44% (n=9), soybeans 14%/29% (n=7, 43% suppressed). See eval section below.
 
 ### Why the guard mattered (historical, keep for NIW/arXiv honesty)
 A live end-to-end trace (2026-05-31) proved the guard — not retrieval, not generation — was
@@ -60,10 +61,46 @@ Plan (executed): `docs/superpowers/plans/2026-05-31-citation-guard-overhaul.md`.
 Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`, `trace_pipeline_batch.py`.
 
 ### ▶▶ RESUME HERE (next session)
-1. **HF Space Env Verified**: Verified and updated by owner (2026-06-03) with `PINECONE_INDEX_NAME=agroar-prod-gte-v2` and `EMBEDDING_MODEL_PATH=thenlper/gte-base`.
-2. **DeepInfra 70B Integration**: Completed (2026-06-03). Added DeepInfra as alternative/fallback 70B provider to bypass Groq Developer tier limits, upgraded fallback Gemini models, and implemented JSON mode parsing pipeline for structured output correctness.
-3. **Re-ingest / cut over gte WITH title+section metadata**: Completed (2026-06-03). Switched active index in `.env` to `agroar-prod-gte-v2` (which already has titles/sections), verified metrics and citation guard end-to-end.
-4. **Calibration item:** `_SAFETY_CRITICAL_RE` calibrated to ignore crop growth stages (`V3`/`R5`/`V3.5`/`R 5`/`R-1`) and focus only on true chemical/rate numbers (completed 2026-06-03).
+1. ✅ HF Space Env Verified (2026-06-03): `PINECONE_INDEX_NAME=agroar-prod-gte-v2` + `EMBEDDING_MODEL_PATH=thenlper/gte-base`.
+2. ✅ DeepInfra 70B Integration (2026-06-03): gen + judge provider, no daily quota.
+3. ✅ Re-ingest / cut over to `agroar-prod-gte-v2` (2026-06-03): titles/sections metadata live.
+4. ✅ `_SAFETY_CRITICAL_RE` calibration (2026-06-03): ignores crop growth stages.
+5. ✅ **70B prod eval DONE (2026-06-05):** correctness 20%, faithfulness 40%, suppression 15% (n=20, seed=7).
+   See section below for full table.
+6. **NEXT — corpus gap analysis**: correctness 20% with 15% suppression = generation is still the ceiling.
+   Soybeans suppression 43% and correctness 14% — likely corpus thin on those topics or guard over-suppressing.
+   Levers: (a) inspect suppressed soybeans items for guard miscalibration, (b) re-examine corpus coverage
+   for soybeans sub-topics, (c) arXiv preprint draft using honest 20% 70B number.
+
+---
+
+## ✅ 70B Prod Eval Results (2026-06-05)
+
+**Config:** DeepInfra Llama-3.3-70B-Instruct (generation + judge) · `agroar-prod-gte-v2` ·
+`thenlper/gte-base` · LLM-as-judge guard on · n=20, seed=7, Craighead County AR
+
+**Corpus audit (pre-run):** 200 eval items checked — `Missing from corpus: 0`, `Text mismatches: 0` ✅
+
+| namespace | lang | n | supp | corr | faith | mean conf |
+|---|---|---|---|---|---|---|
+| poultry | en | 4 | 0% | **50%** | 50% | 0.90 |
+| rice | en | 9 | 0% | **11%** | 44% | 0.87 |
+| soybeans | en | 7 | **43%** | 14% | 29% | 0.49 |
+| **OVERALL** | en | **20** | **15%** | **20%** | **40%** | — |
+
+**Interpretation:**
+- Correctness 20% = honest signal at 70B with reliable guard; prior ~40% was corrupted by broken NLI.
+- Faithfulness 40% = model grounded in retrieved passages ~half the time (judge is also strict 0/0.5/1.0).
+- Poultry outperforms (50% corr): likely denser/cleaner corpus coverage.
+- Soybeans 43% suppression: guard suppressing aggressively; likely low confidence from sparse/ambiguous retrieval. Next lever: inspect suppressed items.
+- Rice 11% correctness despite 0% suppression: answer generates but misses specific numbers/protocols in gold. Corpus coverage gap.
+
+**Run commands (reproducible):**
+```bash
+cd evals
+python answer_eval_full.py --provider deepinfra --sample 20 --seed 7          # guarded (these numbers)
+python answer_eval_full.py --provider deepinfra --sample 20 --seed 7 --no-guard  # raw gen quality
+```
 
 ---
 

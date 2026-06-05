@@ -33,6 +33,11 @@ def _force_groq_generation():
                         api_key=os.environ["GROQ_API_KEY"], temperature=0.1)
 
 
+def _force_deepinfra_generation():
+    """Route the production chain through DeepInfra Llama-3.3-70B (no daily quota)."""
+    config.LLM_PRIMARY = "deepinfra"
+
+
 def _is_suppressed(adv: dict) -> bool:
     """The NLI guard blanks low-confidence advisories (problem_summary='' +
     escalation warning)."""
@@ -193,8 +198,8 @@ async def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sample", type=int, default=15)
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--provider", choices=["gemini", "groq", "local"], default="gemini",
-                    help="groq=Groq generation; local=Qwen-7B on GPU (free, no quota; also judges locally)")
+    ap.add_argument("--provider", choices=["gemini", "groq", "deepinfra", "local"], default="gemini",
+                    help="groq=Groq generation; deepinfra=DeepInfra 70B (no daily quota); local=Qwen-7B on GPU")
     ap.add_argument("--no-guard", action="store_true",
                     help="disable NLI suppression to measure raw answer quality")
     ap.add_argument("--eval-set", type=Path, default=EVAL_SET,
@@ -207,6 +212,20 @@ async def main():
     BRIDGE = args.bridge
     if args.provider == "groq":
         _force_groq_generation()
+    elif args.provider == "deepinfra":
+        _force_deepinfra_generation()
+        from langchain_openai import ChatOpenAI
+        _deepinfra = ChatOpenAI(
+            model=os.environ.get("DEEPINFRA_MODEL", "meta-llama/Llama-3.3-70B-Instruct"),
+            openai_api_key=os.environ["DEEPINFRA_API_KEY"],
+            openai_api_base="https://api.deepinfra.com/v1",
+            temperature=0,
+        )
+        global _judge
+        _judge = _deepinfra
+        import judge as _judge_mod
+        _judge_mod._judge_llm = _deepinfra
+        _judge_mod._deepinfra_judge_llm = _deepinfra
     elif args.provider == "local":
         import local_llm
         rag._get_groq_llm = lambda: local_llm.LocalChat()  # generation -> local Qwen
