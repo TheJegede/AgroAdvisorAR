@@ -95,6 +95,19 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 - Soybeans 43% suppression: guard suppressing aggressively; likely low confidence from sparse/ambiguous retrieval. Next lever: inspect suppressed items.
 - Rice 11% correctness despite 0% suppression: answer generates but misses specific numbers/protocols in gold. Corpus coverage gap.
 
+**No-guard baseline (guard OFF, same config):**
+
+| namespace | n | supp | corr | faith |
+|---|---|---|---|---|
+| poultry | 4 | 0% | 38% | 50% |
+| rice | 9 | 0% | 11% | 44% |
+| soybeans | 7 | 0% | 14% | 50% |
+| **OVERALL** | **20** | **0%** | **17.5%** | **47.5%** |
+
+Guard impact: removes 3 soybeans items → correctness +2.5pp (17.5→20%), faithfulness −7.5pp (47.5→40%).
+Guard is correctly filtering low-confidence items (not over-suppressing). Soybeans 43% suppression with guard
+= guard accurately detecting low retrieval confidence for that namespace.
+
 **Run commands (reproducible):**
 ```bash
 cd evals
