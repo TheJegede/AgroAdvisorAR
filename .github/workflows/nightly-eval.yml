@@ -14,6 +14,7 @@ jobs:
     timeout-minutes: 20
 
     env:
+      HF_HOME: ~/.cache/huggingface
       EVAL_WRITE_TO_DB: "1"
       # Answer eval samples 20 items per run, ~40 LLM calls total. Free tier covers it.
       # Set RUN_ANSWER_EVAL=0 in this block to skip (cost / time reduction).
@@ -48,6 +49,14 @@ jobs:
             evals/requirements.txt
             backend/requirements.txt
 
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ env.EMBEDDING_MODEL_PATH }}-${{ runner.os }}
+          restore-keys: |
+            hf-${{ env.EMBEDDING_MODEL_PATH }}-
+
       - name: Install deps (eval + backend for answer-eval RAG chain)
         run: |
           python -m pip install --upgrade pip
@@ -55,6 +64,10 @@ jobs:
           # Answer eval imports backend.services.rag → needs full backend reqs.
           # Cheap: most overlap with evals/requirements.txt is already cached.
           pip install -r backend/requirements.txt
+
+      - name: Pre-download embedding model
+        run: |
+          python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${{ env.EMBEDDING_MODEL_PATH }}')"
 
       - name: Run retrieval + answer eval
         run: |
