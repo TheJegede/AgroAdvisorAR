@@ -5,6 +5,12 @@ from services.user import _get_service_client
 from utils.db import _assert_insert
 
 
+class SessionOwnershipError(PermissionError):
+    """Raised when a message write targets a session the user does not own.
+    Closes the IDOR write where a client-supplied session_id could poison
+    another user's chat history."""
+
+
 def create_session(user_id: str, preview: str) -> dict:
     result = _get_service_client().table("chat_sessions").insert({
         "user_id": user_id,
@@ -38,6 +44,22 @@ def add_message(
     escalated: bool | None = None,
 ) -> dict:
     client = _get_service_client()
+    # Ownership gate: the service client bypasses RLS and session_id is
+    # client-supplied, so verify the session belongs to this user before any
+    # write — mirrors get_messages. Without this an attacker can inject rows
+    # into a victim's session (IDOR write).
+    ownership = (
+        client.table("chat_sessions")
+        .select("id")
+        .eq("id", session_id)
+        .eq("user_id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    if ownership.data is None:
+        raise SessionOwnershipError(
+            f"session {session_id} not found or not owned by user {user_id}"
+        )
     row = {
         "session_id": session_id,
         "user_id": user_id,
