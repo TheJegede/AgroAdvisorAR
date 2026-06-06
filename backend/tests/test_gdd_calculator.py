@@ -50,6 +50,20 @@ def test_gdd_unknown_fips_returns_zero():
     assert result == 0.0
 
 
+def test_gdd_caps_tmax_at_30c():
+    """F7: a 40°C day must contribute the same as a 30°C day (tmax capped).
+    Day: (min(40,30)+10)/2 - 10 = 10.0 — NOT (40+10)/2 - 10 = 15.0."""
+    import httpx
+    gdd_mod = importlib.import_module("services.gdd_calculator")
+
+    with patch.object(httpx, "AsyncClient", side_effect=_mock_open_meteo([40.0], [10.0])):
+        hot = asyncio.run(gdd_mod.compute_gdd_since_jan1("05001"))
+    with patch.object(httpx, "AsyncClient", side_effect=_mock_open_meteo([30.0], [10.0])):
+        capped = asyncio.run(gdd_mod.compute_gdd_since_jan1("05001"))
+
+    assert hot == capped == 10.0
+
+
 def test_gdd_skips_none_values():
     """None temperature values should be skipped; only valid day accumulates."""
     import httpx

@@ -11,8 +11,15 @@ logger = logging.getLogger(__name__)
 OPEN_METEO_URL = "https://archive-api.open-meteo.com/v1/archive"
 
 
-async def compute_gdd_since_jan1(county_fips: str, base_temp_c: float = 10.0) -> float:
-    """Return cumulative GDD (base 10°C) from Jan 1 to today for a given AR county.
+async def compute_gdd_since_jan1(
+    county_fips: str, base_temp_c: float = 10.0, upper_cap_c: float = 30.0
+) -> float:
+    """Return cumulative GDD (base 10°C, tmax capped at 30°C) from Jan 1 to today
+    for a given AR county.
+
+    Standard rice/soybean GDD models cap the daily high so hot days don't inflate
+    accumulation. Without the cap, cumulative GDD overshoots on hot Arkansas days
+    and pest alerts (rice_water_weevil, palmer_amaranth) fire days early.
 
     Returns 0.0 on any error so the alert engine fails open.
     """
@@ -50,7 +57,8 @@ async def compute_gdd_since_jan1(county_fips: str, base_temp_c: float = 10.0) ->
         for tmax, tmin in zip(t_max, t_min):
             if tmax is None or tmin is None:
                 continue
-            gdd += max(0.0, (tmax + tmin) / 2.0 - base_temp_c)
+            capped_tmax = min(tmax, upper_cap_c)
+            gdd += max(0.0, (capped_tmax + tmin) / 2.0 - base_temp_c)
 
         return round(gdd, 2)
 
