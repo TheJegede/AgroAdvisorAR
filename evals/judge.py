@@ -94,7 +94,16 @@ def _get_deepinfra_judge():
 
 def _is_quota_error(exc: Exception) -> bool:
     msg = str(exc).lower()
-    return any(k in msg for k in ("rate_limit", "rate limit", "429", "quota", "exceeded"))
+    # A bare "exceeded" false-positives on context_length_exceeded — an
+    # oversized prompt would be misrouted to the DeepInfra fallback (which also
+    # overflows), turning a deterministic input-size bug into a paid double
+    # failure. Match only genuine rate/quota signals.
+    if "context_length_exceeded" in msg or "context length" in msg:
+        return False
+    return any(k in msg for k in (
+        "rate_limit", "rate limit", "429", "quota",
+        "too many requests", "tokens per", "tpm", "rpm",
+    ))
 
 
 def score_item(query: str, advisory: dict, gold_chunk_text: str) -> tuple[float, str]:
