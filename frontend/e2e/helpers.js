@@ -8,6 +8,17 @@ export async function loginAs(page, email, password) {
   await page.waitForURL('/');
 }
 
+// Seed a token in localStorage before the app loads so ProtectedRoute (which
+// only checks token presence) lets us through — skipping the real Supabase
+// auth round-trip. Use this for fully-mocked tests; hitting /auth/login on
+// every test rate-limits Supabase and causes flaky login timeouts.
+export async function injectAuth(page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('access_token', 'fake-e2e-token');
+    localStorage.setItem('refresh_token', 'fake-e2e-refresh');
+  });
+}
+
 export async function submitQuery(page, text) {
   await page.locator('textarea').fill(text);
   await page.locator('[data-testid="chat-send"]').click();

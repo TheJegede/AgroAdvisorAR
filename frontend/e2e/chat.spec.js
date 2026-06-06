@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
-import { loginAs, mockChatBackend, submitQuery, EMAIL, PASSWORD } from './helpers.js';
+import { injectAuth, mockChatBackend, submitQuery } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
+  await injectAuth(page);
   await mockChatBackend(page);
-  await loginAs(page, EMAIL, PASSWORD);
+  await page.goto('/');
 });
 
 test('in-scope query renders advisory card with key fields', async ({ page }) => {

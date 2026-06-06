@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { loginAs, mockChatBackend, submitQuery, EMAIL, PASSWORD } from './helpers.js';
+import { injectAuth, mockChatBackend, submitQuery } from './helpers.js';
 
 test('thumbs-down opens comment field and submits feedback', async ({ page }) => {
+  await injectAuth(page);
   await mockChatBackend(page);
   await page.route('**/api/v1/feedback', (route) => {
     route.fulfill({
@@ -11,7 +12,7 @@ test('thumbs-down opens comment field and submits feedback', async ({ page }) =>
     });
   });
 
-  await loginAs(page, EMAIL, PASSWORD);
+  await page.goto('/');
   await submitQuery(page, 'What causes rice sheath blight?');
   await expect(page.getByText(/problem|summary/i).first()).toBeVisible({ timeout: 30000 });
 
@@ -27,8 +28,9 @@ test('thumbs-down opens comment field and submits feedback', async ({ page }) =>
 });
 
 test('feedback API 429 shows retry message', async ({ page }) => {
+  await injectAuth(page);
   await mockChatBackend(page);
-  await loginAs(page, EMAIL, PASSWORD);
+  await page.goto('/');
   await submitQuery(page, 'What causes rice sheath blight?');
   await expect(page.getByText(/problem|summary/i).first()).toBeVisible({ timeout: 30000 });
 

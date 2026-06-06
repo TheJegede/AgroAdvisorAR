@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { injectAuth } from './helpers.js';
 
 const FAKE_REPORT = {
   id: 'e2e-drift-report-uuid-1',
@@ -21,14 +22,6 @@ const FAKE_PROFILE = {
   language: 'en',
   is_admin: false,
 };
-
-// Inject tokens into localStorage before page load — skips real auth entirely
-async function injectAuth(page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('access_token', 'fake-e2e-token');
-    localStorage.setItem('refresh_token', 'fake-e2e-refresh');
-  });
-}
 
 async function mockRoutes(page) {
   await page.route('**/api/v1/profile', (route) =>

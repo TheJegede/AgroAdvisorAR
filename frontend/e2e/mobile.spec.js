@@ -1,15 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { mockChatBackend, EMAIL, PASSWORD } from './helpers.js';
+import { injectAuth, mockChatBackend } from './helpers.js';
 
 test.use({ viewport: { width: 375, height: 667 }, isMobile: true });
 
 test('chat flow works at 375px viewport', async ({ page }) => {
+  await injectAuth(page);
   await mockChatBackend(page);
-  await page.goto('/login');
-  await page.locator('input[type="email"]').fill(EMAIL);
-  await page.locator('input[type="password"]').fill(PASSWORD);
-  await page.locator('button[type="submit"]').click();
-  await page.waitForURL('/');
+  await page.goto('/');
 
   const hamburger = page.getByRole('button', { name: /menu|open|sidebar|hamburger/i });
   if (await hamburger.isVisible()) {

@@ -1,19 +1,12 @@
 import { test } from '@playwright/test';
 import { injectAxe, checkA11y } from 'axe-playwright';
-import { mockProfileBackend, mockChatBackend } from './helpers.js';
+import { injectAuth, mockProfileBackend, mockChatBackend } from './helpers.js';
 
 const ROUTES = [
   { path: '/', isAdmin: false },
   { path: '/profile', isAdmin: false },
   { path: '/admin', isAdmin: true },
 ];
-
-async function injectAuth(page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('access_token', 'fake-e2e-token');
-    localStorage.setItem('refresh_token', 'fake-e2e-refresh');
-  });
-}
 
 for (const route of ROUTES) {
   test(`axe-core: 0 WCAG AA violations on ${route.path}`, async ({ page }) => {
