@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 # Fixed-window query rate limit per authenticated user (see cache.rate_limit_hit).
 QUERY_WINDOW_SECONDS = 3600
 
+# User-facing SSE error — never leak raw exception text (provider URLs, internal
+# messages, occasional key fragments in langchain errors) to the browser.
+GENERIC_STREAM_ERROR = "Something went wrong generating your advisory. Please try again."
+
 
 class QueryRequest(BaseModel):
     message: str
@@ -141,8 +145,9 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
             payload = json.dumps(envelope, ensure_ascii=False)
             yield f"data: {payload}\n\n"
             yield "data: [DONE]\n\n"
-        except Exception as e:
-            error_payload = json.dumps({"error": str(e)})
+        except Exception:
+            logger.exception("Query stream failed")
+            error_payload = json.dumps({"error": GENERIC_STREAM_ERROR})
             yield f"data: {error_payload}\n\n"
             yield "data: [DONE]\n\n"
 
