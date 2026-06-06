@@ -44,14 +44,18 @@ def decode_token(token: str) -> dict:
                 key = jwks.get(kid) if kid else next(iter(jwks.values()), None)
             if key is None:
                 raise JWTError("No matching JWKS key found after refresh")
+            # Pin the asymmetric allowlist — never let a token-supplied alg
+            # downgrade verification (e.g. claim HS256 against a public key).
+            allowed_algs = ["ES256", "RS256"]
         else:
             # Legacy HS256 path (old Supabase eyJ keys)
             key = config.SUPABASE_JWT_SECRET
+            allowed_algs = ["HS256"]
 
         payload = jwt.decode(
             token,
             key,
-            algorithms=[alg],
+            algorithms=allowed_algs,
             audience="authenticated",
         )
         return payload
