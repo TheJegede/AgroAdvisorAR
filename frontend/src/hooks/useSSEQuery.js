@@ -8,6 +8,17 @@ export function parseSSEPayload(payload) {
   }
 }
 
+// Abort any in-flight stream before starting a new one, then store the new
+// controller. A double-submit (chip + Enter) would otherwise run two streams,
+// both calling onResult (duplicate cards / out-of-order history) with only the
+// latest cancelable.
+export function beginRequest(abortRef) {
+  abortRef.current?.abort()
+  const controller = new AbortController()
+  abortRef.current = controller
+  return controller
+}
+
 export function useSSEQuery() {
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState(null)
@@ -31,8 +42,7 @@ export function useSSEQuery() {
     setRetryable(false)
     lastQueryRef.current = { message, language, sessionHistory, sessionId, lastCategory, onResult, onOOS, onError, onCategory }
 
-    const controller = new AbortController()
-    abortRef.current = controller
+    const controller = beginRequest(abortRef)
     const token = localStorage.getItem('access_token')
 
     try {
