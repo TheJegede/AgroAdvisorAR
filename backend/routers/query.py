@@ -18,7 +18,7 @@ import config
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# Sliding-window query rate limit per authenticated user.
+# Fixed-window query rate limit per authenticated user (see cache.rate_limit_hit).
 QUERY_WINDOW_SECONDS = 3600
 
 
