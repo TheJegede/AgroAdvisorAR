@@ -158,12 +158,31 @@ async def judge_claims_llm(claims: list[str], chunks: list[str], run_config: dic
             resp = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
             raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", resp.content.strip(), flags=re.MULTILINE).strip()
             parsed = json.loads(raw)
+            # Normalize common deviations so a recoverable response does not crash
+            # into the retired NLI fallback (F5): a wrapped object, or a dict keyed
+            # by claim text rather than a JSON array.
+            if isinstance(parsed, dict):
+                for _key in ("claims", "results", "data"):
+                    if isinstance(parsed.get(_key), list):
+                        parsed = parsed[_key]
+                        break
+                else:
+                    if parsed and all(isinstance(v, dict) for v in parsed.values()):
+                        parsed = [parsed.get(c, {}) for c in claims]
+            if not isinstance(parsed, list):
+                raise ValueError("judge response is not a list")
             out: list[ClaimResult] = []
             for claim, obj in zip(claims, parsed):
+                if not isinstance(obj, dict):
+                    obj = {}
                 label = obj.get("label", "NEUTRAL")
                 if label not in _NLI_LABELS:
                     label = "NEUTRAL"
+                # Clamp to [0,1]; tolerate a 0–100 scale (F5b).
                 llm_score = float(obj.get("score", 0.0))
+                if llm_score > 1.0:
+                    llm_score = llm_score / 100.0
+                llm_score = min(1.0, max(0.0, llm_score))
                 lexical = _lexical_support(claim, chunks[:3])
                 score = max(llm_score, lexical)
                 # Lexical backstop also vetoes false contradictions on restated content.

@@ -533,6 +533,53 @@ def test_judge_claims_llm_parses_labels_and_scores(monkeypatch):
     assert results[1].label == "CONTRADICTED"
 
 
+def test_judge_claims_llm_handles_0_to_100_scale(monkeypatch):
+    # F5(b): a judge that returns scores on a 0–100 scale must not crash the
+    # ClaimResult Field(ge=0, le=1) validator and fall back to the retired NLI.
+    mod = importlib.import_module("services.citation_guard_v2")
+
+    class FakeResp:
+        content = '[{"claim":"c","label":"ENTAILED","score":95}]'
+
+    class FakeLLM:
+        async def ainvoke(self, messages, *a, **k):
+            return FakeResp()
+
+    def _no_nli():
+        raise AssertionError("must not fall back to NLI")
+
+    monkeypatch.setattr(mod, "_providers", lambda: [FakeLLM()])
+    monkeypatch.setattr(mod, "_get_nli_model", _no_nli)
+    import asyncio
+    results = asyncio.run(mod.judge_claims_llm(["c"], ["c is supported evidence"]))
+    assert len(results) == 1
+    assert 0.0 <= results[0].score <= 1.0
+    assert results[0].label == "ENTAILED"
+
+
+def test_judge_claims_llm_handles_dict_response(monkeypatch):
+    # F5(a): a judge that wraps the array in an object must be normalized, not
+    # zipped as dict-keys → AttributeError → NLI fallback.
+    mod = importlib.import_module("services.citation_guard_v2")
+
+    class FakeResp:
+        content = '{"claims":[{"claim":"c","label":"NEUTRAL","score":0.5}]}'
+
+    class FakeLLM:
+        async def ainvoke(self, messages, *a, **k):
+            return FakeResp()
+
+    def _no_nli():
+        raise AssertionError("must not fall back to NLI")
+
+    monkeypatch.setattr(mod, "_providers", lambda: [FakeLLM()])
+    monkeypatch.setattr(mod, "_get_nli_model", _no_nli)
+    import asyncio
+    results = asyncio.run(mod.judge_claims_llm(["c"], ["evidence about c"]))
+    assert len(results) == 1
+    assert 0.0 <= results[0].score <= 1.0
+
+
 def test_verify_answer_uses_llm_judge_when_configured(monkeypatch):
     mod = importlib.import_module("services.citation_guard_v2")
     import asyncio
