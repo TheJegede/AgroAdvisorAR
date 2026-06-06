@@ -47,15 +47,42 @@ async def fetch_historical_weather(lat: float, lon: float, date: str) -> dict:
             raw = resp.json()
 
         hourly = raw.get("hourly", {})
-        wind_speeds = [v for v in hourly.get("windspeed_10m", []) if v is not None]
-        wind_dirs = [v for v in hourly.get("winddirection_10m", []) if v is not None]
+        times = hourly.get("time", [])
+        raw_speeds = hourly.get("windspeed_10m", [])
+        raw_dirs = hourly.get("winddirection_10m", [])
         temps = hourly.get("temperature_2m", [])
 
+        def _hour_of(ts: str) -> int | None:
+            # Open-Meteo hourly timestamps are local "YYYY-MM-DDTHH:MM".
+            try:
+                return int(ts[11:13])
+            except (TypeError, ValueError, IndexError):
+                return None
+
+        # Pick the value AT local noon by matching the hour label, not a fixed
+        # index — temps[12] is off by an hour on DST-transition days (F14).
         temp_at_noon = None
-        if len(temps) > 12 and temps[12] is not None:
-            temp_at_noon = temps[12]
+        noon_idx = next(
+            (i for i, ts in enumerate(times) if _hour_of(ts) == 12), None
+        )
+        if noon_idx is not None and noon_idx < len(temps) and temps[noon_idx] is not None:
+            temp_at_noon = temps[noon_idx]
         elif temps:
             temp_at_noon = next((t for t in temps if t is not None), None)
+
+        # Wind over the typical daytime application window (08:00–18:00) rather
+        # than a full 24h average, which would dilute a high-wind spray window
+        # with calm overnight hours in the drift PDF (F14). Fall back to all
+        # hours when timestamps are unavailable.
+        if times and len(times) == len(raw_speeds):
+            day_idx = [i for i, ts in enumerate(times)
+                       if (_hour_of(ts) is not None and 8 <= _hour_of(ts) <= 18)]
+        else:
+            day_idx = list(range(len(raw_speeds)))
+        wind_speeds = [raw_speeds[i] for i in day_idx
+                       if i < len(raw_speeds) and raw_speeds[i] is not None]
+        wind_dirs = [raw_dirs[i] for i in day_idx
+                     if i < len(raw_dirs) and raw_dirs[i] is not None]
 
         wind_speed_avg = sum(wind_speeds) / len(wind_speeds) if wind_speeds else None
         if wind_dirs:
