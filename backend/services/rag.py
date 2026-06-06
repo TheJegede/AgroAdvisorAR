@@ -450,7 +450,9 @@ async def run_rag_query(
         if llm is None:
             continue
         try:
-            if llm == _get_deepinfra_llm():
+            # Identity check — value-equality on pydantic models is fragile and
+            # can misclassify a non-DeepInfra provider as DeepInfra.
+            if deepinfra is not None and llm is deepinfra:
                 from langchain_core.output_parsers import PydanticOutputParser
                 parser = PydanticOutputParser(pydantic_object=AdvisoryDraft)
                 format_instructions = parser.get_format_instructions()
