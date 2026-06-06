@@ -1,6 +1,6 @@
 # AgroAdvisor AR — Completion to Production
 
-**Last updated:** 2026-06-05  
+**Last updated:** 2026-06-06  
 **MVP target:** September 2026  
 **Production readiness:** 82%  
 **PRD phase progress:** 80%
@@ -48,14 +48,14 @@ numbers unreliable (single-gold metric + local-Qwen eval vs prod Groq-70b).
 
 ✅ **GT INDEX WITH METADATA SWITCHED 2026-06-03.** Switched active Pinecone index from `agroar-prod-gte` (which lacked document titles) to `agroar-prod-gte-v2` (contains all `document_title` and `section_heading` metadata). Validated that retrieval metrics are maintained (`MRR@5` `0.1508` -> `0.1533`) and the title-matching citation guard now successfully validates citations end-to-end.
 
+✅ **CODE REVIEW REMEDIATION SHIPPED + merged to `main` + deployed 2026-06-06.** All 15 findings + honorable mentions from `docs/2026-06-05-codebase-logic-review.md` fixed (TDD, 1 commit/finding). Security/correctness highlights: **IDOR write** in `session.add_message` closed (ownership check); safety-guard **bare-`\d` over-match** that wiped grounded answers fixed; rate limiter no longer **fails open** on Redis outage (local fallback); SAFETY_CRITICAL gets explicit fan-out + escalation; SSE error frame no longer **leaks raw exceptions**; JWT alg allowlist pinned. Verified backend 131 / frontend 29 / lint clean. Merged to `main`, pushed, frontend auto-deployed (Vercel), backend redeployed to HF Spaces.
+
 Still open (next levers, evidence-ranked):
 - **Generation model 7B → 70B** — Completed (2026-06-03). Integrated DeepInfra 70B (Llama 3.3) to bypass Groq rate/billing tier blocks.
 - **Corpus-coverage audit** — Completed (2026-06-03). Verified 100% of gold queries have supporting chunks in the corpus.
 - **Trustworthy eval** — ✅ Done (2026-06-05). DeepInfra 70B gen + judge, n=20, seed=7: correctness **20%**, faithfulness **40%**, suppression **15%**. Poultry leads (50% corr), soybeans lags (43% suppressed). See PROGRESS.md eval section.
 - **Namespace audit + relabeled eval** — ✅ Done (2026-06-06). LLM audit relabeled 40/70 soybeans items to `general` (off-crop content: pine, wheat, Clearfield rice, sprayer calibration). Relabeled eval n=41, seed=7: correctness **22%**, faithfulness **49%**, suppression **10%**. Soybeans post-relabel: corr 25%, faith 50%, supp 0% (genuine queries only). Canonical eval for arXiv/NIW: `evals/eval_set_v2_relabeled.jsonl`.
 
-Remaining housekeeping: rotate the Groq key (leaked in a chat transcript; owner
-handling).
 
 ---
 
@@ -167,6 +167,7 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | Sidebar Sessions Auto-Refresh — fixed new chat sessions not appearing in sidebar until manual page refresh by refactoring activeSessionId sync in useEffect and pushing session ID to URL | Frontend UI | 2026-06-02 |
 | DeepInfra 70B Integration & Gemini Fallback Upgrades — added DeepInfra Llama 3.3 70B as primary/fallback provider using Pydantic JSON mode parsing and reverted deprecated Gemini models to active gemini-2.5-flash series | Core RAG | 2026-06-03 |
 | Pinecone v2 Index Metadata Cutover & Citation Guard Calibration — cut over to agroar-prod-gte-v2 index (complete with titles/sections), calibrated safety-critical regex to ignore growth stages (V3/R5/V3.5), verified 109 backend tests pass | Core RAG | 2026-06-03 |
+| Code review remediation — all 15 findings + honorable mentions from the 2026-06-05 logic review fixed (IDOR write, safety-guard over-match, rate-limit fail-open, SAFETY_CRITICAL routing, GDD cap, alert dedup, SSE error leak, NFKC length cap, weather noon/wind, JWT alg pin, +more); merged to main + deployed (backend 131 / frontend 29 tests pass) | Security/testing + Core RAG | 2026-06-06 |
 
 
 
