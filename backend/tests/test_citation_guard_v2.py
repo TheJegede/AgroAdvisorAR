@@ -149,6 +149,47 @@ def test_score_answer_growth_stage_contradiction_does_not_suppress():
     assert score == 0.9  # not suppressed (would be 0.0 if safety-critical)
 
 
+def test_is_safety_critical_requires_unit_adjacent_number():
+    # F2: a bare digit must NOT trip the safety-critical full-suppression path.
+    # Only a number adjacent to a rate/unit token is safety-critical.
+    mod = importlib.import_module("services.citation_guard_v2")
+    from models.advisory import ClaimResult
+
+    def sc(text):
+        return mod._is_safety_critical_contradiction(
+            ClaimResult(claim=text, label="CONTRADICTED", score=0.0)
+        )
+
+    # True — real rates / units
+    assert sc("Apply 5 lb/ac of nitrogen.")
+    assert sc("Use 32 oz per acre.")
+    assert sc("Apply 999 lb N/ac.")
+    assert sc("Mix 1 qt/ac.")
+    # False — numbers with no unit/rate token
+    assert not sc("Soybeans were domesticated 10000 years ago.")
+    assert not sc("There are 3 main causes.")
+    assert not sc("Yield dropped 5 percent.")
+    # False — growth stages
+    assert not sc("Apply at V3 stage.")
+    assert not sc("Avoid application after R5.")
+    # Non-contradicted is never safety-critical regardless of content
+    assert not mod._is_safety_critical_contradiction(
+        ClaimResult(claim="Apply 5 lb/ac.", label="ENTAILED", score=0.9)
+    )
+
+
+def test_score_answer_bare_number_contradiction_not_suppressed():
+    # F2 regression: a contradicted claim with a non-rate number must be dropped,
+    # not zero the whole answer.
+    mod = importlib.import_module("services.citation_guard_v2")
+    from models.advisory import ClaimResult
+    claims = [
+        ClaimResult(claim="Scout weekly.", label="ENTAILED", score=0.9),
+        ClaimResult(claim="Domesticated 10000 years ago.", label="CONTRADICTED", score=0.0),
+    ]
+    assert mod.score_answer(claims) == 0.9
+
+
 def test_verify_claim_empty_chunks_ungrounded():
     # P0.2: no retrieved evidence → score 0.0 (was 0.5, which passed the gate).
     mod = importlib.import_module("services.citation_guard_v2")

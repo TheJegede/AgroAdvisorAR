@@ -234,10 +234,15 @@ def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:
 # is deferred — numeric rates/units are the concrete, testable safety signal.)
 #
 # Calibration: Consume crop growth stages (like V3, R5, V3.5, R-1, R 5) on the left
-# of the alternation (without Group 1 capture) to prevent bare digit matches on them,
-# while capturing true numbers/rates in Group 1.
+# of the alternation (WITHOUT Group 1 capture) so they never trip suppression.
+# Group 1 captures a true rate ONLY when a number is adjacent to a unit/rate token
+# (e.g. "5 lb/ac", "32 oz", "1 qt/ac", "5%"). A bare digit ("10000 years",
+# "3 causes") must NOT match — that over-match wiped grounded answers (F2).
 _SAFETY_CRITICAL_RE = re.compile(
-    r"\b[VRvr]\s?-?\d+(?:\.\d+)?\b|(\d|\b(?:lb|lbs|oz|qt|qts|gal|gpa|pt|pts|fl\s*oz)\b|/\s*ac)", re.IGNORECASE
+    r"\b[VRvr]\s?-?\d+(?:\.\d+)?\b"
+    r"|(\d+(?:\.\d+)?\s*(?:lbs|lb|oz|qts|qt|gal|gpa|pts|pt|fl\s*oz|%)\b"
+    r"|\d+(?:\.\d+)?\s*/\s*ac\b)",
+    re.IGNORECASE,
 )
 
 
