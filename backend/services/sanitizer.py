@@ -12,8 +12,15 @@ import re
 import unicodedata
 
 
+MAX_MESSAGE_LENGTH = 800
+
+
 class InjectionDetected(ValueError):
     """User input contained a high-confidence prompt-injection attempt."""
+
+
+class MessageTooLong(ValueError):
+    """Message exceeds the length cap after Unicode normalization."""
 
 
 # High-confidence override patterns — reject with 400.
@@ -51,14 +58,21 @@ _STRIP_PATTERNS = [
 ]
 
 
-def sanitize(message: str) -> str:
-    """Sanitize user input. Raises InjectionDetected on hard-block patterns.
-    Returns a cleaned string otherwise."""
+def sanitize(message: str, max_length: int = MAX_MESSAGE_LENGTH) -> str:
+    """Sanitize user input. Raises InjectionDetected on hard-block patterns and
+    MessageTooLong when the normalized text exceeds the cap. Returns a cleaned
+    string otherwise."""
     if not isinstance(message, str):
         raise InjectionDetected("Message must be a string.")
 
     # Normalize Unicode (combine compatibility characters, strip lookalike tricks).
     normalized = unicodedata.normalize("NFKC", message)
+
+    # Enforce the length cap AFTER normalization: NFKC can expand compatibility
+    # characters (e.g. a single ligature → many chars), so checking the raw
+    # string would let amplified input slip past the cap (F13).
+    if len(normalized) > max_length:
+        raise MessageTooLong(f"message exceeds {max_length} character limit")
 
     if _REJECT_RE.search(normalized):
         raise InjectionDetected(

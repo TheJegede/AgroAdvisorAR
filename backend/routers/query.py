@@ -11,7 +11,7 @@ from services.translation import translate_to_en, translate_advisory_to_es
 from services.session import add_message as save_message
 from services.user import get_profile
 from services.cache import rate_limit_hit
-from services.sanitizer import sanitize, InjectionDetected
+from services.sanitizer import sanitize, InjectionDetected, MessageTooLong
 from utils.prompt import out_of_scope_message
 import config
 
@@ -53,9 +53,6 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message cannot be empty")
 
-    if len(req.message) > 800:
-        raise HTTPException(status_code=400, detail="message exceeds 800 character limit")
-
     # Rate limit before any LLM call to cap free-tier abuse.
     allowed, _remaining = rate_limit_hit(
         f"query_throttle:{user['sub']}",
@@ -76,7 +73,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     # classifier and RAG chain. Mutates req.message to the sanitized form.
     try:
         req.message = sanitize(req.message)
-    except InjectionDetected as e:
+    except (InjectionDetected, MessageTooLong) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     profile = get_profile(user["sub"])
