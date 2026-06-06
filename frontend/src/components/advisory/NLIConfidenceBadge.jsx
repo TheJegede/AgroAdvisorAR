@@ -14,7 +14,9 @@ function scoreColor(score) {
 
 export default function NLIConfidenceBadge({ confidence_score }) {
   const { t } = useLang()
-  if (confidence_score == null || confidence_score === 0) return null
+  // Render only when a score is present. A score of exactly 0 is a valid red
+  // state (scoreColor maps 0 → red); don't dead-end it.
+  if (confidence_score == null) return null
   const color = scoreColor(confidence_score)
   return (
     <span

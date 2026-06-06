@@ -32,6 +32,11 @@ describe('NLIConfidenceBadge scoreColor logic', () => {
     expect(badge).toBeNull()
   })
 
+  it('renders a (red) badge for score exactly 0', () => {
+    const badge = NLIConfidenceBadge({ confidence_score: 0 })
+    expect(badge).not.toBeNull()
+  })
+
   it('formats score to 2 decimal places', () => {
     const badge = NLIConfidenceBadge({ confidence_score: 0.8234 })
     // The component renders with .toFixed(2), so 0.8234 becomes "0.82"
