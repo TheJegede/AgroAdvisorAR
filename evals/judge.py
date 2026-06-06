@@ -82,10 +82,15 @@ _deepinfra_judge_llm = None
 def _get_deepinfra_judge():
     global _deepinfra_judge_llm
     if _deepinfra_judge_llm is None:
+        di_key = os.environ.get("DEEPINFRA_API_KEY")
+        if not di_key:
+            raise RuntimeError(
+                "DeepInfra judge fallback requested but DEEPINFRA_API_KEY is unset/empty."
+            )
         from langchain_openai import ChatOpenAI
         _deepinfra_judge_llm = ChatOpenAI(
             model=os.environ.get("DEEPINFRA_MODEL", "meta-llama/Llama-3.3-70B-Instruct"),
-            openai_api_key=os.environ["DEEPINFRA_API_KEY"],
+            openai_api_key=di_key,
             openai_api_base="https://api.deepinfra.com/v1",
             temperature=0,
         )

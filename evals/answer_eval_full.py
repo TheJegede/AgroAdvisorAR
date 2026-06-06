@@ -20,7 +20,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 import services.rag as rag                        # noqa: E402
 import config                                      # noqa: E402
 from services.rag import run_rag_query             # noqa: E402
-from judge import score_item, sample_items, _summarize_advisory  # noqa: E402
+from judge import (  # noqa: E402
+    score_item, sample_items, _summarize_advisory,
+    _is_quota_error, _get_deepinfra_judge,
+)
 from langchain_groq import ChatGroq               # noqa: E402
 from langchain_core.messages import SystemMessage, HumanMessage  # noqa: E402
 
@@ -93,10 +96,19 @@ def faithfulness(advisory: dict, chunks: list[dict]) -> tuple[float, str]:
     ctx = "\n\n".join(
         f"[{c.get('document_title','')}] {c.get('snippet','')}" for c in chunks
     ) or "(no chunks retrieved)"
-    resp = _get_judge().invoke([
+    msgs = [
         SystemMessage(content=FAITH_SYS),
         HumanMessage(content=FAITH_USER.format(answer=_summarize_advisory(advisory), context=ctx[:6000])),
-    ])
+    ]
+    # Symmetric quota fallback with score_item (correctness): on a Groq quota
+    # error, fall back to DeepInfra if configured rather than crashing the run.
+    try:
+        resp = _get_judge().invoke(msgs)
+    except Exception as e:
+        if _is_quota_error(e) and os.environ.get("DEEPINFRA_API_KEY"):
+            resp = _get_deepinfra_judge().invoke(msgs)
+        else:
+            raise
     return _parse_score(resp.content)
 
 
@@ -214,10 +226,15 @@ async def main():
         _force_groq_generation()
     elif args.provider == "deepinfra":
         _force_deepinfra_generation()
+        di_key = os.environ.get("DEEPINFRA_API_KEY")
+        if not di_key:
+            raise SystemExit(
+                "--provider deepinfra requires DEEPINFRA_API_KEY to be set (and non-empty)."
+            )
         from langchain_openai import ChatOpenAI
         _deepinfra = ChatOpenAI(
             model=os.environ.get("DEEPINFRA_MODEL", "meta-llama/Llama-3.3-70B-Instruct"),
-            openai_api_key=os.environ["DEEPINFRA_API_KEY"],
+            openai_api_key=di_key,
             openai_api_base="https://api.deepinfra.com/v1",
             temperature=0,
         )
@@ -226,6 +243,11 @@ async def main():
         import judge as _judge_mod
         _judge_mod._judge_llm = _deepinfra
         _judge_mod._deepinfra_judge_llm = _deepinfra
+        print(
+            "WARNING: --provider deepinfra uses the same 70B model for generation "
+            "AND judging (judge-on-self bias) — correctness/faithfulness scores "
+            "are optimistic; cross-check with a different judge model."
+        )
     elif args.provider == "local":
         import local_llm
         rag._get_groq_llm = lambda: local_llm.LocalChat()  # generation -> local Qwen
