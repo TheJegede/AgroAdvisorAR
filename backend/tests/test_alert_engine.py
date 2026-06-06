@@ -274,6 +274,73 @@ def test_rww_skipped_when_flood_window_is_old(monkeypatch):
     assert inserted == []
 
 
+def _fake_redis_exists_raises():
+    class FakeRedis:
+        def exists(self, key):
+            raise RuntimeError("redis down")
+        def set(self, key, val, ex=None):
+            pass
+    return FakeRedis()
+
+
+def _fake_redis_capturing_ttl():
+    captured = {}
+
+    class FakeRedis:
+        def exists(self, key):
+            return 0
+        def set(self, key, val, ex=None):
+            captured[key] = ex
+    return FakeRedis(), captured
+
+
+def test_alert_skipped_when_dedup_check_errors(monkeypatch):
+    # F8: when redis.exists raises, skip the alert (don't fall through to an
+    # insert that would duplicate on every scheduler run during an outage).
+    mod = importlib.import_module("services.alert_engine")
+    supabase, inserted = _fake_supabase()
+    monkeypatch.setattr(mod, "_get_service_client", lambda: supabase)
+    monkeypatch.setattr(mod, "_get_redis", lambda: _fake_redis_exists_raises())
+    monkeypatch.setattr(mod, "compute_gdd_since_jan1", _fake_gdd_200)
+
+    rules_path = _write_rules()
+    try:
+        engine = mod.AlertEngine(rules_path=rules_path)
+        fired = asyncio.run(engine.run_for_farmer(
+            farmer_id="farmer-1", county_fips="05001",
+            primary_crops=["rice"], language="en", rice_fields=_rice_fields(7),
+        ))
+    finally:
+        os.unlink(rules_path)
+
+    assert fired == []
+    assert inserted == []
+
+
+def test_dedup_ttl_covers_flood_window(monkeypatch):
+    # F9: a 14-day flood-window rule must dedup for ≥14 days, else it re-fires
+    # mid-window (the old fixed 5-day TTL was too short).
+    mod = importlib.import_module("services.alert_engine")
+    supabase, inserted = _fake_supabase()
+    redis, captured = _fake_redis_capturing_ttl()
+    monkeypatch.setattr(mod, "_get_service_client", lambda: supabase)
+    monkeypatch.setattr(mod, "_get_redis", lambda: redis)
+    monkeypatch.setattr(mod, "compute_gdd_since_jan1", _fake_gdd_200)
+
+    rules_path = _write_rules()
+    try:
+        engine = mod.AlertEngine(rules_path=rules_path)
+        asyncio.run(engine.run_for_farmer(
+            farmer_id="farmer-1", county_fips="05001",
+            primary_crops=["rice"], language="en", rice_fields=_rice_fields(7),
+        ))
+    finally:
+        os.unlink(rules_path)
+
+    ttl = captured["alert:farmer-1:rice_water_weevil"]
+    assert ttl >= 14 * 24 * 60 * 60
+
+
 def test_real_alert_rules_use_profile_crop_keys():
     rules_path = BACKEND_DIR / "data" / "alert_rules.json"
     rules = json.loads(rules_path.read_text())
