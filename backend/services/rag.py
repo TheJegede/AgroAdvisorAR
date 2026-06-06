@@ -179,6 +179,7 @@ async def _postprocess_async(
     weather: dict,
     county_fips: str,
     run_config: dict | None = None,
+    category: str | None = None,
 ) -> AdvisoryResponse:
     """Apply citation guard (title-match + NLI) and stamp context_meta.
 
@@ -244,9 +245,22 @@ async def _postprocess_async(
         ],
     })
 
+    # SAFETY_CRITICAL queries (pesticide overdose, toxic exposure) must ALWAYS
+    # carry an escalation next-step, regardless of guard score — these are the
+    # highest-stakes class. Fall back to the statewide contact when the county
+    # is not in county_agents.json (F3/F4).
+    safety_escalation = None
+    if category and category.split(":", 1)[0] == "SAFETY_CRITICAL":
+        safety_escalation = (
+            citation_guard_v2.escalation_cue(county_fips)
+            or citation_guard_v2.GENERIC_ESCALATION
+        )
+
     # Step 3: NLI claim verification. This can be disabled for constrained
     # runtimes, but defaults on so confidence scoring remains active.
     if not config.NLI_CITATION_GUARD_ENABLED:
+        if safety_escalation:
+            result = result.model_copy(update={"escalation": safety_escalation})
         return result
 
     answer_prose = _advisory_to_verifiable_text(result)
@@ -264,7 +278,14 @@ async def _postprocess_async(
 
     escalation = None
     if confidence_score < citation_guard_v2.ESCALATION_THRESHOLD:
-        escalation = citation_guard_v2.escalation_cue(county_fips)
+        # Generic statewide contact when the county is missing from
+        # county_agents.json — a suppressed body must still carry a next step (F3).
+        escalation = (
+            citation_guard_v2.escalation_cue(county_fips)
+            or citation_guard_v2.GENERIC_ESCALATION
+        )
+    if safety_escalation and not escalation:
+        escalation = safety_escalation
 
     update: dict = {
         "confidence_score": confidence_score,
@@ -451,7 +472,7 @@ async def run_rag_query(
     if result is None:
         raise RuntimeError(f"RAG generation failed (all providers): {last_err}") from last_err
 
-    advisory = await _postprocess_async(result, docs, soil, weather, county_fips, run_config=run_config)
+    advisory = await _postprocess_async(result, docs, soil, weather, county_fips, run_config=run_config, category=category)
     retrieved_chunks = [
         {
             "document_title": d.metadata.get("document_title", ""),

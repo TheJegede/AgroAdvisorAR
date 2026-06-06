@@ -59,6 +59,11 @@ CATEGORY_TO_NAMESPACE = {
     "IN_SCOPE_POULTRY:INFO": CROP_NAMESPACES[CROP_POULTRY],
     "IN_SCOPE_GENERAL_AG:DIAG": None,
     "IN_SCOPE_GENERAL_AG:INFO": None,
+    # SAFETY_CRITICAL has no dedicated corpus → explicit fan-out across every
+    # crop namespace (None resolves to the fan-out in rag._namespaces_for).
+    # query.py lets it flow into run_rag_query; the advisory always carries an
+    # escalation next-step (see rag._postprocess_async).
+    "SAFETY_CRITICAL": None,
 }
 
 

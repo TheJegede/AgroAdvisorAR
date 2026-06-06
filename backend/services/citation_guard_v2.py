@@ -272,6 +272,15 @@ def score_answer(results: list[ClaimResult]) -> float:
     return float(sum(r.score for r in kept) / len(kept))
 
 
+# Statewide fallback when a county is absent from county_agents.json. A
+# suppressed (blanked) advisory must never leave the farmer with no next step.
+GENERIC_ESCALATION = (
+    "Contact your local county Extension office or the University of Arkansas "
+    "System Division of Agriculture (Cooperative Extension Service) at "
+    "1-800-482-8038 for help with this question."
+)
+
+
 def escalation_cue(county_fips: str) -> Optional[str]:
     """Return formatted UA Extension contact string for county, or None."""
     agents = _load_agents()

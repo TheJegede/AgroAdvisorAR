@@ -179,6 +179,42 @@ def test_high_score_keeps_llm_confidence(monkeypatch):
 # --- Task 1.3: _strip_scaffolding removes [RETRIEVED DOCUMENT CONTEXT] ---
 
 
+def test_safety_critical_fans_out_to_all_namespaces():
+    # F4: SAFETY_CRITICAL has no dedicated corpus → deterministic fan-out.
+    rag = importlib.import_module("services.rag")
+    assert rag._namespaces_for("SAFETY_CRITICAL") == ["rice", "soybeans", "poultry"]
+
+
+def test_suppressed_missing_county_still_has_escalation(monkeypatch):
+    # F3: suppressed body + county absent from county_agents.json must still
+    # carry a generic escalation next-step (not a content-free advisory).
+    rag = importlib.import_module("services.rag")
+    _patch_guard(rag, monkeypatch, 0.0)
+    monkeypatch.setattr(rag.citation_guard_v2, "escalation_cue", lambda fips: None)
+
+    result = _make_advisory([]).model_copy(update={"confidence": "High"})
+    out = _run_postprocess(rag, result, [_MetaDoc({"namespace": "rice"}, "rice content")])
+
+    assert out.suppressed is True
+    assert out.escalation
+    assert out.escalation == rag.citation_guard_v2.GENERIC_ESCALATION
+
+
+def test_safety_critical_always_has_escalation_even_when_grounded(monkeypatch):
+    # F4: a high-confidence SAFETY_CRITICAL answer still attaches escalation.
+    rag = importlib.import_module("services.rag")
+    _patch_guard(rag, monkeypatch, 0.95)   # well above ESCALATION_THRESHOLD
+    monkeypatch.setattr(rag.citation_guard_v2, "escalation_cue", lambda fips: None)
+
+    result = _make_advisory([]).model_copy(update={"confidence": "High"})
+    out = asyncio.run(rag._postprocess_async(
+        result=result, docs=[_MetaDoc({"namespace": "rice"}, "c")], soil={}, weather={},
+        county_fips="05001", category="SAFETY_CRITICAL",
+    ))
+    assert out.suppressed is False         # grounded, not suppressed
+    assert out.escalation == rag.citation_guard_v2.GENERIC_ESCALATION
+
+
 def test_strip_scaffolding_removes_context_header():
     rag = importlib.import_module("services.rag")
     assert rag._strip_scaffolding("Read the report, see [RETRIEVED DOCUMENT CONTEXT]") == "Read the report, see"
