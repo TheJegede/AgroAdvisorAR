@@ -179,6 +179,22 @@ def test_high_score_keeps_llm_confidence(monkeypatch):
 # --- Task 1.3: _strip_scaffolding removes [RETRIEVED DOCUMENT CONTEXT] ---
 
 
+def test_mixed_titles_do_not_force_low(monkeypatch):
+    # F12: one stray titled doc among titleless gte results must NOT activate the
+    # title-match guard and force Low on an answer grounded by the titleless docs.
+    rag = importlib.import_module("services.rag")
+    monkeypatch.setattr(rag.config, "NLI_CITATION_GUARD_ENABLED", False)
+
+    result = _make_advisory(["Rice Disease MP154"])  # citation won't match the stray title
+    docs = [
+        _MetaDoc({"document_title": "Soybean Guide"}),  # stray titled doc
+        _MetaDoc({"namespace": "rice"}),                # titleless (real grounding)
+        _MetaDoc({"namespace": "rice"}),
+    ]
+    out = _run_postprocess(rag, result, docs)
+    assert out.confidence == "High"  # not forced to Low by the stray title
+
+
 def test_safety_critical_fans_out_to_all_namespaces():
     # F4: SAFETY_CRITICAL has no dedicated corpus → deterministic fan-out.
     rag = importlib.import_module("services.rag")

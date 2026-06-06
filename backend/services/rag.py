@@ -195,7 +195,13 @@ async def _postprocess_async(
     # title, skip the title guard entirely and let the NLI confidence_score
     # (Step 3) govern. Re-enable fully once gte is re-ingested with title/section
     # metadata (fix 1B).
-    titles_present = any(doc.metadata.get("document_title") for doc in docs)
+    # Run the title-match guard only when the retrieval set RELIABLY carries
+    # titles (every doc), not when a single stray titled doc appears among
+    # titleless gte results — `any()` there forced a false "Low" on answers
+    # actually grounded by the titleless docs (F12). `all()` defers to the NLI
+    # score in mixed/titleless cases and activates once gte is re-ingested with
+    # titles on every chunk.
+    titles_present = bool(docs) and all(doc.metadata.get("document_title") for doc in docs)
     if titles_present:
         retrieved_titles = {
             doc.metadata.get("document_title", "").lower() for doc in docs
