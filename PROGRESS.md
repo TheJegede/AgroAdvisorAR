@@ -117,6 +117,44 @@ python answer_eval_full.py --provider deepinfra --sample 20 --seed 7 --no-guard 
 
 ---
 
+## ✅ Namespace Audit + Relabeled Eval (2026-06-06)
+
+**What changed:** 40 of 70 soybeans-namespace items relabeled to `general`. The "soybeans recommended
+chemicals for weed and brush control" document contained pine seedlings, wheat, Clearfield rice,
+sprayer calibration, and broadleaf brush queries — all off-crop by query intent. `general` routes
+to `_fanout_search` (all 3 crop namespaces), which is correct for those queries.
+
+**Script:** `evals/audit_namespace.py` · DeepInfra Llama-3.3-70B classifier · classification by
+query intent (not document origin) · commit `f66d406`
+
+**Relabeled eval — `eval_set_v2_relabeled.jsonl`, n=41 scored / 9 skipped (network timeouts), seed=7:**
+
+| namespace | n | supp | corr | faith | mean_conf |
+|---|---|---|---|---|---|
+| general | 8 | 25% | **25%** | 44% | 0.55 |
+| poultry | 4 | 0% | **50%** | 50% | 0.88 |
+| rice | 25 | 8% | **16%** | 50% | 0.77 |
+| soybeans | 4 | 0% | **25%** | 50% | 0.74 |
+| **OVERALL** | **41** | **10%** | **22%** | **49%** | — |
+
+**Before/after soybeans (seed=7, relabeled vs original):**
+- Original soybeans (n=7, includes off-crop): corr 14%, faith 29%, supp 43%
+- Relabeled soybeans (n=4, genuine soybean queries only): corr 25%, faith 50%, supp 0%
+
+**Interpretation:**
+- Soybeans suppression 43%→0%: guard was correctly flagging off-crop queries that retrieved wrong chunks. Genuine soybean queries retrieve well.
+- Soybeans correctness 14%→25%, faithfulness 29%→50%: real improvement once off-crop contamination removed.
+- Overall correctness 20%→22%, faithfulness 40%→49%: modest gain; most of the eval is rice (n=25) which is unchanged.
+- General namespace 25% corr / 44% faith / 25% suppression: fanout retrieval works but corpus coverage thinner for cross-crop queries.
+- 9 skipped items = DeepInfra network timeouts (no `asyncio.timeout` in eval loop). True n closer to 50.
+
+**Run command (reproducible):**
+```bash
+python -u evals/answer_eval_full.py --provider deepinfra --sample 50 --seed 7 --eval-set evals/eval_set_v2_relabeled.jsonl
+```
+
+---
+
 ## ⭐ Pinned: the WINNING prod config (do not regress)
 
 Best of everything tested (`answer_eval_full --provider local`):
