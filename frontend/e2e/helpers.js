@@ -24,6 +24,46 @@ export async function submitQuery(page, text) {
   await page.locator('[data-testid="chat-send"]').click();
 }
 
+// Stub the endpoints fired on EVERY authenticated page load: the sidebar lists
+// sessions (GET /sessions) + loads the profile (GET /profile via useProfile), and
+// the chat home polls GET /alerts. With injectAuth's fake token these would hit
+// the real CI backend and 401; api.js's response interceptor then redirects ANY
+// non-/auth 401 to /login, so the page never renders and selectors time out.
+// Call this right after injectAuth. Specs that register their own /sessions or
+// /profile handlers afterward take precedence (Playwright runs handlers LIFO);
+// those handlers fall back here for methods/paths they don't own.
+export async function mockAppShell(page) {
+  await page.route('**/api/v1/alerts', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+      : route.fallback()
+  );
+  await page.route('**/api/v1/profile', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 'e2e-user',
+            full_name: 'E2E Farmer',
+            county_fips: '05001',
+            county_name: 'Arkansas County',
+            primary_crops: ['rice'],
+            language: 'en',
+            created_at: '2026-01-01T00:00:00Z',
+            last_active: '2026-01-01T00:00:00Z',
+            is_admin: false,
+          }),
+        })
+      : route.fallback()
+  );
+  await page.route('**/api/v1/sessions', (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sessions: [] }) })
+      : route.fallback()
+  );
+}
+
 function requestJson(route) {
   try {
     return route.request().postDataJSON() ?? {};
@@ -69,7 +109,7 @@ export async function mockChatBackend(page) {
   const messageId = 'e2e-message-1';
 
   await page.route('**/api/v1/sessions', async (route) => {
-    if (route.request().method() !== 'POST') return route.continue();
+    if (route.request().method() !== 'POST') return route.fallback();
     const body = requestJson(route);
     latestUserMessage = body.preview || latestUserMessage;
     return route.fulfill({

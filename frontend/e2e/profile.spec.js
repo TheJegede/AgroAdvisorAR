@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { injectAuth, mockProfileBackend } from './helpers.js';
+import { injectAuth, mockAppShell, mockProfileBackend } from './helpers.js';
 
 test('update county persists after page reload', async ({ page }) => {
   await injectAuth(page);
+  await mockAppShell(page);
   await mockProfileBackend(page);
   await page.goto('/profile');
   await page.waitForLoadState('networkidle');

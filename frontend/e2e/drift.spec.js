@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { injectAuth } from './helpers.js';
+import { injectAuth, mockAppShell } from './helpers.js';
 
 const FAKE_REPORT = {
   id: 'e2e-drift-report-uuid-1',
@@ -42,6 +42,7 @@ async function mockRoutes(page) {
 
 test.beforeEach(async ({ page }) => {
   await injectAuth(page);
+  await mockAppShell(page);
   await mockRoutes(page);
 });
 

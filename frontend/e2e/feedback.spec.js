@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { injectAuth, mockChatBackend, submitQuery } from './helpers.js';
+import { injectAuth, mockAppShell, mockChatBackend, submitQuery } from './helpers.js';
 
 test('thumbs-down opens comment field and submits feedback', async ({ page }) => {
   await injectAuth(page);
+  await mockAppShell(page);
   await mockChatBackend(page);
   await page.route('**/api/v1/feedback', (route) => {
     route.fulfill({
@@ -29,6 +30,7 @@ test('thumbs-down opens comment field and submits feedback', async ({ page }) =>
 
 test('feedback API 429 shows retry message', async ({ page }) => {
   await injectAuth(page);
+  await mockAppShell(page);
   await mockChatBackend(page);
   await page.goto('/');
   await submitQuery(page, 'What causes rice sheath blight?');

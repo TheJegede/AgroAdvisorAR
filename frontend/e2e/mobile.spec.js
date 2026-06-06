@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { injectAuth, mockChatBackend } from './helpers.js';
+import { injectAuth, mockAppShell, mockChatBackend } from './helpers.js';
 
 test.use({ viewport: { width: 375, height: 667 }, isMobile: true });
 
 test('chat flow works at 375px viewport', async ({ page }) => {
   await injectAuth(page);
+  await mockAppShell(page);
   await mockChatBackend(page);
   await page.goto('/');
 

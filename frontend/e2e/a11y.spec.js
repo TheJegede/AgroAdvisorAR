@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { injectAxe, checkA11y } from 'axe-playwright';
-import { injectAuth, mockProfileBackend, mockChatBackend } from './helpers.js';
+import { injectAuth, mockAppShell, mockProfileBackend, mockChatBackend } from './helpers.js';
 
 const ROUTES = [
   { path: '/', isAdmin: false },
@@ -11,6 +11,7 @@ const ROUTES = [
 for (const route of ROUTES) {
   test(`axe-core: 0 WCAG AA violations on ${route.path}`, async ({ page }) => {
     await injectAuth(page);
+    await mockAppShell(page);
     await mockProfileBackend(page);
     await mockChatBackend(page);
 

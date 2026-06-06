@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { injectAuth, mockChatBackend, submitQuery } from './helpers.js';
+import { injectAuth, mockAppShell, mockChatBackend, submitQuery } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await injectAuth(page);
+  await mockAppShell(page);
   await mockChatBackend(page);
   await page.goto('/');
 });
