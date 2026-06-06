@@ -24,8 +24,8 @@ The bilingual interface (EN/ES) extends access to Spanish-speaking agricultural 
 │  Vite + TW   │◄──►│                                           │
 │  (frontend)  │SSE │  classifier → context → retriever → LLM   │
 └──────────────┘    │                                           │
-                    │  • DeepInfra Llama 3.3 70B / Groq (primary)│
-                    │  • Gemini 1.5 Flash (fallback)            │
+                    │  • Groq llama-3.3-70b (primary) / DeepInfra│
+                    │  • Gemini 2.5 Flash (fallback)            │
                     └─────────┬───────────┬───────────┬─────────┘
                               │           │           │
                        ┌──────▼─────┐ ┌───▼────┐ ┌────▼──────┐
@@ -48,8 +48,8 @@ POST /api/v1/query
   → SAFETY_CRITICAL? proceed with injected safety warning
   → parallel: embed + retrieve (Pinecone, k=5) AND fetch SSURGO + NOAA
   → assemble system prompt (role + conditions + docs + history + instructions)
-  → Primary LLM (DeepInfra / Groq / Gemini) with_structured_output(AdvisoryResponse)
-       → fallback chain: DeepInfra/Groq 70b → llama-3.1-8b-instant → Gemini 1.5 Flash
+  → Primary LLM (Groq / DeepInfra / Gemini) with_structured_output(AdvisoryDraft)
+       → fallback chain: Groq 70b → DeepInfra 70b → llama-3.1-8b-instant → Gemini 2.5 Flash
   → citation guard: title-match + NLI claim verification; low confidence is
     downgraded or the advisory is suppressed (Extension referral)
   → persist user + assistant turn to chat_messages (if session_id)
@@ -126,9 +126,9 @@ Copy `.env.example` to `.env` in the project root and fill in:
 
 | Variable | Purpose |
 |----------|---------|
-| `DEEPINFRA_API_KEY` | **Primary** LLM provider API key |
+| `GROQ_API_KEY` | **Primary** LLM provider API key (`LLM_PRIMARY=groq` default) |
+| `DEEPINFRA_API_KEY` | DeepInfra LLM provider (fallback / eval; `LLM_PRIMARY=deepinfra` to prefer) |
 | `DEEPINFRA_MODEL` | DeepInfra model; defaults to `meta-llama/Llama-3.3-70B-Instruct` |
-| `GROQ_API_KEY` | Alternative primary / fallback LLM provider |
 | `GOOGLE_API_KEY` | Gemini — optional fallback only (free tier is 20 req/day) |
 | `LLM_PRIMARY` | Provider order; defaults to `groq` (`deepinfra` | `gemini` | `local` to switch) |
 | `RERANK_ENABLED` | Optional cross-encoder reranking; off by default (heavy for free-tier CPU) |
@@ -145,8 +145,8 @@ Copy `.env.example` to `.env` in the project root and fill in:
 
 ## Key design decisions
 
-- **Structured output & Informational routing.** `with_structured_output(AdvisoryResponse)` via tool calling/JSON mode on DeepInfra/Groq (primary), Gemini `response_schema` as fallback. No regex or manual schema post-parsing. The schema supports both `"diagnostic"` and `"informational"` types (`response_type`). Diagnostic responses populate crop-health fields (causes, products/rates). Informational responses (for educational/non-diagnostic queries) leave crop-health fields empty and instead populate `detailed_explanation` and `key_points` to prevent awkward diagnostics.
-- **DeepInfra & Groq-primary, provider chain.** `classifier.py`, `rag.py`, and `citation_guard_v2.py` try providers in order (DeepInfra/Groq primary, Gemini fallback) and degrade gracefully. Gemini's free tier is 20 req/day, so DeepInfra and Groq are primary. Note: LLM calls fall back across DeepInfra 70B, Groq 70B, Groq 8B-instant, and Gemini 1.5 Flash to stretch free tier limits.
+- **Structured output & Informational routing.** `with_structured_output(AdvisoryDraft)` via tool calling/JSON mode on Groq (primary) / DeepInfra, Gemini `response_schema` as fallback. (The LLM authors `AdvisoryDraft`; the guard promotes it to `AdvisoryResponse` with the citation-guard fields.) No regex or manual schema post-parsing. The schema supports both `"diagnostic"` and `"informational"` types (`response_type`). Diagnostic responses populate crop-health fields (causes, products/rates). Informational responses (for educational/non-diagnostic queries) leave crop-health fields empty and instead populate `detailed_explanation` and `key_points` to prevent awkward diagnostics.
+- **Groq-primary, provider chain.** `classifier.py`, `rag.py`, and `citation_guard_v2.py` try providers in order (`LLM_PRIMARY=groq` default; DeepInfra and Gemini as fallback) and degrade gracefully. Gemini's free tier is 20 req/day, so Groq is primary. Note: LLM calls fall back across Groq 70B, DeepInfra 70B, Groq 8B-instant, and Gemini 2.5 Flash to stretch free tier limits.
 - **County context.** Every query injects county-level soil (SSURGO SDA API) and weather (NOAA NWS API) for the user's `county_fips`. Cached 6h in Upstash Redis. Both APIs must complete in 3s or the response degrades gracefully via `soil_data_available` / `weather_data_available` flags.
 - **Citation guard.** After generation, citations are cross-checked against retrieved chunk titles. Unmatched citations are stripped; if none remain, confidence is downgraded to `Low`.
 - **Pinecone namespaces.** Documents are upserted by crop (`rice`, `soybeans`, `poultry`, `general`). The classifier output selects the namespace at retrieval time.
@@ -217,7 +217,7 @@ See `CLAUDE.md` for `curl` examples.
 ## Tech stack
 
 - **Backend:** FastAPI, LangChain, Pinecone, Supabase, Pydantic v2, Sentry
-- **LLMs:** DeepInfra `meta-llama/Llama-3.3-70B-Instruct` + Groq `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` (primary), Gemini 1.5 Flash (fallback)
+- **LLMs:** Groq `llama-3.3-70b-versatile` + `llama-3.1-8b-instant` (primary) + DeepInfra `meta-llama/Llama-3.3-70B-Instruct`, Gemini 2.5 Flash (fallback)
 - **Embeddings:** `thenlper/gte-base` (EN retrieval, index `agroar-prod-gte-v2`) + `bge-reranker-v2-m3`; Spanish via translate-bridge (no separate ES embeddings)
 - **Frontend:** React 19, Vite, TailwindCSS, React Router 7, Axios
 - **Storage:** Pinecone (vectors), Supabase Postgres (users + chat history), Upstash Redis (context cache)
