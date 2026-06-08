@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + 1 + 2 wizard + Phase 3 Gate B map + Phase 4 record/Gate D shipped)
+> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phases 0-5 shipped: rules-as-data, /check Gates A-D, wizard, Gate B map, record/Gate D, Spanish parity + soil + registry deep-links)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -25,6 +25,14 @@ These are intentionally parked, NOT forgotten. Do not action until Phases 5 + 6 
 3. **Research-station coordinates UNVERIFIED** — `backend/data/ar_research_stations.json` ships with a
    top-level `source` marked UNVERIFIED; validate the 10 UA/USDA-ARS coords against an authoritative
    source before any pilot reliance (Gate B + Gate D both depend on them).
+4. **FieldWatch registry API** (Phase 5 deferred) — owner must contact FieldWatch for access. Until then
+   the wizard deep-links FieldCheck + keeps the Gate B `human_attested` confirmation. If pullable → new
+   `sensitive_sites` cache feeding Gate B verifiable/partial checks.
+5. **EPA Bulletins Live! Two geospatial layer** (Phase 5 deferred) — currently a deep-link in the wizard;
+   integrate the layer if/when an API path is chosen.
+6. **Mesonet / delta-T inversion measurement** (Phase 5 deferred) — owner must find an Arkansas mesonet
+   delta-T source to move inversion from `estimate` → `measurement`. Until then the heuristic stands,
+   always labeled `is_estimate`.
 
 Together: F4 is fully built + tested in-repo but **not yet exercisable in prod** until #1 + #2.
 
@@ -110,6 +118,23 @@ Together: F4 is fully built + tested in-repo but **not yet exercisable in prod**
   **Still PENDING (owner):** apply `009_spray_records.sql` to prod Supabase + **HF backend orphan-branch
   redeploy** so `/record` + the 4th gate go live (same redeploy debt as Phases 1–3). Station coords still
   **UNVERIFIED**.
+  **Phase 5 — Spanish Parity + Soil Check + Registry Deep-links SHIPPED 2026-06-08** (TDD; plan
+  `docs/superpowers/plans/2026-06-08-f4-dicamba-phase5-external-spanish.md`; owner scoped to the
+  in-codebase **safety slice**, external-API integrations deferred — see Deferred Ops #4-6). (1) **Spanish
+  parity:** every gate `title`/check `label`/`reason` authored bilingual at the source (`CheckResult`
+  +`label_es`/`reason_es`, `GateResult`+`title_es` in `models/spray.py`; all of `spray_check.py` Gates
+  A-D + `weather_now._estimate_inversion` reasons now emit ES). Closes the confirmed gap where backend
+  gate strings rendered English even in ES mode. Frontend `SprayCheckWizard` `GateResultCard` +
+  failing-reasons render `es ? *_es : *`. (2) **Soil-saturation Gate C check:** `soil_moisture_max=0.45`
+  rules-as-data + `spray_rules.soil_moisture_max`; new `soil_not_saturated` check (verifiable when
+  `soil_moisture_0_1cm` present, `needs_confirmation` when missing — never a guessed pass) — Gate C now
+  5 checks. (3) **Registry deep-links:** bilingual FieldWatch FieldCheck + EPA Bulletins Live! Two panel
+  in wizard Step 2 with the Gate B `human_attested` fallback (no API needed). TDD: parity guard tests over
+  pass/fail/unavailable branches + ES-differs-from-EN + soil pass/fail/missing + weather_now ES reasons +
+  e2e registry panel + full ES-mode walk; **backend 210 pass**, **frontend 38 vitest pass**, lint clean,
+  **playwright spray 4 pass**. **Deferred (owner-blocked):** FieldWatch API pull, EPA Bulletins layer
+  integration, mesonet delta-T inversion source (Deferred Ops #4-6). Same HF-redeploy + migration-009
+  prod debt as Phase 4. **NEXT = Phase 6** (legal review + pilot).
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.
