@@ -187,12 +187,14 @@ function GateResultCard({ gate, es }) {
 export default function SprayCheckWizard() {
   const { lang } = useLang()
   const es = lang === 'es'
-  const { runCheck, fetchStations, loading, error } = useSprayCheck()
+  const { runCheck, fetchStations, saveRecord, loading, error } = useSprayCheck()
 
   const [step, setStep] = useState(1)
   const [errs, setErrs] = useState({})
   const [result, setResult] = useState(null)
   const [stations, setStations] = useState([])
+  const [savedRecord, setSavedRecord] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     product: '',
     license_attested: false,
@@ -202,6 +204,11 @@ export default function SprayCheckWizard() {
     no_inversion_observed: false,
     sensitive_crops_checked: false,
     organic_specialty_checked: false,
+    boom_height_ok: false,
+    droplet_setup_ok: false,
+    tank_clean_ok: false,
+    additives_ok: false,
+    ground_application_only: false,
   })
 
   // Load the static station seed list once for the Gate B map markers.
@@ -227,6 +234,11 @@ export default function SprayCheckWizard() {
           no_inversion_observed: merged.no_inversion_observed,
           sensitive_crops_checked: merged.sensitive_crops_checked,
           organic_specialty_checked: merged.organic_specialty_checked,
+          boom_height_ok: merged.boom_height_ok,
+          droplet_setup_ok: merged.droplet_setup_ok,
+          tank_clean_ok: merged.tank_clean_ok,
+          additives_ok: merged.additives_ok,
+          ground_application_only: merged.ground_application_only,
         },
       })
       setResult(res)
@@ -252,6 +264,38 @@ export default function SprayCheckWizard() {
   async function handleGateBToggle(field, checked) {
     set(field, checked)
     await check({ [field]: checked })
+  }
+
+  // Gate D equipment confirmations — toggling re-runs /check (like the inversion toggle).
+  async function handleGateDToggle(field, checked) {
+    set(field, checked)
+    await check({ [field]: checked })
+  }
+
+  async function handleSaveRecord() {
+    setSaving(true)
+    try {
+      const rec = await saveRecord({
+        lat: form.lat,
+        lon: form.lon,
+        product: form.product,
+        attestation: {
+          no_inversion_observed: form.no_inversion_observed,
+          sensitive_crops_checked: form.sensitive_crops_checked,
+          organic_specialty_checked: form.organic_specialty_checked,
+          boom_height_ok: form.boom_height_ok,
+          droplet_setup_ok: form.droplet_setup_ok,
+          tank_clean_ok: form.tank_clean_ok,
+          additives_ok: form.additives_ok,
+          ground_application_only: form.ground_application_only,
+        },
+      })
+      setSavedRecord(rec)
+    } catch {
+      // surfaced via hook error state
+    } finally {
+      setSaving(false)
+    }
   }
 
   function handleNext() {
@@ -494,6 +538,52 @@ export default function SprayCheckWizard() {
                   <GateResultCard key={g.gate} gate={g} es={es} />
                 ))}
               </div>
+
+              <div className="space-y-2" data-testid="gate-d-attestations">
+                <p className="text-sm font-semibold text-charcoal dark:text-hc-fg">
+                  {es ? 'Equipo y objetivo (Compuerta D)' : 'Equipment & target (Gate D)'}
+                </p>
+                {[
+                  ['boom_height_ok', es ? 'Altura de botavara dentro del máximo de la etiqueta.' : 'Boom height within the label maximum.'],
+                  ['droplet_setup_ok', es ? 'Boquillas producen gotas Ultra Gruesas o más.' : 'Nozzles produce Ultra Coarse or coarser droplets.'],
+                  ['tank_clean_ok', es ? 'Tanque limpiado antes de cargar.' : 'Sprayer cleaned out before loading.'],
+                  ['additives_ok', es ? 'VRA + DRA aprobados presentes; sin AMS.' : 'Approved VRA + DRA present; no AMS.'],
+                  ['ground_application_only', es ? 'Aplicación terrestre solamente (sin aérea).' : 'Ground application only (no aerial).'],
+                ].map(([field, label]) => (
+                  <label key={field} className="flex items-start gap-2 text-sm text-charcoal dark:text-hc-fg cursor-pointer bg-gray-50 rounded-xl p-3 dark:bg-hc-bg">
+                    <input
+                      type="checkbox"
+                      checked={form[field]}
+                      onChange={(e) => handleGateDToggle(field, e.target.checked)}
+                      className="rounded accent-field mt-0.5"
+                      data-testid={`gate-d-${field}`}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+
+              {savedRecord ? (
+                <a
+                  href={`/api/v1/dicamba/record/${savedRecord.id}/pdf`}
+                  className={BTN_PRIMARY_CLS}
+                  data-testid="download-pdf-link"
+                >
+                  {es ? 'Descargar PDF del registro' : 'Download record PDF'}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSaveRecord}
+                  disabled={saving}
+                  className={BTN_PRIMARY_CLS}
+                  data-testid="save-record-btn"
+                >
+                  {saving
+                    ? (es ? 'Guardando...' : 'Saving...')
+                    : (es ? 'Guardar registro' : 'Save record')}
+                </button>
+              )}
 
               <p className="text-[11px] text-gray-400 dark:text-hc-fg">
                 {es ? 'Versión de reglas' : 'Rule version'}: {result.rule_version}

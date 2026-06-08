@@ -52,5 +52,17 @@ export function useSprayCheck() {
     return res.data
   }, [])
 
-  return { runCheck, fetchStations, loading, error }
+  // Persist the decision as an immutable record; returns the saved row (with id).
+  const saveRecord = useCallback(async ({ lat, lon, product, at, attestation }) => {
+    const res = await api.post('/dicamba/record', {
+      lat,
+      lon,
+      product,
+      at: at || new Date().toISOString(),
+      attestation: attestation || {},
+    })
+    return res.data
+  }, [])
+
+  return { runCheck, fetchStations, saveRecord, loading, error }
 }
