@@ -82,3 +82,8 @@ def rain_free_hours_required(rules: dict) -> int:
 def buffers_ft(rules: dict) -> dict:
     """Buffer distances in feet (research_station, organic_specialty, non_tolerant_crop)."""
     return rules["buffers_ft"]
+
+
+def downwind_half_angle_deg(rules: dict) -> float:
+    """Half-angle (deg) of the downwind cone used by Gate D geometry."""
+    return float(rules["weather_thresholds"]["downwind_half_angle_deg"])

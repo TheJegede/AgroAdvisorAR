@@ -37,7 +37,8 @@
         "note": "Over-the-top applications only between 1 hour after sunrise and 2 hours before sunset"
       },
       "rain_free_hours_required": 48,
-      "air_temp_f": {"min": 50.0, "max": 91.0}
+      "air_temp_f": {"min": 50.0, "max": 91.0},
+      "downwind_half_angle_deg": 45
     }
   }
 ]

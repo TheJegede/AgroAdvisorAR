@@ -149,3 +149,8 @@ def test_shipped_data_file_loads_and_resolves_for_in_season_2026():
     assert spray_rules.approved_product_ids(rules)
     lo, hi = spray_rules.wind_bounds(rules)
     assert lo < hi
+
+
+def test_downwind_half_angle_deg_reads_value():
+    rules = spray_rules.resolve_rules(date(2026, 5, 1))
+    assert spray_rules.downwind_half_angle_deg(rules) == 45.0
