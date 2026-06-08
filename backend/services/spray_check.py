@@ -11,6 +11,8 @@ from datetime import datetime
 from models.spray import CheckResult, GateResult, SprayCheckRequest, SprayCheckResponse
 from services import spray_rules, spray_stations
 
+_FULL_CIRCLE = 360.0
+
 
 def _rollup(statuses: list[str]) -> str:
     """fail if any failed; else needs_confirmation if any needs it; else pass."""
@@ -239,14 +241,101 @@ def evaluate_gate_c(rules: dict, weather: dict, req: SprayCheckRequest) -> GateR
     )
 
 
+def _attested_check(check_id, label, ok, attested_reason, unattested_reason):
+    """Human-attested Gate D item: pass only on an explicit True attestation."""
+    attested = ok is True
+    return CheckResult(
+        id=check_id, label=label, tier="human_attested",
+        status="pass" if attested else "needs_confirmation",
+        reason=attested_reason if attested else unattested_reason,
+        observed=None, expected="applicator-confirmed",
+    )
+
+
+def evaluate_gate_d(
+    rules: dict, req: SprayCheckRequest, weather: dict, stations: list[dict]
+) -> GateResult:
+    """Gate D — Equipment & target. Verifiable downwind geometry + human-attested setup."""
+    half_angle = spray_rules.downwind_half_angle_deg(rules)
+    research_buf = float(spray_rules.buffers_ft(rules)["research_station"])
+    available = weather.get("available", False)
+    wind_dir = weather.get("wind_direction_deg")
+    cone_label = f"no research station within a {2 * half_angle:.0f}° downwind cone inside its buffer"
+
+    if not available or wind_dir is None:
+        downwind = CheckResult(
+            id="downwind_clear", label="No sensitive site downwind of the field",
+            tier="verifiable_fact", status="needs_confirmation",
+            reason="Wind direction unavailable — confirm downwind exposure on the ground.",
+            observed=None, expected=cone_label,
+        )
+    else:
+        wind_toward = (wind_dir + 180.0) % _FULL_CIRCLE
+        hit = None
+        for s in stations:
+            dist = spray_stations.haversine_ft(req.lat, req.lon, s["lat"], s["lon"])
+            if dist >= research_buf:
+                continue
+            bearing = spray_stations.bearing_deg(req.lat, req.lon, s["lat"], s["lon"])
+            if spray_stations.angular_diff(wind_toward, bearing) <= half_angle:
+                hit = (s, dist, bearing)
+                break
+        if hit:
+            s, dist, bearing = hit
+            downwind = CheckResult(
+                id="downwind_clear", label="No sensitive site downwind of the field",
+                tier="verifiable_fact", status="fail",
+                reason=f"{s['name']} is downwind of the field and inside the research-station buffer.",
+                observed=f"wind toward {wind_toward:.0f}°; {s['name']} at bearing {bearing:.0f}°, {dist / 5280:.1f} mi",
+                expected=cone_label,
+            )
+        else:
+            downwind = CheckResult(
+                id="downwind_clear", label="No sensitive site downwind of the field",
+                tier="verifiable_fact", status="pass",
+                reason="No research station is downwind of the field within its buffer.",
+                observed=f"wind toward {wind_toward:.0f}°", expected=cone_label,
+            )
+
+    att = req.attestation
+    boom = _attested_check(
+        "boom_height", "Boom height at or below the label maximum", att.boom_height_ok,
+        "Applicator confirmed boom height is within the label maximum.",
+        "Confirm the boom is at or below the label maximum height (≤ 2 ft).",
+    )
+    droplet = _attested_check(
+        "droplet_size", "Droplet size Ultra Coarse or coarser", att.droplet_setup_ok,
+        "Applicator confirmed nozzles produce Ultra Coarse or coarser droplets.",
+        "Confirm nozzle setup produces Ultra Coarse or coarser droplets (per label).",
+    )
+    tank = _attested_check(
+        "tank_clean", "Sprayer cleaned out before loading", att.tank_clean_ok,
+        "Applicator confirmed the sprayer was cleaned out.",
+        "Confirm the sprayer was cleaned out before loading.",
+    )
+    additives = _attested_check(
+        "additives", "Required additives present, prohibited absent", att.additives_ok,
+        "Applicator confirmed approved VRA + DRA are in the tank and AMS is not.",
+        "Confirm an approved VRA and DRA are in the tank and that AMS is not added.",
+    )
+    ground = _attested_check(
+        "ground_application", "Ground application only (no aerial)", att.ground_application_only,
+        "Applicator confirmed this is a ground application.",
+        "Confirm this is a ground application — aerial over-the-top dicamba is prohibited.",
+    )
+
+    return _gate("D", "Equipment & target", [downwind, boom, droplet, tank, additives, ground])
+
+
 def run_spray_check(
     req: SprayCheckRequest, rules: dict, weather: dict, stations: list[dict] | None = None
 ) -> SprayCheckResponse:
-    """Assemble Gates A + B + C, roll up overall status, stamp the rule version."""
+    """Assemble Gates A + B + C + D, roll up overall status, stamp the rule version."""
     gates = [
         evaluate_gate_a(rules, req),
         evaluate_gate_b(rules, req, stations or []),
         evaluate_gate_c(rules, weather, req),
+        evaluate_gate_d(rules, req, weather, stations or []),
     ]
     return SprayCheckResponse(
         overall_status=_rollup([g.status for g in gates]),

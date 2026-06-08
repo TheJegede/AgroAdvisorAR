@@ -22,6 +22,7 @@ RULES = {
         "wind_mph": {"min": 3.0, "max": 10.0},
         "air_temp_f": {"min": 50.0, "max": 91.0},
         "rain_free_hours_required": 48,
+        "downwind_half_angle_deg": 45,
     },
 }
 
@@ -37,7 +38,7 @@ def _req(product="engenia", at=datetime(2026, 5, 1, 9, 0), **attest):
     )
 
 
-def _weather(wind=6.0, temp=78.0, precip=0.0, risk="low", available=True):
+def _weather(wind=6.0, temp=78.0, precip=0.0, risk="low", available=True, wind_dir=180.0):
     if not available:
         return {"available": False}
     return {
@@ -45,6 +46,7 @@ def _weather(wind=6.0, temp=78.0, precip=0.0, risk="low", available=True):
         "wind_speed_mph": wind,
         "temp_f": temp,
         "precip_next_48h_in": precip,
+        "wind_direction_deg": wind_dir,
         "inversion": {"risk": risk, "is_estimate": True, "reason": "x"},
     }
 
@@ -185,7 +187,7 @@ def test_runup_status_fail_beats_needs_confirmation_beats_pass():
 def test_response_stamps_rule_version_from_resolved_record():
     resp = spray_check.run_spray_check(_req(), RULES, _weather())
     assert resp.rule_version == "2026-AR-OTT"
-    assert {g.gate for g in resp.gates} == {"A", "B", "C"}
+    assert {g.gate for g in resp.gates} == {"A", "B", "C", "D"}
     assert resp.weather_available is True
 
 
@@ -218,3 +220,58 @@ def test_spray_record_model_roundtrips():
         gates=[], attestation={}, weather_json=None,
     )
     assert rec.product == "engenia"
+
+
+# ---- Gate D ----
+
+# Field at (34.7, -91.8). A station ~0.97 mi due NORTH (inside the 1-mi research buffer).
+NORTH_NEAR = {"id": "n", "name": "North REC", "lat": 34.714, "lon": -91.8}
+# A station ~0.9 mi due EAST (inside buffer, crosswind when wind blows north).
+EAST_NEAR = {"id": "e", "name": "East REC", "lat": 34.7, "lon": -91.7843}
+
+
+def _att(**kw):
+    return _req(**kw)
+
+
+def test_gate_d_downwind_fail_when_station_in_cone_and_inside_buffer():
+    gate = spray_check.evaluate_gate_d(RULES, _req(), _weather(wind_dir=180.0), [NORTH_NEAR])
+    assert gate.gate == "D"
+    assert _check(gate, "downwind_clear").status == "fail"
+
+
+def test_gate_d_downwind_pass_when_station_is_crosswind():
+    gate = spray_check.evaluate_gate_d(RULES, _req(), _weather(wind_dir=180.0), [EAST_NEAR])
+    assert _check(gate, "downwind_clear").status == "pass"
+
+
+def test_gate_d_downwind_pass_when_station_outside_buffer():
+    far_north = {"id": "fn", "name": "Far North", "lat": 34.85, "lon": -91.8}
+    gate = spray_check.evaluate_gate_d(RULES, _req(), _weather(wind_dir=180.0), [far_north])
+    assert _check(gate, "downwind_clear").status == "pass"
+
+
+def test_gate_d_downwind_needs_confirmation_when_wind_unavailable():
+    gate = spray_check.evaluate_gate_d(RULES, _req(), _weather(available=False), [NORTH_NEAR])
+    assert _check(gate, "downwind_clear").status == "needs_confirmation"
+
+
+def test_gate_d_equipment_checks_need_confirmation_unattested():
+    gate = spray_check.evaluate_gate_d(RULES, _req(), _weather(), [EAST_NEAR])
+    for cid in ("boom_height", "droplet_size", "tank_clean", "additives", "ground_application"):
+        assert _check(gate, cid).status == "needs_confirmation"
+
+
+def test_gate_d_equipment_checks_pass_when_attested():
+    gate = spray_check.evaluate_gate_d(
+        RULES, _req(boom_height_ok=True, droplet_setup_ok=True, tank_clean_ok=True,
+                    additives_ok=True, ground_application_only=True),
+        _weather(), [EAST_NEAR],
+    )
+    for cid in ("boom_height", "droplet_size", "tank_clean", "additives", "ground_application"):
+        assert _check(gate, cid).status == "pass"
+
+
+def test_run_spray_check_includes_gate_d():
+    resp = spray_check.run_spray_check(_req(), RULES, _weather(), [EAST_NEAR])
+    assert {g.gate for g in resp.gates} == {"A", "B", "C", "D"}
