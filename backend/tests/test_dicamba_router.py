@@ -29,6 +29,7 @@ RULES = {
         "wind_mph": {"min": 3.0, "max": 10.0},
         "air_temp_f": {"min": 50.0, "max": 91.0},
         "rain_free_hours_required": 48,
+        "downwind_half_angle_deg": 45,
     },
 }
 
@@ -54,7 +55,7 @@ def test_check_returns_gates_a_and_c(monkeypatch):
     )
 
     resp = asyncio.run(router_mod.check_spray(_body(), user=FAKE_USER))
-    assert {g.gate for g in resp.gates} == {"A", "B", "C"}
+    assert {g.gate for g in resp.gates} == {"A", "B", "C", "D"}
     assert resp.rule_version == "2026-AR-OTT"
     assert resp.weather_available is True
 
@@ -108,3 +109,48 @@ def test_check_weather_unavailable_returns_gate_a_and_needs_confirmation_gate_c(
     assert gate_a.status == "pass"
     assert gate_c.status == "needs_confirmation"
     assert resp.weather_available is False
+
+
+def test_create_record_persists_and_uses_authenticated_owner(monkeypatch):
+    router_mod = importlib.import_module("routers.dicamba")
+    monkeypatch.setattr(router_mod, "resolve_rules", lambda on_date: RULES)
+    monkeypatch.setattr(
+        router_mod, "fetch_forecast_conditions", AsyncMock(return_value=WEATHER_OK)
+    )
+    monkeypatch.setattr(router_mod, "load_stations", lambda: [])
+    captured = {}
+
+    def _fake_create(farmer_id, payload):
+        captured["farmer_id"] = farmer_id
+        captured["payload"] = payload
+        return {"id": "rec-1", "farmer_id": farmer_id, **payload}
+
+    monkeypatch.setattr(router_mod, "create_record", _fake_create)
+
+    rec = asyncio.run(router_mod.create_spray_record(_body(), user=FAKE_USER))
+    assert captured["farmer_id"] == FAKE_USER["sub"]
+    assert captured["payload"]["rule_version"] == "2026-AR-OTT"
+    assert {g["gate"] for g in captured["payload"]["gates"]} == {"A", "B", "C", "D"}
+    assert rec["id"] == "rec-1"
+
+
+def test_get_record_404_when_foreign(monkeypatch):
+    router_mod = importlib.import_module("routers.dicamba")
+    monkeypatch.setattr(router_mod, "get_record", lambda rid, fid: None)
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(router_mod.get_spray_record("rec-x", user=FAKE_USER))
+    assert exc.value.status_code == 404
+
+
+def test_list_records_uses_owner(monkeypatch):
+    router_mod = importlib.import_module("routers.dicamba")
+    seen = {}
+
+    def _fake_list(fid, **kw):
+        seen["fid"] = fid
+        return [{"id": "rec-1"}]
+
+    monkeypatch.setattr(router_mod, "list_records", _fake_list)
+    out = asyncio.run(router_mod.list_spray_records(user=FAKE_USER))
+    assert seen["fid"] == FAKE_USER["sub"]
+    assert out[0]["id"] == "rec-1"

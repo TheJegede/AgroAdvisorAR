@@ -4,13 +4,21 @@ Stateless: given a field point, product, and datetime, return per-gate results.
 No persistence yet (Phase 4) so there is no IDOR write surface; the request
 carries no owner field and auth is enforced via get_current_user.
 """
-from fastapi import APIRouter, Depends, HTTPException
+import io
 
-from models.spray import ResearchStation, SprayCheckRequest, SprayCheckResponse
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+
+from models.spray import (
+    ResearchStation, SprayCheckRequest, SprayCheckResponse, SprayRecord,
+)
 from services.auth import get_current_user
+from services.pdf_generator import generate_spray_record_pdf
 from services.spray_check import run_spray_check
+from services.spray_record import create_record, get_record, list_records
 from services.spray_rules import RulesNotFoundError, resolve_rules
 from services.spray_stations import load_stations
+from services.user import get_profile
 from services.weather_now import fetch_forecast_conditions
 
 router = APIRouter(prefix="/dicamba", tags=["dicamba"])
@@ -42,3 +50,60 @@ async def list_stations(user: dict = Depends(get_current_user)):
     Coordinates ship UNVERIFIED (see ar_research_stations.json `source`).
     """
     return load_stations()
+
+
+def _build_record_payload(body: SprayCheckRequest, resp: SprayCheckResponse, weather: dict) -> dict:
+    return {
+        "lat": body.lat,
+        "lon": body.lon,
+        "product": body.product,
+        "applied_at": body.at.isoformat(),
+        "overall_status": resp.overall_status,
+        "rule_version": resp.rule_version,
+        "gates": [g.model_dump() for g in resp.gates],
+        "attestation": body.attestation.model_dump(),
+        "weather_json": weather if weather.get("available") else None,
+    }
+
+
+@router.post("/record", response_model=SprayRecord, status_code=201)
+async def create_spray_record(
+    body: SprayCheckRequest,
+    user: dict = Depends(get_current_user),
+):
+    try:
+        rules = resolve_rules(body.at.date())
+    except RulesNotFoundError:
+        raise HTTPException(status_code=422, detail="No dicamba rules effective for that date")
+    weather = await fetch_forecast_conditions(body.lat, body.lon, body.at)
+    stations = load_stations()
+    resp = run_spray_check(body, rules, weather, stations)
+    payload = _build_record_payload(body, resp, weather)
+    return create_record(user["sub"], payload)
+
+
+@router.get("/records", response_model=list[SprayRecord])
+async def list_spray_records(user: dict = Depends(get_current_user)):
+    return list_records(user["sub"])
+
+
+@router.get("/record/{record_id}", response_model=SprayRecord)
+async def get_spray_record(record_id: str, user: dict = Depends(get_current_user)):
+    record = get_record(record_id, user["sub"])
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+    return record
+
+
+@router.get("/record/{record_id}/pdf")
+async def download_spray_record_pdf(record_id: str, user: dict = Depends(get_current_user)):
+    record = get_record(record_id, user["sub"])
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+    profile = get_profile(user["sub"]) or {}
+    pdf_bytes = generate_spray_record_pdf(record, profile)
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=spray_record_{record_id[:8]}.pdf"},
+    )
