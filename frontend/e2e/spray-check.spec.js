@@ -83,6 +83,20 @@ function checkResponse(att = {}) {
   };
 }
 
+// The real backend authors title_es/label_es/reason_es (Phase 5). Synthesize
+// recognizable Spanish here so the e2e can assert the ES render path resolves to
+// the backend ES fields (not the EN fallback).
+function withSpanishParity(resp) {
+  for (const g of resp.gates) {
+    g.title_es = `ES ${g.title}`;
+    for (const c of g.checks) {
+      c.label_es = `ES ${c.label}`;
+      c.reason_es = `ES ${c.reason}`;
+    }
+  }
+  return resp;
+}
+
 async function mockRoutes(page) {
   await page.route('**/api/v1/profile', (route) =>
     route.request().method() === 'GET'
@@ -97,7 +111,7 @@ async function mockRoutes(page) {
   await page.route('**/api/v1/dicamba/check', (route) => {
     let body = {};
     try { body = route.request().postDataJSON() ?? {}; } catch { /* empty */ }
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(checkResponse(body?.attestation ?? {})) });
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(withSpanishParity(checkResponse(body?.attestation ?? {}))) });
   });
   // Record persistence + history + PDF download.
   await page.route('**/api/v1/dicamba/record', (route) =>
@@ -148,6 +162,9 @@ test('wizard walks 4 steps, draws buffers + station markers, and Gate B + invers
   await expect(page.locator('.leaflet-interactive').first()).toBeVisible({ timeout: 10000 });
   expect(await page.locator('.leaflet-interactive').count()).toBeGreaterThanOrEqual(4); // 3 rings + ≥1 station
   await expect(page.getByTestId('station-distance')).toContainText(/mi to/i);
+  // Deep-link fallback panel for the voluntary registries (Phase 5).
+  await expect(page.getByTestId('registry-links')).toContainText(/FieldWatch/i);
+  await expect(page.getByTestId('registry-links')).toContainText(/EPA Bulletins Live/i);
 
   // Gate B neighbor confirmations re-run /check
   const [ntReq] = await Promise.all([
@@ -196,4 +213,30 @@ test('spray-records page lists saved records', async ({ page }) => {
   await page.goto('/spray-records');
   await expect(page.getByTestId('records-list')).toBeVisible({ timeout: 15000 });
   await expect(page.getByTestId('records-list')).toContainText('engenia');
+});
+
+test('Spanish mode renders ES gate strings + registry deep-links (Phase 5 parity)', async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.setItem('agro_lang', 'es'));
+  await page.goto('/spray-check');
+  await expect(page.getByRole('heading', { name: /verificación antes de aplicar dicamba/i })).toBeVisible({ timeout: 15000 });
+
+  // Step 1 — Eligibility (ES chrome)
+  await page.locator('select').first().selectOption('engenia');
+  await page.locator('input[type="checkbox"]').first().check();
+  await page.getByRole('button', { name: /siguiente/i }).click();
+
+  // Step 2 — pin fires /check; registry panel is in Spanish
+  await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 15000 });
+  await Promise.all([
+    page.waitForRequest('**/api/v1/dicamba/check'),
+    page.locator('.leaflet-container').click({ position: { x: 160, y: 160 } }),
+  ]);
+  await expect(page.getByTestId('registry-links')).toContainText(/Verifique los registros oficiales/i);
+  await page.getByRole('button', { name: /siguiente/i }).click();
+
+  // Step 3 → Step 4
+  await page.getByRole('button', { name: /siguiente/i }).click();
+
+  // Step 4 — gate cards render the backend ES strings (title_es), not the EN fallback
+  await expect(page.getByText('ES Legal window')).toBeVisible({ timeout: 10000 });
 });

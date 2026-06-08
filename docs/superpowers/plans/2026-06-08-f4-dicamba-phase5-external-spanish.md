@@ -1,8 +1,25 @@
-# F4 Dicamba — Phase 5: External Data + Spanish Parity (OUTLINE)
+# F4 Dicamba — Phase 5: External Data + Spanish Parity
 
-**Status:** Outline. Detail when Phase 4 ships. Sixth phase of `AgroAdvisor_F4_PRD_v3.md`.
-**Ships:** Real sensitive-site data (where available) + full Spanish parity on every gate string and
-disclaimer.
+**Status:** SCOPED 2026-06-08 (owner decision). Sixth phase of `AgroAdvisor_F4_PRD_v3.md`.
+
+**Scope split (owner decision 2026-06-08): build the in-codebase SAFETY SLICE now; defer the
+external-API integrations (need owner to obtain access) alongside the Phase-4 deferred ops.**
+
+- **BUILD NOW (safety slice):**
+  1. **Spanish parity** — every gate `title`/`label`/`reason` + outcome banner + disclaimer authored
+     bilingual (EN+ES), not machine-translated at runtime. Closes the confirmed gap: backend gate
+     strings rendered English even in ES mode (`CheckResult.label`/`.reason`, `GateResult.title`).
+  2. **Soil-saturation Gate C check** — `weather_now` already returns `soil_moisture_0_1cm`; promote it
+     from raw-value-only to a real Gate C check (rules-as-data threshold, `needs_confirmation` when
+     unavailable — never a guessed pass).
+  3. **Deep-link + human-attested fallbacks** for FieldWatch (FieldCheck) + EPA Bulletins Live! Two —
+     no API needed; the applicator opens the official map and confirms. Bilingual.
+- **DEFERRED (owner-blocked — contact providers; park with Phase-4 deferred ops):** FieldWatch registry
+  *API* pull → `sensitive_sites` cache; EPA Bulletins geospatial *layer* integration; mesonet/delta-T
+  inversion *measurement* source. Until obtained, the deep-link + `human_attested` confirmation stands.
+
+**Ships:** full Spanish parity on every gate string + disclaimer; a real soil-saturation Gate C check;
+bilingual deep-link fallbacks for the registries.
 
 ## Context
 

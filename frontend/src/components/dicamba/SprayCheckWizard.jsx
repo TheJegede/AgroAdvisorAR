@@ -44,6 +44,12 @@ const BTN_PRIMARY_CLS =
 const BTN_GHOST_CLS =
   'flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 font-semibold text-gray-600 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 min-h-touch dark:border-2 dark:border-hc-border dark:bg-hc-bg dark:text-hc-fg'
 
+// Official sensitive-site registries. We deep-link + ask the applicator to confirm
+// (Gate B human_attested) because the registries are voluntary/incomplete and have
+// no open API yet — honesty about the blind spot is the safety asset (PRD §10).
+const FIELDWATCH_URL = 'https://fieldcheck.fieldwatch.com/'
+const EPA_BULLETINS_URL = 'https://www.epa.gov/endangered-species/bulletins-live-two-view-bulletins'
+
 const STEP_TITLES_EN = ['Eligibility', 'Field & Buffers', 'Live Conditions', 'Confirm & Result']
 const STEP_TITLES_ES = ['Elegibilidad', 'Campo y Zonas', 'Condiciones Actuales', 'Confirmar y Resultado']
 
@@ -158,7 +164,7 @@ function GateResultCard({ gate, es }) {
     <div className="bg-white rounded-xl border border-gray-100 p-4 dark:bg-hc-surface dark:border-hc-border">
       <div className="flex items-center justify-between mb-3">
         <p className="font-semibold text-charcoal dark:text-hc-fg">
-          {es ? 'Compuerta' : 'Gate'} {gate.gate} · {gate.title}
+          {es ? 'Compuerta' : 'Gate'} {gate.gate} · {es ? (gate.title_es || gate.title) : gate.title}
         </p>
         <span className={`text-xs font-bold px-2 py-1 rounded-full ${STATUS_BADGE[gate.status]}`}>
           {statusLabel(gate.status, es)}
@@ -168,13 +174,13 @@ function GateResultCard({ gate, es }) {
         {gate.checks.map((c) => (
           <li key={c.id} className="text-sm">
             <div className="flex items-start justify-between gap-2">
-              <span className="text-charcoal dark:text-hc-fg">{c.label}</span>
+              <span className="text-charcoal dark:text-hc-fg">{es ? (c.label_es || c.label) : c.label}</span>
               <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${STATUS_BADGE[c.status]}`}>
                 {statusLabel(c.status, es)}
               </span>
             </div>
             <p className="text-xs text-gray-500 dark:text-hc-fg mt-0.5">
-              <span className="font-medium">{tierLabel(c.tier, es)}</span> · {c.reason}
+              <span className="font-medium">{tierLabel(c.tier, es)}</span> · {es ? (c.reason_es || c.reason) : c.reason}
               {c.observed != null && ` (${c.observed})`}
             </p>
           </li>
@@ -319,7 +325,7 @@ export default function SprayCheckWizard() {
   const failingReasons = (result?.gates || [])
     .flatMap((g) => g.checks)
     .filter((c) => c.status !== 'pass')
-    .map((c) => c.reason)
+    .map((c) => (es ? (c.reason_es || c.reason) : c.reason))
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm dark:bg-hc-surface dark:border-hc-border">
@@ -406,6 +412,30 @@ export default function SprayCheckWizard() {
             <span><span className="inline-block w-3 h-3 rounded-full bg-amber-700/70 mr-1 align-middle" />{es ? 'Orgánico/especial (½ mi)' : 'Organic/specialty (½ mi)'}</span>
             <span><span className="inline-block w-3 h-3 rounded-full bg-green-700/70 mr-1 align-middle" />{es ? 'Cultivo no tolerante (¼ mi)' : 'Non-tolerant crop (¼ mi)'}</span>
             <span><span className="inline-block w-3 h-3 rounded-full bg-blue-700 mr-1 align-middle" />{es ? 'Estación de investigación' : 'Research station'}</span>
+          </div>
+
+          {/* Deep-link fallback for the voluntary registries (no open API yet). */}
+          <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 text-xs text-charcoal dark:bg-hc-bg dark:border-hc-border dark:text-hc-fg" data-testid="registry-links">
+            <p className="font-semibold mb-1">
+              {es ? 'Verifique los registros oficiales' : 'Check the official registries'}
+            </p>
+            <p className="text-gray-600 dark:text-hc-fg mb-1">
+              {es
+                ? 'Los datos de sitios sensibles están incompletos. Antes de aplicar, revise:'
+                : 'Sensitive-site data is incomplete. Before you spray, check:'}
+            </p>
+            <ul className="space-y-1">
+              <li>
+                <a href={FIELDWATCH_URL} target="_blank" rel="noopener noreferrer"
+                  className="font-semibold text-field-dark underline">FieldWatch / FieldCheck</a>
+                {' — '}{es ? 'cultivos sensibles registrados cerca' : 'registered sensitive crops nearby'}
+              </li>
+              <li>
+                <a href={EPA_BULLETINS_URL} target="_blank" rel="noopener noreferrer"
+                  className="font-semibold text-field-dark underline">EPA Bulletins Live! Two</a>
+                {' — '}{es ? 'restricciones por especies en peligro' : 'endangered-species restrictions for this field'}
+              </li>
+            </ul>
           </div>
 
           {loading && (
