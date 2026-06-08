@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phases 0-5 shipped: rules-as-data, /check Gates A-D, wizard, Gate B map, record/Gate D, Spanish parity + soil + registry deep-links)
+> **Last updated:** 2026-06-08 (shimmering skeleton screen loading states; F4 dicamba rebuild — Phases 0-5 shipped: rules-as-data, /check Gates A-D, wizard, Gate B map, record/Gate D, Spanish parity + soil + registry deep-links)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -322,6 +322,7 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 
 ## ✅ Recently shipped (earlier this arc)
 
+- **Shimmering Skeleton Screens**: Replaced standard loading spinners with highly responsive, custom-animated shimmering skeleton screens across all fetching/loading states. Includes custom CSS `@keyframes` in `index.css` supporting high-contrast accessibility mode. Handled loading layouts for past sessions, chat history, profile form, admin dashboard widgets, drift reports table, evaluation queue, and route guards. All 42 frontend tests pass, 0 lint errors. 2026-06-08
 - **Sidebar Sessions Auto-Refresh**: Fixed new chat sessions not appearing in the sidebar until manual page refresh. Removed forced key remounting on `ChatPageWrapper` in `App.jsx`, updated `ChatPage` to push the new session ID to the URL on session creation, and implemented synchronized active session state in `useEffect` using `useRef`. All unit tests and lint checks pass clean. 2026-06-02
 - **Cartoonish Tractor Loader Animation**: Replaced default three-dot bouncing typing indicator with a custom CSS-animated SVG tractor in `TypingIndicator.jsx`. Configured dynamic color mappings for Light and High Contrast modes. All frontend (26/26) and backend (108/108) unit tests pass. 2026-06-01
 - `f553863` GENERAL_AG zero-retrieval fix — fan-out across crop namespaces (prod-verified 0→5 docs)
