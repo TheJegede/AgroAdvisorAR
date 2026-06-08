@@ -58,3 +58,33 @@ def test_generate_complaint_pdf_handles_empty_profile():
 
     assert isinstance(pdf_bytes, bytes)
     assert pdf_bytes[:4] == b"%PDF"
+
+
+def test_generate_spray_record_pdf_returns_pdf_bytes():
+    from services.pdf_generator import generate_spray_record_pdf
+    record = {
+        "id": "rec-1", "lat": 34.7, "lon": -91.8, "product": "engenia",
+        "applied_at": "2026-06-08T09:00:00", "overall_status": "needs_confirmation",
+        "rule_version": "2026-AR-OTT",
+        "gates": [
+            {"gate": "A", "title": "Legal window", "status": "pass", "checks": [
+                {"id": "in_season", "label": "Inside the dicamba season window",
+                 "tier": "verifiable_fact", "status": "pass", "reason": "ok", "observed": "2026-06-08"}
+            ]},
+        ],
+        "attestation": {"no_inversion_observed": True, "boom_height_ok": True},
+        "weather_json": {"available": True, "wind_speed_mph": 6.0, "temp_f": 78.0},
+    }
+    out = generate_spray_record_pdf(record, {"full_name": "Jane Farmer", "email": "j@x.com"})
+    assert out[:4] == b"%PDF"
+
+
+def test_generate_spray_record_pdf_handles_missing_weather_and_empty_profile():
+    from services.pdf_generator import generate_spray_record_pdf
+    record = {
+        "id": "rec-2", "lat": 34.7, "lon": -91.8, "product": "engenia",
+        "applied_at": "2026-06-08T09:00:00", "overall_status": "fail",
+        "rule_version": "2026-AR-OTT", "gates": [], "attestation": {}, "weather_json": None,
+    }
+    out = generate_spray_record_pdf(record, {})
+    assert out[:4] == b"%PDF"
