@@ -49,6 +49,10 @@ class CheckResult(BaseModel):
     reason: str
     observed: Optional[str] = None
     expected: Optional[str] = None
+    # Spanish parity (F4 Phase 5): authored bilingual, not machine-translated at
+    # runtime. Fall back to the EN field when absent so older checks never blank.
+    label_es: Optional[str] = None
+    reason_es: Optional[str] = None
 
 
 class GateResult(BaseModel):
@@ -56,6 +60,7 @@ class GateResult(BaseModel):
     title: str
     status: GateStatus
     checks: list[CheckResult]
+    title_es: Optional[str] = None
 
 
 class SprayCheckResponse(BaseModel):

@@ -23,6 +23,7 @@ RULES = {
         "air_temp_f": {"min": 50.0, "max": 91.0},
         "rain_free_hours_required": 48,
         "downwind_half_angle_deg": 45,
+        "soil_moisture_max": 0.45,
     },
 }
 
@@ -38,7 +39,7 @@ def _req(product="engenia", at=datetime(2026, 5, 1, 9, 0), **attest):
     )
 
 
-def _weather(wind=6.0, temp=78.0, precip=0.0, risk="low", available=True, wind_dir=180.0):
+def _weather(wind=6.0, temp=78.0, precip=0.0, risk="low", available=True, wind_dir=180.0, soil=0.2):
     if not available:
         return {"available": False}
     return {
@@ -47,7 +48,8 @@ def _weather(wind=6.0, temp=78.0, precip=0.0, risk="low", available=True, wind_d
         "temp_f": temp,
         "precip_next_48h_in": precip,
         "wind_direction_deg": wind_dir,
-        "inversion": {"risk": risk, "is_estimate": True, "reason": "x"},
+        "soil_moisture_0_1cm": soil,
+        "inversion": {"risk": risk, "is_estimate": True, "reason": "x", "reason_es": "y"},
     }
 
 
@@ -275,3 +277,64 @@ def test_gate_d_equipment_checks_pass_when_attested():
 def test_run_spray_check_includes_gate_d():
     resp = spray_check.run_spray_check(_req(), RULES, _weather(), [EAST_NEAR])
     assert {g.gate for g in resp.gates} == {"A", "B", "C", "D"}
+
+
+# ---- Spanish parity (Phase 5) ----
+
+def _assert_parity(resp):
+    for g in resp.gates:
+        assert g.title_es, f"gate {g.gate} missing title_es"
+        for c in g.checks:
+            assert c.label_es, f"{g.gate}/{c.id} missing label_es"
+            assert c.reason_es, f"{g.gate}/{c.id} missing reason_es"
+
+
+def test_spanish_parity_all_pass_branch():
+    resp = spray_check.run_spray_check(
+        _req(no_inversion_observed=True, sensitive_crops_checked=True,
+             organic_specialty_checked=True, boom_height_ok=True, droplet_setup_ok=True,
+             tank_clean_ok=True, additives_ok=True, ground_application_only=True),
+        RULES, _weather(risk="low"), [FAR_STATION],
+    )
+    _assert_parity(resp)
+
+
+def test_spanish_parity_fail_branch():
+    resp = spray_check.run_spray_check(
+        _req(at=datetime(2026, 7, 15, 9, 0), product="banvel"),
+        RULES, _weather(wind=12.0, wind_dir=180.0), [NEAR_STATION],
+    )
+    _assert_parity(resp)
+
+
+def test_spanish_parity_weather_unavailable_branch():
+    resp = spray_check.run_spray_check(_req(), RULES, _weather(available=False), [])
+    _assert_parity(resp)
+
+
+# ---- Gate C soil saturation (Phase 5) ----
+
+def test_gate_c_soil_pass_when_below_max():
+    gate = spray_check.evaluate_gate_c(RULES, _weather(soil=0.2), _req())
+    assert _check(gate, "soil_not_saturated").status == "pass"
+
+
+def test_gate_c_soil_fail_when_saturated():
+    gate = spray_check.evaluate_gate_c(RULES, _weather(soil=0.6), _req())
+    assert _check(gate, "soil_not_saturated").status == "fail"
+
+
+def test_gate_c_soil_needs_confirmation_when_missing():
+    wx = _weather()
+    wx.pop("soil_moisture_0_1cm")
+    gate = spray_check.evaluate_gate_c(RULES, wx, _req())
+    assert _check(gate, "soil_not_saturated").status == "needs_confirmation"
+
+
+def test_spanish_strings_differ_from_english():
+    # Parity must be authored, not a copy of the EN string.
+    resp = spray_check.run_spray_check(_req(), RULES, _weather(), [FAR_STATION])
+    a = next(g for g in resp.gates if g.gate == "A")
+    season = _check(a, "in_season")
+    assert season.reason_es != season.reason
+    assert a.title_es != a.title

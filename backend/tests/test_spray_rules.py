@@ -154,3 +154,8 @@ def test_shipped_data_file_loads_and_resolves_for_in_season_2026():
 def test_downwind_half_angle_deg_reads_value():
     rules = spray_rules.resolve_rules(date(2026, 5, 1))
     assert spray_rules.downwind_half_angle_deg(rules) == 45.0
+
+
+def test_soil_moisture_max_reads_value():
+    rules = spray_rules.resolve_rules(date(2026, 5, 1))
+    assert spray_rules.soil_moisture_max(rules) == 0.45

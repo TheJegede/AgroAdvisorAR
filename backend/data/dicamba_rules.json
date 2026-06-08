@@ -38,7 +38,8 @@
       },
       "rain_free_hours_required": 48,
       "air_temp_f": {"min": 50.0, "max": 91.0},
-      "downwind_half_angle_deg": 45
+      "downwind_half_angle_deg": 45,
+      "soil_moisture_max": 0.45
     }
   }
 ]

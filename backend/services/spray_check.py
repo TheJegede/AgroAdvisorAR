@@ -1,10 +1,14 @@
-"""Dicamba gate-evaluation engine (F4 Phase 1: Gates A + C).
+"""Dicamba gate-evaluation engine (F4 Phases 1-4: Gates A + B + C + D).
 
 Core principle (PRD §3/§4): never invent certainty. Verifiable facts are stated
 as pass/fail; items the tool cannot measure (the inversion estimate) return
 needs_confirmation and can only reach 'pass' on an explicit applicator
-attestation — never automatically. Gates B + D append in later phases with no
-signature change.
+attestation — never automatically.
+
+Spanish parity (Phase 5, PRD §10): every gate title, check label, and reason is
+authored bilingual here (EN + ES) — not machine-translated at runtime. The
+audience includes Spanish-speaking applicators least able to second-guess a
+false green light, so ES is a safety requirement, not a nicety.
 """
 from datetime import datetime
 
@@ -12,6 +16,10 @@ from models.spray import CheckResult, GateResult, SprayCheckRequest, SprayCheckR
 from services import spray_rules, spray_stations
 
 _FULL_CIRCLE = 360.0
+
+# Live-weather-unavailable reason, EN + ES (shared by every Gate C verifiable check).
+_WX_UNAVAILABLE = "Live weather unavailable — confirm this on the ground."
+_WX_UNAVAILABLE_ES = "Clima en vivo no disponible — confírmelo en el campo."
 
 
 def _rollup(statuses: list[str]) -> str:
@@ -23,10 +31,11 @@ def _rollup(statuses: list[str]) -> str:
     return "pass"
 
 
-def _gate(gate_id: str, title: str, checks: list[CheckResult]) -> GateResult:
+def _gate(gate_id: str, title: str, checks: list[CheckResult], title_es: str) -> GateResult:
     return GateResult(
         gate=gate_id,
         title=title,
+        title_es=title_es,
         status=_rollup([c.status for c in checks]),
         checks=checks,
     )
@@ -41,12 +50,18 @@ def evaluate_gate_a(rules: dict, req: SprayCheckRequest) -> GateResult:
     season_check = CheckResult(
         id="in_season",
         label="Inside the dicamba season window",
+        label_es="Dentro de la ventana de temporada del dicamba",
         tier="verifiable_fact",
         status="pass" if in_season else "fail",
         reason=(
             "Application date is inside the season window."
             if in_season
             else "Application date is outside the season window."
+        ),
+        reason_es=(
+            "La fecha de aplicación está dentro de la ventana de temporada."
+            if in_season
+            else "La fecha de aplicación está fuera de la ventana de temporada."
         ),
         observed=on_date.isoformat(),
         expected=f"{window['start']} to {window['end']}",
@@ -56,12 +71,18 @@ def evaluate_gate_a(rules: dict, req: SprayCheckRequest) -> GateResult:
     product_check = CheckResult(
         id="product_approved",
         label="Product is an approved over-the-top dicamba",
+        label_es="El producto es un dicamba aprobado para aplicación sobre el cultivo",
         tier="verifiable_fact",
         status="pass" if approved else "fail",
         reason=(
             f"'{req.product}' is an approved over-the-top product."
             if approved
             else f"'{req.product}' is not on the approved over-the-top product list."
+        ),
+        reason_es=(
+            f"'{req.product}' es un producto aprobado para aplicación sobre el cultivo."
+            if approved
+            else f"'{req.product}' no está en la lista de productos aprobados para aplicación sobre el cultivo."
         ),
         observed=req.product,
         expected=", ".join(sorted(spray_rules.approved_product_ids(rules))),
@@ -71,6 +92,7 @@ def evaluate_gate_a(rules: dict, req: SprayCheckRequest) -> GateResult:
     cutoff_check = CheckResult(
         id="within_cutoff",
         label="On or before the season cutoff date",
+        label_es="En o antes de la fecha límite de la temporada",
         tier="verifiable_fact",
         status="pass" if within_cutoff else "fail",
         reason=(
@@ -78,11 +100,18 @@ def evaluate_gate_a(rules: dict, req: SprayCheckRequest) -> GateResult:
             if within_cutoff
             else "Application date is past the season cutoff."
         ),
+        reason_es=(
+            "La fecha de aplicación es en o antes de la fecha límite."
+            if within_cutoff
+            else "La fecha de aplicación es posterior a la fecha límite de la temporada."
+        ),
         observed=on_date.isoformat(),
         expected=f"on or before {window['end']}",
     )
 
-    return _gate("A", "Legal window", [season_check, product_check, cutoff_check])
+    return _gate(
+        "A", "Legal window", [season_check, product_check, cutoff_check], "Ventana legal"
+    )
 
 
 def evaluate_gate_b(
@@ -101,9 +130,11 @@ def evaluate_gate_b(
         station_check = CheckResult(
             id="station_buffer",
             label="Clear of research-station buffer",
+            label_es="Fuera de la zona de protección de estaciones de investigación",
             tier="verifiable_fact",
             status="needs_confirmation",
             reason="Station data unavailable — confirm distance to any research station on the ground.",
+            reason_es="Datos de estaciones no disponibles — confirme la distancia a cualquier estación de investigación en el campo.",
             observed=None,
             expected=f"≥ {station_buf / 5280:.1f} mi ({station_buf:.0f} ft) from research stations",
         )
@@ -112,12 +143,18 @@ def evaluate_gate_b(
         station_check = CheckResult(
             id="station_buffer",
             label="Clear of research-station buffer",
+            label_es="Fuera de la zona de protección de estaciones de investigación",
             tier="verifiable_fact",
             status="pass" if clear else "fail",
             reason=(
                 f"Field is outside the research-station buffer ({station['name']})."
                 if clear
                 else f"Field is inside the research-station buffer for {station['name']}."
+            ),
+            reason_es=(
+                f"El campo está fuera de la zona de protección de la estación de investigación ({station['name']})."
+                if clear
+                else f"El campo está dentro de la zona de protección de la estación de investigación {station['name']}."
             ),
             observed=f"{dist_ft / 5280:.1f} mi to {station['name']}",
             expected=f"≥ {station_buf / 5280:.1f} mi ({station_buf:.0f} ft) from research stations",
@@ -128,12 +165,18 @@ def evaluate_gate_b(
     non_tolerant_check = CheckResult(
         id="non_tolerant_neighbor",
         label="Checked for non-dicamba-tolerant crops in the buffer",
+        label_es="Revisado: cultivos no tolerantes al dicamba en la zona de protección",
         tier="human_attested",
         status="pass" if nt_attested else "needs_confirmation",
         reason=(
             "Applicator confirmed no non-tolerant crops within the buffer."
             if nt_attested
             else f"Confirm no non-dicamba-tolerant crops within {nt_buf / 5280:.2f} mi ({nt_buf:.0f} ft)."
+        ),
+        reason_es=(
+            "El aplicador confirmó que no hay cultivos no tolerantes dentro de la zona de protección."
+            if nt_attested
+            else f"Confirme que no hay cultivos no tolerantes al dicamba dentro de {nt_buf / 5280:.2f} mi ({nt_buf:.0f} ft)."
         ),
         observed=None,
         expected=f"no non-tolerant crops within {nt_buf / 5280:.2f} mi ({nt_buf:.0f} ft)",
@@ -144,6 +187,7 @@ def evaluate_gate_b(
     organic_check = CheckResult(
         id="organic_specialty",
         label="Checked for organic / specialty crops in the buffer",
+        label_es="Revisado: cultivos orgánicos / especiales en la zona de protección",
         tier="human_attested",
         status="pass" if org_attested else "needs_confirmation",
         reason=(
@@ -153,6 +197,13 @@ def evaluate_gate_b(
             else f"Confirm no organic/specialty crops within {org_buf / 5280:.1f} mi ({org_buf:.0f} ft). "
             "Registry data is incomplete — voluntary FieldWatch registries are not yet integrated."
         ),
+        reason_es=(
+            "El aplicador confirmó que no hay cultivos orgánicos o especiales dentro de la zona de protección. "
+            "Los datos de registro están incompletos — los registros voluntarios de FieldWatch aún no están integrados."
+            if org_attested
+            else f"Confirme que no hay cultivos orgánicos/especiales dentro de {org_buf / 5280:.1f} mi ({org_buf:.0f} ft). "
+            "Los datos de registro están incompletos — los registros voluntarios de FieldWatch aún no están integrados."
+        ),
         observed=None,
         expected=f"no organic/specialty crops within {org_buf / 5280:.1f} mi ({org_buf:.0f} ft)",
     )
@@ -160,6 +211,7 @@ def evaluate_gate_b(
     return _gate(
         "B", "Field & buffers",
         [station_check, non_tolerant_check, organic_check],
+        "Campo y zonas de protección",
     )
 
 
@@ -170,46 +222,71 @@ def evaluate_gate_c(rules: dict, weather: dict, req: SprayCheckRequest) -> GateR
     lo_t, hi_t = spray_rules.temp_bounds(rules)
     rain_hours = spray_rules.rain_free_hours_required(rules)
 
-    def verifiable(check_id, label, value, ok, reason_ok, reason_bad, expected):
+    def verifiable(check_id, label, label_es, value, ok,
+                   reason_ok, reason_bad, reason_ok_es, reason_bad_es, expected):
         # When weather is unavailable, a verifiable fact cannot be measured ->
         # needs_confirmation, never a guessed pass/fail.
         if not available or value is None:
             return CheckResult(
-                id=check_id, label=label, tier="verifiable_fact",
+                id=check_id, label=label, label_es=label_es, tier="verifiable_fact",
                 status="needs_confirmation",
-                reason="Live weather unavailable — confirm this on the ground.",
+                reason=_WX_UNAVAILABLE, reason_es=_WX_UNAVAILABLE_ES,
                 observed=None, expected=expected,
             )
         return CheckResult(
-            id=check_id, label=label, tier="verifiable_fact",
+            id=check_id, label=label, label_es=label_es, tier="verifiable_fact",
             status="pass" if ok else "fail",
             reason=reason_ok if ok else reason_bad,
+            reason_es=reason_ok_es if ok else reason_bad_es,
             observed=str(value), expected=expected,
         )
 
     wind = weather.get("wind_speed_mph")
     wind_check = verifiable(
-        "wind_in_range", "Wind speed within the allowed range", wind,
+        "wind_in_range", "Wind speed within the allowed range",
+        "Velocidad del viento dentro del rango permitido", wind,
         wind is not None and lo_w <= wind <= hi_w,
         f"Wind {wind} mph is within range.", f"Wind {wind} mph is outside range.",
+        f"El viento de {wind} mph está dentro del rango.",
+        f"El viento de {wind} mph está fuera del rango.",
         f"{lo_w}-{hi_w} mph",
     )
 
     temp = weather.get("temp_f")
     temp_check = verifiable(
-        "temp_in_range", "Air temperature within the allowed range", temp,
+        "temp_in_range", "Air temperature within the allowed range",
+        "Temperatura del aire dentro del rango permitido", temp,
         temp is not None and lo_t <= temp <= hi_t,
         f"Temp {temp}°F is within range.", f"Temp {temp}°F is outside range.",
+        f"La temperatura de {temp}°F está dentro del rango.",
+        f"La temperatura de {temp}°F está fuera del rango.",
         f"{lo_t}-{hi_t} °F",
     )
 
     precip = weather.get("precip_next_48h_in")
     rain_check = verifiable(
-        "rain_free_48h", f"No rain forecast within {rain_hours} hours", precip,
+        "rain_free_48h", f"No rain forecast within {rain_hours} hours",
+        f"Sin lluvia pronosticada en {rain_hours} horas", precip,
         precip is not None and precip == 0,
         "No rain forecast in the window.",
         f"{precip} in of rain forecast in the window.",
+        "No se pronostica lluvia en la ventana.",
+        f"{precip} in de lluvia pronosticada en la ventana.",
         "0 in",
+    )
+
+    # Soil saturation (Phase 5) — verifiable when available, else needs_confirmation.
+    soil = weather.get("soil_moisture_0_1cm")
+    soil_max = spray_rules.soil_moisture_max(rules)
+    soil_check = verifiable(
+        "soil_not_saturated", "Topsoil not saturated",
+        "Capa superior del suelo no saturada", soil,
+        soil is not None and soil <= soil_max,
+        f"Topsoil moisture {soil} m³/m³ is at or below the saturation guide.",
+        f"Topsoil moisture {soil} m³/m³ is above the saturation guide — runoff/volatility risk.",
+        f"La humedad del suelo {soil} m³/m³ está en o por debajo de la guía de saturación.",
+        f"La humedad del suelo {soil} m³/m³ está por encima de la guía de saturación — riesgo de escorrentía/volatilidad.",
+        f"≤ {soil_max} m³/m³ (0-1 cm)",
     )
 
     # Inversion — ALWAYS human-attested. Only 'pass' when the estimate is low AND
@@ -220,34 +297,43 @@ def evaluate_gate_c(rules: dict, weather: dict, req: SprayCheckRequest) -> GateR
     if available and risk == "low" and attested:
         inv_status = "pass"
         inv_reason = "Estimate is low risk and applicator confirmed no inversion."
+        inv_reason_es = "La estimación es de bajo riesgo y el aplicador confirmó que no hay inversión."
     else:
         inv_status = "needs_confirmation"
         inv_reason = inversion.get("reason") or (
             "Inversion cannot be measured — applicator must confirm no inversion."
         )
+        inv_reason_es = inversion.get("reason_es") or (
+            "La inversión no se puede medir — el aplicador debe confirmar que no hay inversión."
+        )
     inversion_check = CheckResult(
         id="no_inversion",
         label="No temperature inversion",
+        label_es="Sin inversión térmica",
         tier="human_attested",
         status=inv_status,
         reason=inv_reason,
+        reason_es=inv_reason_es,
         observed=f"risk={risk} (estimate)",
         expected="applicator-confirmed no inversion",
     )
 
     return _gate(
         "C", "Weather now",
-        [wind_check, temp_check, rain_check, inversion_check],
+        [wind_check, temp_check, rain_check, soil_check, inversion_check],
+        "Clima actual",
     )
 
 
-def _attested_check(check_id, label, ok, attested_reason, unattested_reason):
+def _attested_check(check_id, label, label_es, ok, attested_reason, unattested_reason,
+                    attested_reason_es, unattested_reason_es):
     """Human-attested Gate D item: pass only on an explicit True attestation."""
     attested = ok is True
     return CheckResult(
-        id=check_id, label=label, tier="human_attested",
+        id=check_id, label=label, label_es=label_es, tier="human_attested",
         status="pass" if attested else "needs_confirmation",
         reason=attested_reason if attested else unattested_reason,
+        reason_es=attested_reason_es if attested else unattested_reason_es,
         observed=None, expected="applicator-confirmed",
     )
 
@@ -261,12 +347,15 @@ def evaluate_gate_d(
     available = weather.get("available", False)
     wind_dir = weather.get("wind_direction_deg")
     cone_label = f"no research station within a {2 * half_angle:.0f}° downwind cone inside its buffer"
+    downwind_label = "No sensitive site downwind of the field"
+    downwind_label_es = "Ningún sitio sensible a favor del viento del campo"
 
     if not available or wind_dir is None:
         downwind = CheckResult(
-            id="downwind_clear", label="No sensitive site downwind of the field",
+            id="downwind_clear", label=downwind_label, label_es=downwind_label_es,
             tier="verifiable_fact", status="needs_confirmation",
             reason="Wind direction unavailable — confirm downwind exposure on the ground.",
+            reason_es="Dirección del viento no disponible — confirme la exposición a favor del viento en el campo.",
             observed=None, expected=cone_label,
         )
     else:
@@ -283,48 +372,69 @@ def evaluate_gate_d(
         if hit:
             s, dist, bearing = hit
             downwind = CheckResult(
-                id="downwind_clear", label="No sensitive site downwind of the field",
+                id="downwind_clear", label=downwind_label, label_es=downwind_label_es,
                 tier="verifiable_fact", status="fail",
                 reason=f"{s['name']} is downwind of the field and inside the research-station buffer.",
+                reason_es=f"{s['name']} está a favor del viento del campo y dentro de la zona de protección de la estación de investigación.",
                 observed=f"wind toward {wind_toward:.0f}°; {s['name']} at bearing {bearing:.0f}°, {dist / 5280:.1f} mi",
                 expected=cone_label,
             )
         else:
             downwind = CheckResult(
-                id="downwind_clear", label="No sensitive site downwind of the field",
+                id="downwind_clear", label=downwind_label, label_es=downwind_label_es,
                 tier="verifiable_fact", status="pass",
                 reason="No research station is downwind of the field within its buffer.",
+                reason_es="Ninguna estación de investigación está a favor del viento del campo dentro de su zona de protección.",
                 observed=f"wind toward {wind_toward:.0f}°", expected=cone_label,
             )
 
     att = req.attestation
     boom = _attested_check(
-        "boom_height", "Boom height at or below the label maximum", att.boom_height_ok,
+        "boom_height", "Boom height at or below the label maximum",
+        "Altura de la botavara igual o por debajo del máximo de la etiqueta", att.boom_height_ok,
         "Applicator confirmed boom height is within the label maximum.",
         "Confirm the boom is at or below the label maximum height (≤ 2 ft).",
+        "El aplicador confirmó que la altura de la botavara está dentro del máximo de la etiqueta.",
+        "Confirme que la botavara está en o por debajo de la altura máxima de la etiqueta (≤ 2 ft).",
     )
     droplet = _attested_check(
-        "droplet_size", "Droplet size Ultra Coarse or coarser", att.droplet_setup_ok,
+        "droplet_size", "Droplet size Ultra Coarse or coarser",
+        "Tamaño de gota Ultra Gruesa o más gruesa", att.droplet_setup_ok,
         "Applicator confirmed nozzles produce Ultra Coarse or coarser droplets.",
         "Confirm nozzle setup produces Ultra Coarse or coarser droplets (per label).",
+        "El aplicador confirmó que las boquillas producen gotas Ultra Gruesas o más gruesas.",
+        "Confirme que la configuración de boquillas produce gotas Ultra Gruesas o más gruesas (según la etiqueta).",
     )
     tank = _attested_check(
-        "tank_clean", "Sprayer cleaned out before loading", att.tank_clean_ok,
+        "tank_clean", "Sprayer cleaned out before loading",
+        "Pulverizadora limpiada antes de cargar", att.tank_clean_ok,
         "Applicator confirmed the sprayer was cleaned out.",
         "Confirm the sprayer was cleaned out before loading.",
+        "El aplicador confirmó que la pulverizadora fue limpiada.",
+        "Confirme que la pulverizadora fue limpiada antes de cargar.",
     )
     additives = _attested_check(
-        "additives", "Required additives present, prohibited absent", att.additives_ok,
+        "additives", "Required additives present, prohibited absent",
+        "Aditivos requeridos presentes, prohibidos ausentes", att.additives_ok,
         "Applicator confirmed approved VRA + DRA are in the tank and AMS is not.",
         "Confirm an approved VRA and DRA are in the tank and that AMS is not added.",
+        "El aplicador confirmó que el VRA + DRA aprobados están en el tanque y el AMS no.",
+        "Confirme que un VRA y DRA aprobados están en el tanque y que no se añade AMS.",
     )
     ground = _attested_check(
-        "ground_application", "Ground application only (no aerial)", att.ground_application_only,
+        "ground_application", "Ground application only (no aerial)",
+        "Solo aplicación terrestre (sin aérea)", att.ground_application_only,
         "Applicator confirmed this is a ground application.",
         "Confirm this is a ground application — aerial over-the-top dicamba is prohibited.",
+        "El aplicador confirmó que esta es una aplicación terrestre.",
+        "Confirme que esta es una aplicación terrestre — el dicamba aéreo sobre el cultivo está prohibido.",
     )
 
-    return _gate("D", "Equipment & target", [downwind, boom, droplet, tank, additives, ground])
+    return _gate(
+        "D", "Equipment & target",
+        [downwind, boom, droplet, tank, additives, ground],
+        "Equipo y objetivo",
+    )
 
 
 def run_spray_check(

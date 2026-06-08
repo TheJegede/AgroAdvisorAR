@@ -46,6 +46,7 @@ def _estimate_inversion(wind_mph, at, sunrise, sunset) -> dict:
             "risk": "unknown",
             "is_estimate": True,
             "reason": "Insufficient data to estimate inversion risk — confirm conditions on the ground.",
+            "reason_es": "Datos insuficientes para estimar el riesgo de inversión — confirme las condiciones en el campo.",
         }
     near_dawn = sunrise <= at <= sunrise + _INVERSION_WINDOW
     near_dusk = at >= sunset - _INVERSION_WINDOW
@@ -57,6 +58,11 @@ def _estimate_inversion(wind_mph, at, sunrise, sunset) -> dict:
                 f"Wind {wind_mph} mph and the time is near dawn/dusk — temperature "
                 "inversions form in calm air near sunrise and sunset. Confirm no inversion."
             ),
+            "reason_es": (
+                f"Viento de {wind_mph} mph y la hora está cerca del amanecer/atardecer — las "
+                "inversiones térmicas se forman con aire en calma cerca del amanecer y el atardecer. "
+                "Confirme que no hay inversión."
+            ),
         }
     return {
         "risk": "low",
@@ -64,6 +70,10 @@ def _estimate_inversion(wind_mph, at, sunrise, sunset) -> dict:
         "reason": (
             f"Wind {wind_mph} mph and the time is away from dawn/dusk — inversion "
             "less likely, but still confirm visually (no smoke/dust hanging low)."
+        ),
+        "reason_es": (
+            f"Viento de {wind_mph} mph y la hora está lejos del amanecer/atardecer — inversión "
+            "menos probable, pero confirme visualmente (sin humo/polvo suspendido bajo)."
         ),
     }
 

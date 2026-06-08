@@ -132,3 +132,14 @@ def test_inversion_always_is_estimate_true():
                      (9.0, datetime(2026, 6, 8, 12, 0)),
                      (1.0, datetime(2026, 6, 8, 19, 30))]:
         assert weather_now._estimate_inversion(wind, at, sunrise, sunset)["is_estimate"] is True
+
+
+def test_estimate_inversion_carries_spanish_reason_all_branches():
+    sunrise = datetime(2026, 6, 8, 6, 0)
+    sunset = datetime(2026, 6, 8, 20, 0)
+    elevated = weather_now._estimate_inversion(1.5, datetime(2026, 6, 8, 7, 0), sunrise, sunset)
+    low = weather_now._estimate_inversion(8.0, datetime(2026, 6, 8, 13, 0), sunrise, sunset)
+    unknown = weather_now._estimate_inversion(None, datetime(2026, 6, 8, 7, 0), None, None)
+    for out in (elevated, low, unknown):
+        assert out.get("reason_es")
+        assert out["reason_es"] != out["reason"]

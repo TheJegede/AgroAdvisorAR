@@ -30,6 +30,7 @@ RULES = {
         "air_temp_f": {"min": 50.0, "max": 91.0},
         "rain_free_hours_required": 48,
         "downwind_half_angle_deg": 45,
+        "soil_moisture_max": 0.45,
     },
 }
 
@@ -38,7 +39,8 @@ WEATHER_OK = {
     "wind_speed_mph": 6.0,
     "temp_f": 78.0,
     "precip_next_48h_in": 0.0,
-    "inversion": {"risk": "low", "is_estimate": True, "reason": "x"},
+    "soil_moisture_0_1cm": 0.2,
+    "inversion": {"risk": "low", "is_estimate": True, "reason": "x", "reason_es": "y"},
 }
 
 

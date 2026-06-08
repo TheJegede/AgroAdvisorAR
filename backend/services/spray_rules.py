@@ -87,3 +87,8 @@ def buffers_ft(rules: dict) -> dict:
 def downwind_half_angle_deg(rules: dict) -> float:
     """Half-angle (deg) of the downwind cone used by Gate D geometry."""
     return float(rules["weather_thresholds"]["downwind_half_angle_deg"])
+
+
+def soil_moisture_max(rules: dict) -> float:
+    """Max volumetric topsoil moisture (m³/m³, 0-1 cm) before saturation concern (Gate C)."""
+    return float(rules["weather_thresholds"]["soil_moisture_max"])
