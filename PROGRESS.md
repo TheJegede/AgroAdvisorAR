@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-05 (70B prod eval — DeepInfra gen + judge, n=20, seed=7)
+> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + Phase 1 shipped)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -12,6 +12,16 @@
 
 ## TL;DR — current state
 
+- **F4 DICAMBA REBUILD (PRD v3) — Phase 0 + Phase 1 SHIPPED 2026-06-08.** F4 redefined from a
+  backward-looking drift-complaint form into a before-you-spray dicamba compliance checklist (four
+  gates A/B/C/D; PRD `AgroAdvisor_F4_PRD_v3.md`; 7 phase plans in `docs/superpowers/plans/`).
+  **Phase 0** (`main`, merged): versioned effective-dated rules-as-data `backend/data/dicamba_rules.json`
+  + `services/spray_rules.py` (`resolve_rules` + accessors). **Phase 1** (branch
+  `feat/f4-dicamba-phase1-check`): `POST /api/v1/dicamba/check` for Gates A (legal window) + C (weather
+  now) — new `services/weather_now.py` (Open-Meteo **forecast** API + inversion-risk **estimate**),
+  `models/spray.py`, `services/spray_check.py` gate engine (verifiable_fact vs human_attested;
+  inversion never auto-passes), `routers/dicamba.py`. TDD, 25 new tests, full backend **166 passed**.
+  Gates B/D + persistence/PDF + wizard UI are later phases. Coexists with old drift tool.
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.
