@@ -24,6 +24,10 @@ function checkResponse(att = {}) {
   const orgStatus = att.organic_specialty_checked === true ? 'pass' : 'needs_confirmation';
   const invStatus = noInversion ? 'pass' : 'needs_confirmation';
   const gateBStatus = ntStatus === 'pass' && orgStatus === 'pass' ? 'pass' : 'needs_confirmation';
+  const gateDEquip = att.boom_height_ok && att.droplet_setup_ok && att.tank_clean_ok && att.additives_ok && att.ground_application_only;
+  const gateDStatus = gateDEquip ? 'pass' : 'needs_confirmation';
+  // Overall mirrors the original (Gate B + inversion); Gate D rides alongside so
+  // the Step-4 outcome banner is asserted before Gate D is attested.
   const allPass = gateBStatus === 'pass' && invStatus === 'pass';
   return {
     overall_status: allPass ? 'pass' : 'needs_confirmation',
@@ -62,6 +66,19 @@ function checkResponse(att = {}) {
           { id: 'no_inversion', label: 'No temperature inversion', tier: 'human_attested', status: invStatus, reason: noInversion ? 'Estimate is low risk and applicator confirmed no inversion.' : 'Inversion cannot be measured — applicator must confirm no inversion.', observed: 'risk=low (estimate)', expected: 'applicator-confirmed no inversion' },
         ],
       },
+      {
+        gate: 'D',
+        title: 'Equipment & target',
+        status: gateDStatus,
+        checks: [
+          { id: 'downwind_clear', label: 'No sensitive site downwind of the field', tier: 'verifiable_fact', status: 'pass', reason: 'No research station is downwind within its buffer.', observed: 'wind toward 0°', expected: 'no research station within a 90° downwind cone inside its buffer' },
+          { id: 'boom_height', label: 'Boom height at or below the label maximum', tier: 'human_attested', status: att.boom_height_ok ? 'pass' : 'needs_confirmation', reason: 'x', observed: null, expected: 'applicator-confirmed' },
+          { id: 'droplet_size', label: 'Droplet size Ultra Coarse or coarser', tier: 'human_attested', status: att.droplet_setup_ok ? 'pass' : 'needs_confirmation', reason: 'x', observed: null, expected: 'applicator-confirmed' },
+          { id: 'tank_clean', label: 'Sprayer cleaned out before loading', tier: 'human_attested', status: att.tank_clean_ok ? 'pass' : 'needs_confirmation', reason: 'x', observed: null, expected: 'applicator-confirmed' },
+          { id: 'additives', label: 'Required additives present, prohibited absent', tier: 'human_attested', status: att.additives_ok ? 'pass' : 'needs_confirmation', reason: 'x', observed: null, expected: 'applicator-confirmed' },
+          { id: 'ground_application', label: 'Ground application only (no aerial)', tier: 'human_attested', status: att.ground_application_only ? 'pass' : 'needs_confirmation', reason: 'x', observed: null, expected: 'applicator-confirmed' },
+        ],
+      },
     ],
   };
 }
@@ -82,6 +99,16 @@ async function mockRoutes(page) {
     try { body = route.request().postDataJSON() ?? {}; } catch { /* empty */ }
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(checkResponse(body?.attestation ?? {})) });
   });
+  // Record persistence + history + PDF download.
+  await page.route('**/api/v1/dicamba/record', (route) =>
+    route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ id: 'rec-1', product: 'engenia', applied_at: '2026-06-08T09:00:00', overall_status: 'needs_confirmation' }) })
+  );
+  await page.route('**/api/v1/dicamba/records', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'rec-1', product: 'engenia', applied_at: '2026-06-08T09:00:00', overall_status: 'needs_confirmation' }]) })
+  );
+  await page.route('**/api/v1/dicamba/record/*/pdf', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4 fake' })
+  );
   // Block external OSM tiles so the test never hits the network.
   await page.route('**tile.openstreetmap.org/**', (route) =>
     route.fulfill({ status: 200, contentType: 'image/png', body: '' })
@@ -150,4 +177,23 @@ test('wizard walks 4 steps, draws buffers + station markers, and Gate B + invers
   await expect(page.getByText(/Gate B/i)).toBeVisible();
   await expect(page.getByText(/Gate C/i)).toBeVisible();
   await expect(page.getByTestId('outcome-banner')).toContainText(/meets the requirements/i);
+
+  // Step 4 — attest Gate D, save the record, PDF link appears
+  await page.getByTestId('gate-d-boom_height_ok').check();
+  await page.getByTestId('gate-d-droplet_setup_ok').check();
+  await page.getByTestId('gate-d-tank_clean_ok').check();
+  await page.getByTestId('gate-d-additives_ok').check();
+  await page.getByTestId('gate-d-ground_application_only').check();
+  const [recReq] = await Promise.all([
+    page.waitForRequest('**/api/v1/dicamba/record'),
+    page.getByTestId('save-record-btn').click(),
+  ]);
+  expect(recReq.postDataJSON().attestation.boom_height_ok).toBe(true);
+  await expect(page.getByTestId('download-pdf-link')).toBeVisible({ timeout: 10000 });
+});
+
+test('spray-records page lists saved records', async ({ page }) => {
+  await page.goto('/spray-records');
+  await expect(page.getByTestId('records-list')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTestId('records-list')).toContainText('engenia');
 });
