@@ -123,6 +123,21 @@ async function mockRoutes(page) {
   await page.route('**/api/v1/dicamba/record/*/pdf', (route) =>
     route.fulfill({ status: 200, contentType: 'application/pdf', body: '%PDF-1.4 fake' })
   );
+  await page.route('**/api/v1/dicamba/feedback', (route) => {
+    let body = {};
+    try { body = route.request().postDataJSON() ?? {}; } catch { /* empty */ }
+    return route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: 'fb-1',
+        record_id: body.record_id,
+        rating: body.rating,
+        comment: body.comment,
+        created_at: '2026-06-08T15:00:00Z',
+      }),
+    });
+  });
   // Block external OSM tiles so the test never hits the network.
   await page.route('**tile.openstreetmap.org/**', (route) =>
     route.fulfill({ status: 200, contentType: 'image/png', body: '' })
@@ -146,10 +161,16 @@ test('wizard walks 4 steps, draws buffers + station markers, and Gate B + invers
   await page.goto('/spray-check');
   await expect(page.getByRole('heading', { name: /before-you-spray dicamba check/i })).toBeVisible({ timeout: 15000 });
 
-  // Step 1 — Eligibility
+  // Step 1 — Eligibility: check disclaimer banner is visible
+  await expect(page.getByTestId('disclaimer-banner')).toBeVisible();
+  await expect(page.getByTestId('disclaimer-banner')).toContainText('This tool surfaces verifiable requirements');
+
   await page.locator('select').first().selectOption('engenia');
   await page.locator('input[type="checkbox"]').first().check(); // license attestation
   await page.getByRole('button', { name: /next|siguiente/i }).click();
+
+  // Step 2 — disclaimer banner still visible
+  await expect(page.getByTestId('disclaimer-banner')).toBeVisible();
 
   // Step 2 — Field & Buffers: place a pin; /check fires, rings + station markers render
   await expect(page.locator('.leaflet-container')).toBeVisible({ timeout: 15000 });
@@ -207,6 +228,22 @@ test('wizard walks 4 steps, draws buffers + station markers, and Gate B + invers
   ]);
   expect(recReq.postDataJSON().attestation.boom_height_ok).toBe(true);
   await expect(page.getByTestId('download-pdf-link')).toBeVisible({ timeout: 10000 });
+
+  // Verify feedback widget appears on Step 4 after save
+  await expect(page.getByTestId('spray-feedback-widget')).toBeVisible();
+  await page.getByTestId('feedback-thumb-up').click();
+  await page.getByTestId('feedback-comment-input').fill('Great validation checks!');
+
+  const [feedbackReq] = await Promise.all([
+    page.waitForRequest('**/api/v1/dicamba/feedback'),
+    page.getByTestId('feedback-submit-btn').click(),
+  ]);
+  expect(feedbackReq.postDataJSON()).toEqual({
+    record_id: 'rec-1',
+    rating: 1,
+    comment: 'Great validation checks!',
+  });
+  await expect(page.locator('text=Thanks for your feedback.')).toBeVisible();
 });
 
 test('spray-records page lists saved records', async ({ page }) => {
@@ -219,6 +256,10 @@ test('Spanish mode renders ES gate strings + registry deep-links (Phase 5 parity
   await page.addInitScript(() => window.localStorage.setItem('agro_lang', 'es'));
   await page.goto('/spray-check');
   await expect(page.getByRole('heading', { name: /verificación antes de aplicar dicamba/i })).toBeVisible({ timeout: 15000 });
+
+  // Check Spanish disclaimer banner
+  await expect(page.getByTestId('disclaimer-banner')).toBeVisible();
+  await expect(page.getByTestId('disclaimer-banner')).toContainText('Esta herramienta muestra los requisitos verificables');
 
   // Step 1 — Eligibility (ES chrome)
   await page.locator('select').first().selectOption('engenia');

@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (shimmering skeleton screen loading states; F4 dicamba rebuild — Phases 0-5 shipped: rules-as-data, /check Gates A-D, wizard, Gate B map, record/Gate D, Spanish parity + soil + registry deep-links)
+> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 6 code track shipped: central disclaimer, gate stats endpoint, spray feedback widget; shimmering skeleton screen loading states; Spanish parity; Gates A-D)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -134,7 +134,21 @@ Together: F4 is fully built + tested in-repo but **not yet exercisable in prod**
   e2e registry panel + full ES-mode walk; **backend 210 pass**, **frontend 38 vitest pass**, lint clean,
   **playwright spray 4 pass**. **Deferred (owner-blocked):** FieldWatch API pull, EPA Bulletins layer
   integration, mesonet delta-T inversion source (Deferred Ops #4-6). Same HF-redeploy + migration-009
-  prod debt as Phase 4. **NEXT = Phase 6** (legal review + pilot).
+  prod debt as Phase 4.
+  **Phase 6 (Code Track) — Central Disclaimer, Gate Stats, and Feedback Loop SHIPPED 2026-06-08** (TDD; plan
+  `docs/superpowers/plans/2026-06-08-f4-dicamba-phase6-code.md`):
+  (1) **Central Disclaimer:** created `disclaimers.js` defining bilingual constants, rendered persistently above
+  step content on all steps in the wizard, removed Step 4 inline copy, unified backend PDF disclaimer in
+  `pdf_generator.py` under the module-level constant `SPRAY_DISCLAIMER`. (2) **Gate Stats:** implemented
+  `GET /api/v1/dicamba/stats` (admin-only via `require_admin`) using `aggregate_gate_stats` in `spray_stats.py` to
+  tally pass/fail/needs_confirmation counts across all frozen records. (3) **Feedback Loop:** added append-only
+  feedback table via migration `010_spray_feedback.sql` with owner/admin RLS; Pydantic models in `models/spray_feedback.py`;
+  `POST /api/v1/dicamba/feedback` in `routers/dicamba.py` (validated via `verify_record_ownership` in
+  `services/spray_feedback.py` to prevent IDOR feedback injection); created `SprayFeedbackWidget` that renders on
+  Step 4 when a record is saved. TDD: unit/integration tests for stats, feedback service, and router; expanded playwright
+  spray-check E2E spec to walk the wizard, verify disclaimers in EN and ES, save a record, click thumbs up, fill comment,
+  submit, and assert thank-you message; **backend 218 pass**, **frontend 45 vitest pass**, lint clean, Playwright
+  E2E **4 pass**.
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.

@@ -8,6 +8,8 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import { useLang } from '../../contexts/LangContext'
 import { useSprayCheck, getSprayStepErrors } from '../../hooks/useSprayCheck'
 import Alert from '../ui/Alert'
+import { SPRAY_DISCLAIMER_EN, SPRAY_DISCLAIMER_ES } from '../../lib/disclaimers'
+import SprayFeedbackWidget from './SprayFeedbackWidget'
 
 // Bundlers strip Leaflet's default marker URLs; re-point them at the imported assets.
 L.Icon.Default.mergeOptions({
@@ -112,6 +114,17 @@ function StepIndicator({ step, titles }) {
 function FieldError({ msg }) {
   if (!msg) return null
   return <p className="text-xs text-red-500 mt-1">{msg}</p>
+}
+
+function DisclaimerBanner({ es }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl bg-amber-50/60 border border-amber-200/60 p-3 text-xs text-amber-900/90 dark:bg-hc-bg dark:border-hc-border dark:text-hc-fg mb-4" data-testid="disclaimer-banner">
+      <span className="text-sm select-none" role="img" aria-label="warning">⚠️</span>
+      <p className="flex-1 leading-normal font-medium">
+        {es ? SPRAY_DISCLAIMER_ES : SPRAY_DISCLAIMER_EN}
+      </p>
+    </div>
+  )
 }
 
 // Headless map-event listener; relays a click's latlng up via onPick.
@@ -337,8 +350,9 @@ export default function SprayCheckWizard() {
           ? 'Revise los requisitos verificables antes de aplicar. Esta herramienta informa, no autoriza la aplicación.'
           : 'Walk the verifiable requirements before you spray. This tool informs — it does not authorize an application.'}
       </p>
-
       <StepIndicator step={step} titles={stepTitles} />
+
+      <DisclaimerBanner es={es} />
 
       {error && <Alert variant="error" className="mb-4">{error}</Alert>}
 
@@ -556,11 +570,6 @@ export default function SprayCheckWizard() {
                     ))}
                   </ul>
                 )}
-                <p className="text-xs text-gray-500 dark:text-hc-fg mt-2">
-                  {es
-                    ? 'Esto no es una autorización para aplicar. Verifique siempre la etiqueta del producto y las normas estatales vigentes.'
-                    : 'This is not an authorization to spray. Always verify the product label and current state rules.'}
-                </p>
               </div>
 
               <div className="space-y-3">
@@ -594,13 +603,16 @@ export default function SprayCheckWizard() {
               </div>
 
               {savedRecord ? (
-                <a
-                  href={`/api/v1/dicamba/record/${savedRecord.id}/pdf`}
-                  className={BTN_PRIMARY_CLS}
-                  data-testid="download-pdf-link"
-                >
-                  {es ? 'Descargar PDF del registro' : 'Download record PDF'}
-                </a>
+                <>
+                  <a
+                    href={`/api/v1/dicamba/record/${savedRecord.id}/pdf`}
+                    className={BTN_PRIMARY_CLS}
+                    data-testid="download-pdf-link"
+                  >
+                    {es ? 'Descargar PDF del registro' : 'Download record PDF'}
+                  </a>
+                  <SprayFeedbackWidget recordId={savedRecord.id} />
+                </>
               ) : (
                 <button
                   type="button"

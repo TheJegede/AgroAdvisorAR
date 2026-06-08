@@ -64,5 +64,33 @@ export function useSprayCheck() {
     return res.data
   }, [])
 
-  return { runCheck, fetchStations, saveRecord, loading, error }
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false)
+
+  const submitFeedback = useCallback(async ({ recordId, rating, comment }) => {
+    setFeedbackSubmitting(true)
+    try {
+      const res = await api.post('/dicamba/feedback', {
+        record_id: recordId,
+        rating,
+        comment: comment?.trim() || null,
+      })
+      return { ok: true, data: res.data }
+    } catch (err) {
+      const status = err.response?.status
+      const detail = err.response?.data?.detail || 'Could not submit feedback.'
+      return { ok: false, status, detail }
+    } finally {
+      setFeedbackSubmitting(false)
+    }
+  }, [])
+
+  return {
+    runCheck,
+    fetchStations,
+    saveRecord,
+    submitFeedback,
+    loading,
+    error,
+    feedbackSubmitting,
+  }
 }

@@ -12,11 +12,15 @@ from fastapi.responses import StreamingResponse
 from models.spray import (
     ResearchStation, SprayCheckRequest, SprayCheckResponse, SprayRecord,
 )
+from models.spray_feedback import SprayFeedbackRequest, SprayFeedbackResponse
+from services.admin import require_admin
 from services.auth import get_current_user
 from services.pdf_generator import generate_spray_record_pdf
 from services.spray_check import run_spray_check
 from services.spray_record import create_record, get_record, list_records
+from services.spray_feedback import insert_spray_feedback, verify_record_ownership
 from services.spray_rules import RulesNotFoundError, resolve_rules
+from services.spray_stats import aggregate_gate_stats
 from services.spray_stations import load_stations
 from services.user import get_profile
 from services.weather_now import fetch_forecast_conditions
@@ -107,3 +111,35 @@ async def download_spray_record_pdf(record_id: str, user: dict = Depends(get_cur
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=spray_record_{record_id[:8]}.pdf"},
     )
+
+
+@router.get("/stats")
+async def get_spray_stats(admin_user: dict = Depends(require_admin)):
+    """Aggregate per-gate statistics across all spray records (admin-only)."""
+    return aggregate_gate_stats()
+
+
+@router.post("/feedback", response_model=SprayFeedbackResponse, status_code=201)
+async def submit_spray_feedback(
+    body: SprayFeedbackRequest,
+    user: dict = Depends(get_current_user),
+):
+    """Submit rating + optional comment for a saved spray record.
+
+    Validates ownership to prevent IDOR feedback injection.
+    """
+    if not verify_record_ownership(body.record_id, user["sub"]):
+        raise HTTPException(status_code=404, detail="Record not found")
+
+    feedback = insert_spray_feedback(
+        record_id=body.record_id,
+        farmer_id=user["sub"],
+        rating=body.rating,
+        comment=body.comment,
+    )
+    if hasattr(feedback.get("created_at"), "isoformat"):
+        feedback["created_at"] = feedback["created_at"].isoformat()
+    else:
+        feedback["created_at"] = str(feedback.get("created_at") or "")
+
+    return feedback

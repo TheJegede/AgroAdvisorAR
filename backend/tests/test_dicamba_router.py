@@ -156,3 +156,68 @@ def test_list_records_uses_owner(monkeypatch):
     out = asyncio.run(router_mod.list_spray_records(user=FAKE_USER))
     assert seen["fid"] == FAKE_USER["sub"]
     assert out[0]["id"] == "rec-1"
+
+
+def test_get_spray_stats_admin_success(monkeypatch):
+    import config
+    monkeypatch.setattr(config, "ADMIN_USER_IDS", {"admin-uuid-1"})
+
+    router_mod = importlib.import_module("routers.dicamba")
+    mock_stats = {"total_records": 10, "gates": {}}
+    monkeypatch.setattr(router_mod, "aggregate_gate_stats", lambda: mock_stats)
+
+    res = asyncio.run(router_mod.get_spray_stats(admin_user={"sub": "admin-uuid-1"}))
+    assert res == mock_stats
+
+
+def test_get_spray_stats_non_admin_forbidden(monkeypatch):
+    import config
+    monkeypatch.setattr(config, "ADMIN_USER_IDS", {"admin-uuid-1"})
+
+    from services.admin import require_admin
+    with pytest.raises(HTTPException) as exc_info:
+        require_admin(user={"sub": "farmer-uuid-1"})
+    assert exc_info.value.status_code == 403
+
+
+def test_submit_spray_feedback_success(monkeypatch):
+    router_mod = importlib.import_module("routers.dicamba")
+
+    # Mock verify_record_ownership to return True
+    monkeypatch.setattr(router_mod, "verify_record_ownership", lambda rid, fid: True)
+
+    # Mock insert_spray_feedback to return a fake feedback dict
+    fake_fb = {
+        "id": "fb-1",
+        "record_id": "rec-1",
+        "farmer_id": FAKE_USER["sub"],
+        "rating": 1,
+        "comment": "Nice tool!",
+        "created_at": datetime(2026, 6, 8, 12, 0),
+    }
+    monkeypatch.setattr(router_mod, "insert_spray_feedback", lambda record_id, farmer_id, rating, comment: fake_fb)
+
+    from models.spray_feedback import SprayFeedbackRequest
+    req_body = SprayFeedbackRequest(record_id="rec-1", rating=1, comment="Nice tool!")
+
+    res = asyncio.run(router_mod.submit_spray_feedback(req_body, user=FAKE_USER))
+    assert res["id"] == "fb-1"
+    assert res["record_id"] == "rec-1"
+    assert res["rating"] == 1
+    assert res["comment"] == "Nice tool!"
+    assert "2026-06-08T12:00:00" in res["created_at"]
+
+
+def test_submit_spray_feedback_foreign_record_404(monkeypatch):
+    router_mod = importlib.import_module("routers.dicamba")
+
+    # Mock verify_record_ownership to return False (foreign record)
+    monkeypatch.setattr(router_mod, "verify_record_ownership", lambda rid, fid: False)
+
+    from models.spray_feedback import SprayFeedbackRequest
+    req_body = SprayFeedbackRequest(record_id="rec-2", rating=-1, comment="Bad weather data")
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(router_mod.submit_spray_feedback(req_body, user=FAKE_USER))
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Record not found"

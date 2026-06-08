@@ -61,7 +61,7 @@ def test_generate_complaint_pdf_handles_empty_profile():
 
 
 def test_generate_spray_record_pdf_returns_pdf_bytes():
-    from services.pdf_generator import generate_spray_record_pdf
+    from services.pdf_generator import generate_spray_record_pdf, SPRAY_DISCLAIMER
     record = {
         "id": "rec-1", "lat": 34.7, "lon": -91.8, "product": "engenia",
         "applied_at": "2026-06-08T09:00:00", "overall_status": "needs_confirmation",
@@ -77,6 +77,7 @@ def test_generate_spray_record_pdf_returns_pdf_bytes():
     }
     out = generate_spray_record_pdf(record, {"full_name": "Jane Farmer", "email": "j@x.com"})
     assert out[:4] == b"%PDF"
+    assert "solely responsible for verifying" in SPRAY_DISCLAIMER
 
 
 def test_generate_spray_record_pdf_handles_missing_weather_and_empty_profile():
