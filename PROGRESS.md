@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + Phase 1 shipped)
+> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + Phase 1 + Phase 2 wizard shipped)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -21,7 +21,18 @@
   now) — new `services/weather_now.py` (Open-Meteo **forecast** API + inversion-risk **estimate**),
   `models/spray.py`, `services/spray_check.py` gate engine (verifiable_fact vs human_attested;
   inversion never auto-passes), `routers/dicamba.py`. TDD, 25 new tests, full backend **166 passed**.
-  Gates B/D + persistence/PDF + wizard UI are later phases. Coexists with old drift tool.
+  Gates B/D + persistence/PDF are later phases. Coexists with old drift tool.
+  **Phase 2 — Spray-Check Wizard SHIPPED 2026-06-08** (`docs/superpowers/plans/2026-06-08-f4-dicamba-phase2-wizard.md`):
+  new 3-step UI `components/dicamba/SprayCheckWizard.jsx` + `hooks/useSprayCheck.js`
+  (`getSprayStepErrors` + `runCheck` → `POST /api/v1/dicamba/check`), `pages/SprayCheckPage.jsx`,
+  route `/spray-check`, sidebar nav `t.sprayCheck` (coexists with `/drift-report`). Step 1 product +
+  license attestation (Gate A), Step 2 **react-leaflet** click-to-place pin → fires `/check` + live
+  conditions summary (Gate C), Step 3 per-gate result cards + inversion toggle that re-runs `/check`
+  and flips the outcome banner. Advisory framing (never "approved, spray now"); EN+ES; high-contrast
+  status badges (≥4.5:1) + `min-h-touch`. Added deps `react-leaflet@5` + `leaflet@1.9`. TDD:
+  `useSprayCheck.test.js` (7) + `e2e/spray-check.spec.js` (2). Verified frontend **36 vitest pass**,
+  lint clean, build OK, playwright spray spec green. Out of scope: Gate B buffer rings (Phase 3),
+  record save/PDF (Phase 4), pro ES review (Phase 5).
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.

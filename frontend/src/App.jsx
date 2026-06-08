@@ -18,6 +18,7 @@ const SessionsPage = lazy(() => import('./pages/SessionsPage'))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'))
 const EvalQueuePage = lazy(() => import('./pages/EvalQueuePage'))
 const DriftReportPage = lazy(() => import('./pages/DriftReportPage'))
+const SprayCheckPage = lazy(() => import('./pages/SprayCheckPage'))
 
 // ChatPage wrapper component. State is reset internally inside ChatPage
 // based on changes to the session query parameter.
@@ -49,6 +50,7 @@ export default function App() {
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/sessions" element={<SessionsPage />} />
                 <Route path="/drift-report" element={<DriftReportPage />} />
+                <Route path="/spray-check" element={<SprayCheckPage />} />
                 <Route
                   path="/admin"
                   element={<AdminRoute><AdminDashboardPage /></AdminRoute>}
