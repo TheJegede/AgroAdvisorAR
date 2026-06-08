@@ -31,8 +31,21 @@
   and flips the outcome banner. Advisory framing (never "approved, spray now"); EN+ES; high-contrast
   status badges (≥4.5:1) + `min-h-touch`. Added deps `react-leaflet@5` + `leaflet@1.9`. TDD:
   `useSprayCheck.test.js` (7) + `e2e/spray-check.spec.js` (2). Verified frontend **36 vitest pass**,
-  lint clean, build OK, playwright spray spec green. Out of scope: Gate B buffer rings (Phase 3),
-  record save/PDF (Phase 4), pro ES review (Phase 5).
+  lint clean, build OK, playwright spray spec green. Committed + pushed to `main` (`90cd0b7`); Vercel
+  frontend auto-deploys on push.
+  **⚠️ HF BACKEND NOT YET REDEPLOYED** — `/api/v1/dicamba/check` (Phase 1) lives on `main` but the HF
+  Space still runs the pre-Phase-1 image, so the wizard's `/check` call 404s in prod until a backend
+  redeploy (orphan-branch force-push to HF — see CLAUDE.md Priorities #2). Deferred by owner: redeploy
+  once all F4 phases land.
+  **Deviations from the Phase 2 plan:** (1) plan said spec in repo-root `tests/`, but playwright
+  `testDir` = `frontend/e2e/` → spec lives at `frontend/e2e/spray-check.spec.js` (matches existing
+  `drift.spec.js`). (2) Live-conditions summary pulls wind/temp/48h-rain from Gate C check `observed`
+  values; `SprayCheckResponse` exposes no separate soil/sunrise fields, so those (named in the plan's
+  step-2 summary) are omitted. (3) `CLAUDE.md` is gitignored locally → its F4 doc update is NOT in the
+  commit (local-only); PROGRESS.md + memory carry the record instead.
+  **Out of scope (later phases):** Gate B buffer rings / station pins (Phase 3), record save + PDF
+  (Phase 4), pro Spanish review (Phase 5 — copy is bilingual from the start but not professionally
+  reviewed).
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.
