@@ -1,0 +1,43 @@
+[
+  {
+    "rule_version": "2026-AR-OTT",
+    "jurisdiction": "AR",
+    "effective_start": "2026-01-01",
+    "effective_end": null,
+    "source_citation": "AR State Plant Board dicamba regulations 2026; UA Extension MP44 — UNVERIFIED, re-confirm each season against the Arkansas Department of Agriculture and the product label (PRD v3 §8)",
+    "season_window": {
+      "start": "2026-04-15",
+      "end": "2026-06-30",
+      "cutoff_note": "No over-the-top applications after June 30 or past soybean V4 / R1, whichever comes first"
+    },
+    "buffers_ft": {
+      "research_station": 5280,
+      "organic_specialty": 2640,
+      "non_tolerant_crop": 1320
+    },
+    "approved_products": [
+      {"id": "engenia", "name": "Engenia", "epa_reg_no": "7969-345"},
+      {"id": "xtendimax", "name": "XtendiMax with VaporGrip", "epa_reg_no": "264-1210"},
+      {"id": "tavium", "name": "Tavium Plus VaporGrip", "epa_reg_no": "100-1623"}
+    ],
+    "required_additives": [
+      {"id": "vra", "name": "Approved volatility-reduction agent (VRA)"},
+      {"id": "dra", "name": "Approved drift-reduction agent (DRA)"}
+    ],
+    "prohibited_additives": [
+      {"id": "ammonium_sulfate", "name": "Ammonium sulfate (AMS)"}
+    ],
+    "weather_thresholds": {
+      "wind_mph": {"min": 3.0, "max": 10.0},
+      "boom_height_ft_max": 2.0,
+      "droplet_size": "Ultra Coarse or coarser (per label)",
+      "time_of_day": {
+        "earliest": "sunrise",
+        "latest": "sunset",
+        "note": "Over-the-top applications only between 1 hour after sunrise and 2 hours before sunset"
+      },
+      "rain_free_hours_required": 48,
+      "air_temp_f": {"min": 50.0, "max": 91.0}
+    }
+  }
+]
