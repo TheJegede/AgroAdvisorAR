@@ -74,8 +74,10 @@ Appended to `services/spray_check.py`; wired into `run_spray_check` → gate ord
 **Verifiable downwind check (`downwind_clear`, `verifiable_fact`):**
 - Wind blows TOWARD `wind_toward = (wind_direction_deg + 180) mod 360`.
 - For each station: `bearing_deg(field → station)`; it is *downwind* if
-  `angular_diff(wind_toward, bearing) <= _DOWNWIND_HALF_ANGLE_DEG` (default **45°**, a 90° cone) AND
-  `haversine_ft(field, station) < buffers_ft.research_station`.
+  `angular_diff(wind_toward, bearing) <= half_angle` AND
+  `haversine_ft(field, station) < buffers_ft.research_station`. `half_angle` =
+  `spray_rules.downwind_half_angle_deg(rules)` (rules-as-data, **not** hardcoded — see below; the
+  conservative seed is 45°, a 90° cone).
 - Any station downwind AND inside its buffer → `fail` (observed = which station + bearing).
 - Wind unavailable / `wind_direction_deg is None` → `needs_confirmation` (never a guessed pass).
 - No station downwind-and-inside → `pass`.
@@ -96,11 +98,13 @@ Appended to `services/spray_check.py`; wired into `run_spray_check` → gate ord
 
 **`models/spray.py`:** add `additives_ok` + `ground_application_only` to `ApplicatorAttestation`.
 
+**Rules-as-data (NOT hardcoded):** add `"downwind_half_angle_deg": 45` under `weather_thresholds`
+in `backend/data/dicamba_rules.json` (the one `2026-AR-OTT` record) + accessor
+`spray_rules.downwind_half_angle_deg(rules) -> float`. Effective-dated like every other threshold, so
+the cone can be retuned per season without a code change. `evaluate_gate_d` reads it via the accessor.
+
 **Consequence:** `/check` now returns 4 gates, so the wizard Step 4 gains a Gate D equipment-
 attestation block (below) — otherwise Gate D can never clear.
-
-`_DOWNWIND_HALF_ANGLE_DEG` is a module constant in `spray_check.py` with a comment (conservative
-90° cone); promotable to rules-as-data later without touching callers.
 
 ## Section 3 — Service: `backend/services/spray_record.py`
 
@@ -158,6 +162,7 @@ Handles missing weather / empty profile (mirror `test_pdf_generator.py`).
   downwind + inside buffer → `fail`; downwind but outside buffer → not fail; crosswind → `pass`; wind
   unavailable → `needs_confirmation`; each human-attested item `needs_confirmation` unattested / `pass`
   attested; `run_spray_check` returns gates {A,B,C,D} and rolls up.
+  `spray_rules.downwind_half_angle_deg` reads the seeded value (extend `tests/test_spray_rules.py`).
 - **PDF** (`tests/test_pdf_generator.py`): valid `%PDF` magic bytes; missing weather / empty profile OK.
 - **Router** (extend `tests/test_dicamba_router.py`): `/record` requires auth + uses authenticated
   owner + 422 no-rules; `/record/{id}` 404 foreign; `/records` lists owner only.
@@ -176,8 +181,9 @@ first user's record (RLS + app gate). Old drift wizard + Phase 2/3 flow still re
 
 Automated FieldWatch / EPA Bulletins Live! Two registry integration (Phase 5); geocoding non-tolerant /
 organic neighbors for downwind geometry (stays human-attested here); professional Spanish copy review
-(Phase 5); record export/retention tooling for legal discovery. `_DOWNWIND_HALF_ANGLE_DEG` and station
-coordinates remain heuristic / UNVERIFIED — validate before any production/pilot reliance.
+(Phase 5); record export/retention tooling for legal discovery. The seeded `downwind_half_angle_deg`
+(45°) and station coordinates remain heuristic / UNVERIFIED — validate before any production/pilot
+reliance.
 
 ## Deploy note
 
