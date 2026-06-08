@@ -17,11 +17,13 @@ CheckStatus = Literal["pass", "fail", "needs_confirmation"]
 
 class ApplicatorAttestation(BaseModel):
     no_inversion_observed: Optional[bool] = None     # Gate C confirmation
-    boom_height_ok: Optional[bool] = None            # Gate D (reserved)
-    droplet_setup_ok: Optional[bool] = None          # Gate D (reserved)
+    boom_height_ok: Optional[bool] = None            # Gate D — boom at/below label max
+    droplet_setup_ok: Optional[bool] = None          # Gate D — Ultra Coarse or coarser
     sensitive_crops_checked: Optional[bool] = None   # Gate B — ¼ mi non-tolerant crops
     organic_specialty_checked: Optional[bool] = None # Gate B — ½ mi organic/specialty
-    tank_clean_ok: Optional[bool] = None             # Gate D (reserved)
+    tank_clean_ok: Optional[bool] = None             # Gate D — sprayer cleaned out
+    additives_ok: Optional[bool] = None              # Gate D — VRA+DRA present, AMS absent
+    ground_application_only: Optional[bool] = None   # Gate D — no aerial OTT application
 
 
 class ResearchStation(BaseModel):
@@ -62,3 +64,18 @@ class SprayCheckResponse(BaseModel):
     evaluated_at: datetime
     weather_available: bool
     gates: list[GateResult]
+
+
+class SprayRecord(BaseModel):
+    id: str
+    farmer_id: str
+    created_at: datetime
+    lat: float
+    lon: float
+    product: str
+    applied_at: datetime
+    overall_status: GateStatus
+    rule_version: str
+    gates: list[dict]
+    attestation: dict
+    weather_json: Optional[dict] = None

@@ -199,3 +199,22 @@ def test_runup_includes_gate_b_and_rolls_up():
     gate_b = next(g for g in resp.gates if g.gate == "B")
     assert gate_b.status == "fail"
     assert resp.overall_status == "fail"
+
+
+def test_attestation_has_gate_d_fields():
+    from models.spray import ApplicatorAttestation
+    a = ApplicatorAttestation(additives_ok=True, ground_application_only=True)
+    assert a.additives_ok is True
+    assert a.ground_application_only is True
+
+
+def test_spray_record_model_roundtrips():
+    from datetime import datetime as _dt
+    from models.spray import SprayRecord
+    rec = SprayRecord(
+        id="r1", farmer_id="f1", created_at=_dt(2026, 6, 8, 12, 0),
+        lat=34.7, lon=-91.8, product="engenia", applied_at=_dt(2026, 6, 8, 9, 0),
+        overall_status="needs_confirmation", rule_version="2026-AR-OTT",
+        gates=[], attestation={}, weather_json=None,
+    )
+    assert rec.product == "engenia"
