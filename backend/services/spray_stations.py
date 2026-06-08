@@ -46,3 +46,18 @@ def nearest_station(
         if d < best_d:
             best, best_d = s, d
     return best, best_d
+
+
+def bearing_deg(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Initial great-circle bearing from point 1 to point 2, 0-360 deg (0 = north)."""
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dlon = math.radians(lon2 - lon1)
+    x = math.sin(dlon) * math.cos(p2)
+    y = math.cos(p1) * math.sin(p2) - math.sin(p1) * math.cos(p2) * math.cos(dlon)
+    return (math.degrees(math.atan2(x, y)) + 360.0) % 360.0
+
+
+def angular_diff(a: float, b: float) -> float:
+    """Smallest absolute angle (deg) between two bearings, 0-180."""
+    d = abs(a - b) % 360.0
+    return d if d <= 180.0 else 360.0 - d

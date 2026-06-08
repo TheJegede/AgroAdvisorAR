@@ -39,3 +39,19 @@ def test_load_stations_reads_seed_file():
     stations = spray_stations.load_stations()
     assert len(stations) >= 5
     assert all({"id", "name", "lat", "lon"} <= set(s) for s in stations)
+
+
+def test_bearing_due_north_is_zero():
+    b = spray_stations.bearing_deg(34.70, -91.80, 34.85, -91.80)
+    assert abs(b - 0.0) < 0.5 or abs(b - 360.0) < 0.5
+
+
+def test_bearing_due_east_is_ninety():
+    b = spray_stations.bearing_deg(34.70, -91.80, 34.70, -91.60)
+    assert abs(b - 90.0) < 0.5
+
+
+def test_angular_diff_wraps_across_zero():
+    assert spray_stations.angular_diff(350.0, 10.0) == 20.0
+    assert spray_stations.angular_diff(10.0, 350.0) == 20.0
+    assert spray_stations.angular_diff(0.0, 180.0) == 180.0
