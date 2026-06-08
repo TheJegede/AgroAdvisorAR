@@ -10,6 +10,26 @@
 
 ---
 
+## ⏸ DEFERRED OPS — tend AFTER Phase 6 (owner decision 2026-06-08)
+
+These are intentionally parked, NOT forgotten. Do not action until Phases 5 + 6 land.
+
+1. **Apply migration `009_spray_records.sql` to prod Supabase** — the `spray_records` table + RLS
+   only exist in the repo; prod has no table yet, so `POST /dicamba/record` will 500 in prod until
+   applied. (Local/test fine — tests mock the client.)
+2. **HF backend orphan-branch redeploy** — accumulated debt for Phases 1→4. The live HF Space still
+   serves the pre-F4 backend, so `/dicamba/check` (4 gates), `/dicamba/stations`, and all
+   `/dicamba/record*` endpoints are NOT live in prod. Redeploy procedure: CLAUDE.md Priorities §2.
+   Frontend (Vercel) auto-deploys on push, so the wizard is live but calls endpoints that 404 in prod
+   until this redeploy.
+3. **Research-station coordinates UNVERIFIED** — `backend/data/ar_research_stations.json` ships with a
+   top-level `source` marked UNVERIFIED; validate the 10 UA/USDA-ARS coords against an authoritative
+   source before any pilot reliance (Gate B + Gate D both depend on them).
+
+Together: F4 is fully built + tested in-repo but **not yet exercisable in prod** until #1 + #2.
+
+---
+
 ## TL;DR — current state
 
 - **F4 DICAMBA REBUILD (PRD v3) — Phase 0 + Phase 1 SHIPPED 2026-06-08.** F4 redefined from a
