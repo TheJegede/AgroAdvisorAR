@@ -19,6 +19,11 @@ FAKE_USER = {"sub": "farmer-uuid-1"}
 RULES = {
     "rule_version": "2026-AR-OTT",
     "season_window": {"start": "2026-04-15", "end": "2026-06-30"},
+    "buffers_ft": {
+        "research_station": 5280,
+        "organic_specialty": 2640,
+        "non_tolerant_crop": 1320,
+    },
     "approved_products": [{"id": "engenia"}, {"id": "xtendimax"}, {"id": "tavium"}],
     "weather_thresholds": {
         "wind_mph": {"min": 3.0, "max": 10.0},
@@ -49,9 +54,17 @@ def test_check_returns_gates_a_and_c(monkeypatch):
     )
 
     resp = asyncio.run(router_mod.check_spray(_body(), user=FAKE_USER))
-    assert {g.gate for g in resp.gates} == {"A", "C"}
+    assert {g.gate for g in resp.gates} == {"A", "B", "C"}
     assert resp.rule_version == "2026-AR-OTT"
     assert resp.weather_available is True
+
+
+def test_list_stations_returns_seed_list():
+    router_mod = importlib.import_module("routers.dicamba")
+    stations = asyncio.run(router_mod.list_stations(user=FAKE_USER))
+    assert len(stations) >= 5
+    # Function returns raw dicts; FastAPI coerces to ResearchStation at the response layer.
+    assert all({"id", "name", "lat", "lon"} <= set(s) for s in stations)
 
 
 def test_check_422_when_no_rules_for_date(monkeypatch):

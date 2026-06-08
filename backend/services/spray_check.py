@@ -9,7 +9,7 @@ signature change.
 from datetime import datetime
 
 from models.spray import CheckResult, GateResult, SprayCheckRequest, SprayCheckResponse
-from services import spray_rules
+from services import spray_rules, spray_stations
 
 
 def _rollup(statuses: list[str]) -> str:
@@ -81,6 +81,84 @@ def evaluate_gate_a(rules: dict, req: SprayCheckRequest) -> GateResult:
     )
 
     return _gate("A", "Legal window", [season_check, product_check, cutoff_check])
+
+
+def evaluate_gate_b(
+    rules: dict, req: SprayCheckRequest, stations: list[dict]
+) -> GateResult:
+    """Gate B — Field & buffers. Verifiable station distance + human-attested neighbors.
+
+    Never guesses a pass: an empty station list yields needs_confirmation, and the
+    two neighbor checks can only reach 'pass' on an explicit applicator attestation.
+    """
+    buffers = spray_rules.buffers_ft(rules)
+    station_buf = float(buffers["research_station"])
+
+    station, dist_ft = spray_stations.nearest_station(req.lat, req.lon, stations)
+    if station is None:
+        station_check = CheckResult(
+            id="station_buffer",
+            label="Clear of research-station buffer",
+            tier="verifiable_fact",
+            status="needs_confirmation",
+            reason="Station data unavailable — confirm distance to any research station on the ground.",
+            observed=None,
+            expected=f"≥ {station_buf / 5280:.1f} mi ({station_buf:.0f} ft) from research stations",
+        )
+    else:
+        clear = dist_ft >= station_buf
+        station_check = CheckResult(
+            id="station_buffer",
+            label="Clear of research-station buffer",
+            tier="verifiable_fact",
+            status="pass" if clear else "fail",
+            reason=(
+                f"Field is outside the research-station buffer ({station['name']})."
+                if clear
+                else f"Field is inside the research-station buffer for {station['name']}."
+            ),
+            observed=f"{dist_ft / 5280:.1f} mi to {station['name']}",
+            expected=f"≥ {station_buf / 5280:.1f} mi ({station_buf:.0f} ft) from research stations",
+        )
+
+    nt_attested = req.attestation.sensitive_crops_checked is True
+    nt_buf = float(buffers["non_tolerant_crop"])
+    non_tolerant_check = CheckResult(
+        id="non_tolerant_neighbor",
+        label="Checked for non-dicamba-tolerant crops in the buffer",
+        tier="human_attested",
+        status="pass" if nt_attested else "needs_confirmation",
+        reason=(
+            "Applicator confirmed no non-tolerant crops within the buffer."
+            if nt_attested
+            else f"Confirm no non-dicamba-tolerant crops within {nt_buf / 5280:.2f} mi ({nt_buf:.0f} ft)."
+        ),
+        observed=None,
+        expected=f"no non-tolerant crops within {nt_buf / 5280:.2f} mi ({nt_buf:.0f} ft)",
+    )
+
+    org_attested = req.attestation.organic_specialty_checked is True
+    org_buf = float(buffers["organic_specialty"])
+    organic_check = CheckResult(
+        id="organic_specialty",
+        label="Checked for organic / specialty crops in the buffer",
+        tier="human_attested",
+        status="pass" if org_attested else "needs_confirmation",
+        reason=(
+            "Applicator confirmed no organic or specialty crops within the buffer. "
+            "Registry data is incomplete — voluntary FieldWatch registries are not yet integrated."
+            if org_attested
+            else f"Confirm no organic/specialty crops within {org_buf / 5280:.1f} mi ({org_buf:.0f} ft). "
+            "Registry data is incomplete — voluntary FieldWatch registries are not yet integrated."
+        ),
+        observed=None,
+        expected=f"no organic/specialty crops within {org_buf / 5280:.1f} mi ({org_buf:.0f} ft)",
+    )
+
+    return _gate(
+        "B", "Field & buffers",
+        [station_check, non_tolerant_check, organic_check],
+    )
 
 
 def evaluate_gate_c(rules: dict, weather: dict, req: SprayCheckRequest) -> GateResult:
@@ -161,9 +239,15 @@ def evaluate_gate_c(rules: dict, weather: dict, req: SprayCheckRequest) -> GateR
     )
 
 
-def run_spray_check(req: SprayCheckRequest, rules: dict, weather: dict) -> SprayCheckResponse:
-    """Assemble Gate A + C, roll up overall status, stamp the rule version."""
-    gates = [evaluate_gate_a(rules, req), evaluate_gate_c(rules, weather, req)]
+def run_spray_check(
+    req: SprayCheckRequest, rules: dict, weather: dict, stations: list[dict] | None = None
+) -> SprayCheckResponse:
+    """Assemble Gates A + B + C, roll up overall status, stamp the rule version."""
+    gates = [
+        evaluate_gate_a(rules, req),
+        evaluate_gate_b(rules, req, stations or []),
+        evaluate_gate_c(rules, weather, req),
+    ]
     return SprayCheckResponse(
         overall_status=_rollup([g.status for g in gates]),
         rule_version=rules["rule_version"],

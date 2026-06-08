@@ -12,6 +12,11 @@ from services import spray_check  # noqa: E402
 RULES = {
     "rule_version": "2026-AR-OTT",
     "season_window": {"start": "2026-04-15", "end": "2026-06-30"},
+    "buffers_ft": {
+        "research_station": 5280,
+        "organic_specialty": 2640,
+        "non_tolerant_crop": 1320,
+    },
     "approved_products": [{"id": "engenia"}, {"id": "xtendimax"}, {"id": "tavium"}],
     "weather_thresholds": {
         "wind_mph": {"min": 3.0, "max": 10.0},
@@ -19,6 +24,11 @@ RULES = {
         "rain_free_hours_required": 48,
     },
 }
+
+# A station ~10 mi from the (34.7, -91.8) test field — well outside the 1-mi buffer.
+FAR_STATION = {"id": "far", "name": "Far REC", "lat": 34.85, "lon": -91.8}
+# A station essentially on top of the test field — inside the 1-mi buffer.
+NEAR_STATION = {"id": "near", "name": "Near REC", "lat": 34.701, "lon": -91.8}
 
 
 def _req(product="engenia", at=datetime(2026, 5, 1, 9, 0), **attest):
@@ -66,6 +76,48 @@ def test_gate_a_fail_unapproved_product():
 def test_gate_a_fail_after_cutoff():
     gate = spray_check.evaluate_gate_a(RULES, _req(at=datetime(2026, 7, 1, 9, 0)))
     assert _check(gate, "within_cutoff").status == "fail"
+
+
+# ---- Gate B ----
+
+def test_gate_b_station_buffer_pass_when_field_well_outside():
+    gate = spray_check.evaluate_gate_b(RULES, _req(), [FAR_STATION])
+    assert gate.gate == "B"
+    assert _check(gate, "station_buffer").status == "pass"
+
+
+def test_gate_b_station_buffer_fail_when_field_inside_ring():
+    gate = spray_check.evaluate_gate_b(RULES, _req(), [NEAR_STATION])
+    assert _check(gate, "station_buffer").status == "fail"
+    assert gate.status == "fail"
+
+
+def test_gate_b_station_buffer_needs_confirmation_when_no_stations():
+    gate = spray_check.evaluate_gate_b(RULES, _req(), [])
+    assert _check(gate, "station_buffer").status == "needs_confirmation"
+
+
+def test_gate_b_neighbor_checks_need_confirmation_unattested():
+    gate = spray_check.evaluate_gate_b(RULES, _req(), [FAR_STATION])
+    assert _check(gate, "non_tolerant_neighbor").status == "needs_confirmation"
+    assert _check(gate, "organic_specialty").status == "needs_confirmation"
+
+
+def test_gate_b_neighbor_checks_pass_when_attested():
+    gate = spray_check.evaluate_gate_b(
+        RULES, _req(sensitive_crops_checked=True, organic_specialty_checked=True),
+        [FAR_STATION],
+    )
+    assert _check(gate, "non_tolerant_neighbor").status == "pass"
+    assert _check(gate, "organic_specialty").status == "pass"
+
+
+def test_gate_b_all_pass_when_clear_and_both_attested():
+    gate = spray_check.evaluate_gate_b(
+        RULES, _req(sensitive_crops_checked=True, organic_specialty_checked=True),
+        [FAR_STATION],
+    )
+    assert gate.status == "pass"
 
 
 # ---- Gate C ----
@@ -133,5 +185,17 @@ def test_runup_status_fail_beats_needs_confirmation_beats_pass():
 def test_response_stamps_rule_version_from_resolved_record():
     resp = spray_check.run_spray_check(_req(), RULES, _weather())
     assert resp.rule_version == "2026-AR-OTT"
-    assert {g.gate for g in resp.gates} == {"A", "C"}
+    assert {g.gate for g in resp.gates} == {"A", "B", "C"}
     assert resp.weather_available is True
+
+
+def test_runup_includes_gate_b_and_rolls_up():
+    # Field inside a station ring -> Gate B fail -> overall fail even when A+C pass.
+    resp = spray_check.run_spray_check(
+        _req(no_inversion_observed=True, sensitive_crops_checked=True,
+             organic_specialty_checked=True),
+        RULES, _weather(risk="low"), [NEAR_STATION],
+    )
+    gate_b = next(g for g in resp.gates if g.gate == "B")
+    assert gate_b.status == "fail"
+    assert resp.overall_status == "fail"

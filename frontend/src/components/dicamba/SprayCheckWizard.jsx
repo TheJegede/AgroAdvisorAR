@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { useEffect, useState } from 'react'
+import { MapContainer, TileLayer, Marker, Circle, CircleMarker, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
@@ -16,7 +16,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 })
 
-const TOTAL_STEPS = 3
+const TOTAL_STEPS = 4
 // Arkansas centroid — the field is almost always in-state.
 const AR_CENTER = [34.8, -92.2]
 
@@ -28,6 +28,14 @@ const APPROVED_PRODUCTS = [
   { id: 'tavium', name: 'Tavium Plus VaporGrip' },
 ]
 
+// Buffer rings (Gate B). Hardcoded from dicamba_rules.json buffers_ft (2026-AR-OTT),
+// converted ft → m (× 0.3048) for Leaflet Circle radii. Mirrors APPROVED_PRODUCTS.
+const BUFFERS_M = {
+  research_station: Math.round(5280 * 0.3048), // 1609 m
+  organic_specialty: Math.round(2640 * 0.3048), // 805 m
+  non_tolerant_crop: Math.round(1320 * 0.3048), // 402 m
+}
+
 const INPUT_CLS =
   'w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-base text-charcoal outline-none transition placeholder:text-gray-400 focus:border-field focus:ring-2 focus:ring-field/20 dark:border-2 dark:border-hc-border dark:bg-hc-bg dark:text-hc-fg'
 const INPUT_ERR_CLS = 'border-red-400/60 focus:border-red-400/80 focus:ring-red-300/25'
@@ -36,8 +44,8 @@ const BTN_PRIMARY_CLS =
 const BTN_GHOST_CLS =
   'flex-1 rounded-xl border border-gray-200 bg-white px-4 py-3 font-semibold text-gray-600 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 min-h-touch dark:border-2 dark:border-hc-border dark:bg-hc-bg dark:text-hc-fg'
 
-const STEP_TITLES_EN = ['Eligibility', 'Live Conditions', 'Confirm & Result']
-const STEP_TITLES_ES = ['Elegibilidad', 'Condiciones Actuales', 'Confirmar y Resultado']
+const STEP_TITLES_EN = ['Eligibility', 'Field & Buffers', 'Live Conditions', 'Confirm & Result']
+const STEP_TITLES_ES = ['Elegibilidad', 'Campo y Zonas', 'Condiciones Actuales', 'Confirmar y Resultado']
 
 // Status → high-contrast badge (≥4.5:1 per the design audit Low-badge fix).
 const STATUS_BADGE = {
@@ -110,12 +118,12 @@ function ClickHandler({ onPick }) {
   return null
 }
 
-// Click-to-place single marker; lifts the chosen lat/lon up via onPick.
-function MapPicker({ position, onPick }) {
+// Click-to-place field marker + Gate B buffer rings + research-station markers.
+function MapPicker({ position, onPick, stations }) {
   return (
     <MapContainer
       center={position || AR_CENTER}
-      zoom={position ? 11 : 7}
+      zoom={position ? 12 : 7}
       style={{ height: '320px', width: '100%' }}
       className="rounded-xl"
     >
@@ -124,7 +132,23 @@ function MapPicker({ position, onPick }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ClickHandler onPick={onPick} />
-      {position && <Marker position={position} />}
+      {position && (
+        <>
+          {/* Buffer rings, largest first so smaller rings stay visible on top. */}
+          <Circle center={position} radius={BUFFERS_M.research_station}
+            pathOptions={{ color: '#b91c1c', weight: 1, fillOpacity: 0.04 }} />
+          <Circle center={position} radius={BUFFERS_M.organic_specialty}
+            pathOptions={{ color: '#b45309', weight: 1, fillOpacity: 0.05 }} />
+          <Circle center={position} radius={BUFFERS_M.non_tolerant_crop}
+            pathOptions={{ color: '#15803d', weight: 1, fillOpacity: 0.06 }} />
+          <Marker position={position} />
+        </>
+      )}
+      {/* Research stations as CircleMarkers — distinct from the field pin, no icon asset. */}
+      {(stations || []).map((s) => (
+        <CircleMarker key={s.id} center={[s.lat, s.lon]} radius={5}
+          pathOptions={{ color: '#1d4ed8', fillColor: '#1d4ed8', fillOpacity: 0.9 }} />
+      ))}
     </MapContainer>
   )
 }
@@ -163,11 +187,12 @@ function GateResultCard({ gate, es }) {
 export default function SprayCheckWizard() {
   const { lang } = useLang()
   const es = lang === 'es'
-  const { runCheck, loading, error } = useSprayCheck()
+  const { runCheck, fetchStations, loading, error } = useSprayCheck()
 
   const [step, setStep] = useState(1)
   const [errs, setErrs] = useState({})
   const [result, setResult] = useState(null)
+  const [stations, setStations] = useState([])
   const [form, setForm] = useState({
     product: '',
     license_attested: false,
@@ -175,7 +200,14 @@ export default function SprayCheckWizard() {
     lat: null,
     lon: null,
     no_inversion_observed: false,
+    sensitive_crops_checked: false,
+    organic_specialty_checked: false,
   })
+
+  // Load the static station seed list once for the Gate B map markers.
+  useEffect(() => {
+    fetchStations().then(setStations).catch(() => setStations([]))
+  }, [fetchStations])
 
   const stepTitles = es ? STEP_TITLES_ES : STEP_TITLES_EN
 
@@ -191,7 +223,11 @@ export default function SprayCheckWizard() {
         lat: merged.lat,
         lon: merged.lon,
         product: merged.product,
-        attestation: { no_inversion_observed: merged.no_inversion_observed },
+        attestation: {
+          no_inversion_observed: merged.no_inversion_observed,
+          sensitive_crops_checked: merged.sensitive_crops_checked,
+          organic_specialty_checked: merged.organic_specialty_checked,
+        },
       })
       setResult(res)
       return res
@@ -212,6 +248,12 @@ export default function SprayCheckWizard() {
     await check({ no_inversion_observed: checked })
   }
 
+  // Gate B neighbor confirmations — toggling re-runs /check (like the inversion toggle).
+  async function handleGateBToggle(field, checked) {
+    set(field, checked)
+    await check({ [field]: checked })
+  }
+
   function handleNext() {
     const stepErrs = getSprayStepErrors(form, step)
     if (Object.keys(stepErrs).length > 0) {
@@ -225,6 +267,10 @@ export default function SprayCheckWizard() {
   // Derive a compact live-conditions summary from Gate C's observed values.
   const gateC = result?.gates?.find((g) => g.gate === 'C')
   const observedOf = (id) => gateC?.checks?.find((c) => c.id === id)?.observed
+
+  // Gate B nearest-station distance label.
+  const gateB = result?.gates?.find((g) => g.gate === 'B')
+  const stationDistance = gateB?.checks?.find((c) => c.id === 'station_buffer')?.observed
 
   const failingReasons = (result?.gates || [])
     .flatMap((g) => g.checks)
@@ -297,44 +343,121 @@ export default function SprayCheckWizard() {
         </div>
       )}
 
-      {/* Step 2 — Live conditions (Gate C) */}
+      {/* Step 2 — Field & Buffers (Gate B) */}
       {step === 2 && (
         <div className="space-y-4">
           <p className="text-sm font-medium text-charcoal dark:text-hc-fg">
-            {es ? 'Toque su campo en el mapa para colocar un pin.' : 'Tap your field on the map to drop a pin.'}
+            {es ? 'Toque su campo en el mapa para dibujar las zonas de protección.' : 'Tap your field on the map to draw the buffer rings.'}
           </p>
           <MapPicker
             position={form.lat != null ? [form.lat, form.lon] : null}
             onPick={handlePick}
+            stations={stations}
           />
           <FieldError msg={errs.pin} />
 
+          {/* Buffer-ring legend. */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-hc-fg">
+            <span><span className="inline-block w-3 h-3 rounded-full bg-red-700/70 mr-1 align-middle" />{es ? 'Estación de inv. (1 mi)' : 'Research station (1 mi)'}</span>
+            <span><span className="inline-block w-3 h-3 rounded-full bg-amber-700/70 mr-1 align-middle" />{es ? 'Orgánico/especial (½ mi)' : 'Organic/specialty (½ mi)'}</span>
+            <span><span className="inline-block w-3 h-3 rounded-full bg-green-700/70 mr-1 align-middle" />{es ? 'Cultivo no tolerante (¼ mi)' : 'Non-tolerant crop (¼ mi)'}</span>
+            <span><span className="inline-block w-3 h-3 rounded-full bg-blue-700 mr-1 align-middle" />{es ? 'Estación de investigación' : 'Research station'}</span>
+          </div>
+
           {loading && (
             <p className="text-sm text-gray-500 dark:text-hc-fg">
-              {es ? 'Obteniendo condiciones...' : 'Fetching live conditions...'}
+              {es ? 'Calculando distancias...' : 'Calculating distances...'}
+            </p>
+          )}
+
+          {stationDistance && (
+            <p className="text-sm text-gray-600 dark:text-hc-fg" data-testid="station-distance">
+              {es ? 'Estación más cercana' : 'Nearest station'}: {stationDistance}
             </p>
           )}
 
           {result && (
-            <div className="bg-gray-50 rounded-xl p-4 text-sm dark:bg-hc-bg" data-testid="conditions-summary">
-              <p className="font-semibold text-charcoal dark:text-hc-fg mb-2">
-                {es ? 'Condiciones actuales' : 'Live conditions'}
-                {!result.weather_available && (
-                  <span className="ml-2 text-xs font-normal text-amber-700 dark:text-hc-fg">
-                    {es ? '(clima no disponible)' : '(weather unavailable)'}
+            <div className="space-y-2">
+              <label className="flex items-start gap-2 text-sm text-charcoal dark:text-hc-fg cursor-pointer bg-gray-50 rounded-xl p-3 dark:bg-hc-bg">
+                <input
+                  type="checkbox"
+                  checked={form.sensitive_crops_checked}
+                  onChange={(e) => handleGateBToggle('sensitive_crops_checked', e.target.checked)}
+                  className="rounded accent-field mt-0.5"
+                  data-testid="non-tolerant-toggle"
+                />
+                {es
+                  ? 'Confirmo que revisé que no hay cultivos no tolerantes al dicamba dentro de ¼ de milla.'
+                  : 'I confirm I checked for non-dicamba-tolerant crops within ¼ mile.'}
+              </label>
+              <label className="flex items-start gap-2 text-sm text-charcoal dark:text-hc-fg cursor-pointer bg-gray-50 rounded-xl p-3 dark:bg-hc-bg">
+                <input
+                  type="checkbox"
+                  checked={form.organic_specialty_checked}
+                  onChange={(e) => handleGateBToggle('organic_specialty_checked', e.target.checked)}
+                  className="rounded accent-field mt-0.5"
+                  data-testid="organic-toggle"
+                />
+                <span>
+                  {es
+                    ? 'Confirmo que revisé que no hay cultivos orgánicos o especiales dentro de ½ milla.'
+                    : 'I confirm I checked for organic or specialty crops within ½ mile.'}
+                  <span className="block text-xs text-gray-500 dark:text-hc-fg mt-0.5">
+                    {es
+                      ? 'Los registros voluntarios (FieldWatch) aún no están integrados — datos incompletos.'
+                      : 'Voluntary registries (FieldWatch) are not yet integrated — data is incomplete.'}
                   </span>
-                )}
-              </p>
-              <p className="text-gray-600 dark:text-hc-fg">
-                {es ? 'Viento' : 'Wind'}: {observedOf('wind_in_range') ?? '—'} · {es ? 'Temp' : 'Temp'}: {observedOf('temp_in_range') ?? '—'} · {es ? 'Lluvia 48h' : '48h rain'}: {observedOf('rain_free_48h') ?? '—'}
-              </p>
+                </span>
+              </label>
             </div>
           )}
         </div>
       )}
 
-      {/* Step 3 — Attest + result */}
+      {/* Step 3 — Live conditions (Gate C) */}
       {step === 3 && (
+        <div className="space-y-4">
+          {result ? (
+            <>
+              <div className="bg-gray-50 rounded-xl p-4 text-sm dark:bg-hc-bg" data-testid="conditions-summary">
+                <p className="font-semibold text-charcoal dark:text-hc-fg mb-2">
+                  {es ? 'Condiciones actuales' : 'Live conditions'}
+                  {!result.weather_available && (
+                    <span className="ml-2 text-xs font-normal text-amber-700 dark:text-hc-fg">
+                      {es ? '(clima no disponible)' : '(weather unavailable)'}
+                    </span>
+                  )}
+                </p>
+                <p className="text-gray-600 dark:text-hc-fg">
+                  {es ? 'Viento' : 'Wind'}: {observedOf('wind_in_range') ?? '—'} · {es ? 'Temp' : 'Temp'}: {observedOf('temp_in_range') ?? '—'} · {es ? 'Lluvia 48h' : '48h rain'}: {observedOf('rain_free_48h') ?? '—'}
+                </p>
+              </div>
+
+              <label className="flex items-start gap-2 text-sm text-charcoal dark:text-hc-fg cursor-pointer bg-gray-50 rounded-xl p-3 dark:bg-hc-bg">
+                <input
+                  type="checkbox"
+                  checked={form.no_inversion_observed}
+                  onChange={(e) => handleInversionToggle(e.target.checked)}
+                  className="rounded accent-field mt-0.5"
+                  data-testid="inversion-toggle"
+                />
+                {es
+                  ? 'Confirmo que no observo una inversión térmica en el campo en este momento.'
+                  : 'I confirm I do not observe a temperature inversion in the field right now.'}
+              </label>
+            </>
+          ) : (
+            <Alert variant="info">
+              {es
+                ? 'Vuelva al paso 2 y coloque un pin para ejecutar la verificación.'
+                : 'Go back to step 2 and drop a pin to run the check.'}
+            </Alert>
+          )}
+        </div>
+      )}
+
+      {/* Step 4 — Confirm & result */}
+      {step === 4 && (
         <div className="space-y-4">
           {result ? (
             <>
@@ -365,19 +488,6 @@ export default function SprayCheckWizard() {
                     : 'This is not an authorization to spray. Always verify the product label and current state rules.'}
                 </p>
               </div>
-
-              <label className="flex items-start gap-2 text-sm text-charcoal dark:text-hc-fg cursor-pointer bg-gray-50 rounded-xl p-3 dark:bg-hc-bg">
-                <input
-                  type="checkbox"
-                  checked={form.no_inversion_observed}
-                  onChange={(e) => handleInversionToggle(e.target.checked)}
-                  className="rounded accent-field mt-0.5"
-                  data-testid="inversion-toggle"
-                />
-                {es
-                  ? 'Confirmo que no observo una inversión térmica en el campo en este momento.'
-                  : 'I confirm I do not observe a temperature inversion in the field right now.'}
-              </label>
 
               <div className="space-y-3">
                 {result.gates.map((g) => (

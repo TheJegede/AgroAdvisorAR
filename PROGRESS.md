@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + Phase 1 + Phase 2 wizard shipped)
+> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + 1 + 2 wizard + Phase 3 Gate B map shipped)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -43,9 +43,26 @@
   values; `SprayCheckResponse` exposes no separate soil/sunrise fields, so those (named in the plan's
   step-2 summary) are omitted. (3) `CLAUDE.md` is gitignored locally → its F4 doc update is NOT in the
   commit (local-only); PROGRESS.md + memory carry the record instead.
-  **Out of scope (later phases):** Gate B buffer rings / station pins (Phase 3), record save + PDF
-  (Phase 4), pro Spanish review (Phase 5 — copy is bilingual from the start but not professionally
-  reviewed).
+  **Phase 3 — Gate B Field & Buffer Map SHIPPED 2026-06-08** (`docs/superpowers/plans/2026-06-08-f4-dicamba-phase3-gateB-map.md`):
+  wizard grows from 3 → **4 steps** (Eligibility A → **Field & Buffers B** → Live Conditions C →
+  Confirm & Result); the field pin moves to the new Step 2. Backend: new
+  `backend/data/ar_research_stations.json` (10 UA/USDA-ARS stations, marked **UNVERIFIED** at source),
+  `services/spray_stations.py` (`load_stations` + `haversine_ft` + `nearest_station`),
+  `spray_rules.buffers_ft` accessor, `evaluate_gate_b` (verifiable `station_buffer` distance + two
+  human-attested neighbor checks: `non_tolerant_neighbor` ¼ mi, `organic_specialty` ½ mi marked
+  Partial / registry-incomplete), `run_spray_check` gains `stations` (gate order A,B,C), new
+  `GET /dicamba/stations`, `ResearchStation` model, `ApplicatorAttestation.organic_specialty_checked`.
+  Frontend: `useSprayCheck.fetchStations()`; `SprayCheckWizard` draws three `Circle` buffer rings
+  (ft→m × 0.3048, `BUFFERS_M` constant) + station `CircleMarker`s on the react-leaflet map, nearest-
+  station distance label, two Gate B confirm checkboxes that re-run `/check` (same pattern as inversion
+  toggle). Station data single-sourced server-side (both `evaluate_gate_b` + `/stations` read
+  `load_stations()`). TDD: new `test_spray_stations.py` (5) + extended `test_spray_check.py`/
+  `test_dicamba_router.py`; **backend 179 pass**, **frontend 37 vitest pass**, lint clean, playwright
+  spray spec **2 pass** (mocks `/stations` + `/check`, asserts ≥4 leaflet-interactive paths + Gate B
+  card + toggle re-runs). Still **HF BACKEND NOT YET REDEPLOYED** (same as Phase 1/2).
+  **Out of scope (later phases):** record save + PDF (Phase 4), Gate D downwind geometry (wind × Gate B
+  sites, Phase 4), pro Spanish review (Phase 5). Station coordinates ship **UNVERIFIED** — owner must
+  validate before any production/pilot reliance.
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.

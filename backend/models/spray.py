@@ -16,11 +16,19 @@ CheckStatus = Literal["pass", "fail", "needs_confirmation"]
 
 
 class ApplicatorAttestation(BaseModel):
-    no_inversion_observed: Optional[bool] = None    # Gate C confirmation
-    boom_height_ok: Optional[bool] = None           # Gate D (reserved)
-    droplet_setup_ok: Optional[bool] = None         # Gate D (reserved)
-    sensitive_crops_checked: Optional[bool] = None  # Gate B (reserved)
-    tank_clean_ok: Optional[bool] = None            # Gate D (reserved)
+    no_inversion_observed: Optional[bool] = None     # Gate C confirmation
+    boom_height_ok: Optional[bool] = None            # Gate D (reserved)
+    droplet_setup_ok: Optional[bool] = None          # Gate D (reserved)
+    sensitive_crops_checked: Optional[bool] = None   # Gate B — ¼ mi non-tolerant crops
+    organic_specialty_checked: Optional[bool] = None # Gate B — ½ mi organic/specialty
+    tank_clean_ok: Optional[bool] = None             # Gate D (reserved)
+
+
+class ResearchStation(BaseModel):
+    id: str
+    name: str
+    lat: float
+    lon: float
 
 
 class SprayCheckRequest(BaseModel):

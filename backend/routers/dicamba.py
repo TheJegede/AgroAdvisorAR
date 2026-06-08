@@ -6,10 +6,11 @@ carries no owner field and auth is enforced via get_current_user.
 """
 from fastapi import APIRouter, Depends, HTTPException
 
-from models.spray import SprayCheckRequest, SprayCheckResponse
+from models.spray import ResearchStation, SprayCheckRequest, SprayCheckResponse
 from services.auth import get_current_user
 from services.spray_check import run_spray_check
 from services.spray_rules import RulesNotFoundError, resolve_rules
+from services.spray_stations import load_stations
 from services.weather_now import fetch_forecast_conditions
 
 router = APIRouter(prefix="/dicamba", tags=["dicamba"])
@@ -29,4 +30,15 @@ async def check_spray(
     # Unapproved product is NOT a 422 — Gate A reports product_approved=fail so
     # the checklist surfaces the failure rather than hiding it.
     weather = await fetch_forecast_conditions(body.lat, body.lon, body.at)
-    return run_spray_check(body, rules, weather)
+    stations = load_stations()
+    return run_spray_check(body, rules, weather, stations)
+
+
+@router.get("/stations", response_model=list[ResearchStation])
+async def list_stations(user: dict = Depends(get_current_user)):
+    """Static research-station seed list so the Gate B map can plot markers.
+
+    Single source with evaluate_gate_b (both read spray_stations.load_stations).
+    Coordinates ship UNVERIFIED (see ar_research_stations.json `source`).
+    """
+    return load_stations()

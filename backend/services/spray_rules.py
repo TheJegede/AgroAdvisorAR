@@ -77,3 +77,8 @@ def temp_bounds(rules: dict) -> tuple[float, float]:
 
 def rain_free_hours_required(rules: dict) -> int:
     return int(rules["weather_thresholds"]["rain_free_hours_required"])
+
+
+def buffers_ft(rules: dict) -> dict:
+    """Buffer distances in feet (research_station, organic_specialty, non_tolerant_crop)."""
+    return rules["buffers_ft"]

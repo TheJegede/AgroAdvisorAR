@@ -1,0 +1,15 @@
+{
+  "source": "UNVERIFIED — curated from public UA System Division of Agriculture / USDA-ARS station listings; re-confirm coordinates before production (PRD v3 §6/§8)",
+  "stations": [
+    {"id": "rrec_stuttgart", "name": "Rice Research & Extension Center — Stuttgart", "lat": 34.4664, "lon": -91.4151},
+    {"id": "nerec_keiser", "name": "Northeast Research & Extension Center — Keiser", "lat": 35.6797, "lon": -90.0856},
+    {"id": "ptrs_colt", "name": "Pine Tree Research Station — Colt", "lat": 35.1240, "lon": -90.9290},
+    {"id": "rohwer_res", "name": "Rohwer Research Station — Rohwer", "lat": 33.8001, "lon": -91.2724},
+    {"id": "lmcrec_marianna", "name": "Lon Mann Cotton Research & Extension Center — Marianna", "lat": 34.7270, "lon": -90.7676},
+    {"id": "serec_monticello", "name": "Southeast Research & Extension Center — Monticello", "lat": 33.6290, "lon": -91.7710},
+    {"id": "vres_kibler", "name": "Vegetable Research Station — Kibler", "lat": 35.4262, "lon": -94.2305},
+    {"id": "fres_clarksville", "name": "Fruit Research Station — Clarksville", "lat": 35.5312, "lon": -93.4663},
+    {"id": "newport_ext", "name": "Newport Extension Center — Newport", "lat": 35.6045, "lon": -91.2818},
+    {"id": "main_fayetteville", "name": "Main Station — Fayetteville", "lat": 36.0972, "lon": -94.1733}
+  ]
+}

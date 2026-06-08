@@ -10,11 +10,13 @@ export function getSprayStepErrors(form, step) {
     if (!form.license_attested) errs.license = 'You must attest your applicator license'
   }
   if (step === 2) {
-    // 0 is a valid coordinate — check for null/undefined, not falsiness.
+    // Step 2 is now Field & Buffers (Gate B). 0 is a valid coordinate —
+    // check for null/undefined, not falsiness.
     if (form.lat == null || form.lon == null) {
-      errs.pin = 'Drop a pin on your field to pull live conditions'
+      errs.pin = 'Drop a pin on your field to draw buffers and pull conditions'
     }
   }
+  // Steps 3 (live conditions) and 4 (result) impose no required fields.
   return errs
 }
 
@@ -44,5 +46,11 @@ export function useSprayCheck() {
     }
   }, [])
 
-  return { runCheck, loading, error }
+  // Static research-station seed list for the Gate B map markers.
+  const fetchStations = useCallback(async () => {
+    const res = await api.get('/dicamba/stations')
+    return res.data
+  }, [])
+
+  return { runCheck, fetchStations, loading, error }
 }

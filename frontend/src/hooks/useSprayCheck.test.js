@@ -38,8 +38,13 @@ describe('getSprayStepErrors', () => {
     expect(errs.pin).toBeFalsy()
   })
 
-  it('imposes no required fields on step 3', () => {
+  it('imposes no required fields on step 3 (live conditions)', () => {
     const errs = getSprayStepErrors({}, 3)
+    expect(Object.keys(errs)).toHaveLength(0)
+  })
+
+  it('imposes no required fields on step 4 (result)', () => {
+    const errs = getSprayStepErrors({}, 4)
     expect(Object.keys(errs)).toHaveLength(0)
   })
 })
