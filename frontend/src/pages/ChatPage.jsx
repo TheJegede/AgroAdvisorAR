@@ -7,8 +7,9 @@ import { deriveFollowUps } from '../utils/deriveFollowUps'
 import ChatHistory from '../components/chat/ChatHistory'
 import ChatInput from '../components/chat/ChatInput'
 import Alert from '../components/ui/Alert'
-import Spinner from '../components/ui/Spinner'
+import Skeleton from '../components/ui/Skeleton'
 import AlertBanner from '../components/AlertBanner'
+
 
 const TECHNICAL_ERROR_RE = /pydantic|langchain|structured output|validation|failed|parsing|request failed|error code|failed_generation|tool_use_failed/i
 
@@ -147,8 +148,8 @@ export default function ChatPage() {
 
   if (loadingSession) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Spinner />
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        <Skeleton count={3} />
       </div>
     )
   }

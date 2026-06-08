@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useLang } from '../contexts/LangContext'
 import { useSessions } from '../hooks/useSessions'
 import SessionListItem from '../components/sessions/SessionListItem'
-import Spinner from '../components/ui/Spinner'
+import Skeleton from '../components/ui/Skeleton'
 import Button from '../components/ui/Button'
 import Alert from '../components/ui/Alert'
 
@@ -39,7 +39,19 @@ export default function SessionsPage() {
         </Button>
 
         {error && <Alert variant="error">{error}</Alert>}
-        {loading && <div className="flex justify-center py-8"><Spinner /></div>}
+        {loading && (
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="w-full bg-white border border-gray-100 rounded-card px-4 py-3.5 min-h-touch flex flex-col gap-2.5 dark:bg-hc-surface dark:border-2 dark:border-hc-border"
+              >
+                <Skeleton variant="text" className="w-3/4" />
+                <Skeleton variant="text" className="w-1/4 h-3" />
+              </div>
+            ))}
+          </div>
+        )}
         {!loading && !error && sessions.length === 0 && (
           <p className="text-sm text-gray-600 dark:text-hc-fg text-center py-8">{t.noSessions}</p>
         )}

@@ -7,7 +7,7 @@ import Button from '../ui/Button'
 import Alert from '../ui/Alert'
 import CropCheckboxGroup from './CropCheckboxGroup'
 import { COUNTY_OPTIONS } from '../../constants/counties'
-import Spinner from '../ui/Spinner'
+import Skeleton from '../ui/Skeleton'
 
 export default function ProfileForm() {
   const { t, setLang } = useLang()
@@ -29,7 +29,51 @@ export default function ProfileForm() {
     }
   }, [profile])
 
-  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-5 py-2">
+        {/* Full Name field */}
+        <div className="flex flex-col gap-2">
+          <Skeleton variant="text" className="w-24 h-4" />
+          <Skeleton variant="text" className="w-full h-10" />
+        </div>
+
+        {/* County field */}
+        <div className="flex flex-col gap-2">
+          <Skeleton variant="text" className="w-16 h-4" />
+          <Skeleton variant="text" className="w-full h-10" />
+        </div>
+
+        {/* Crops field */}
+        <div className="flex flex-col gap-2">
+          <Skeleton variant="text" className="w-28 h-4" />
+          <div className="flex gap-4">
+            <Skeleton variant="text" className="w-20 h-8 rounded-full" />
+            <Skeleton variant="text" className="w-20 h-8 rounded-full" />
+            <Skeleton variant="text" className="w-20 h-8 rounded-full" />
+          </div>
+        </div>
+
+        {/* Language field */}
+        <div className="flex flex-col gap-2">
+          <Skeleton variant="text" className="w-32 h-4" />
+          <div className="flex gap-6">
+            <div className="flex items-center gap-2">
+              <Skeleton variant="circle" className="w-5 h-5" />
+              <Skeleton variant="text" className="w-16 h-4" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton variant="circle" className="w-5 h-5" />
+              <Skeleton variant="text" className="w-16 h-4" />
+            </div>
+          </div>
+        </div>
+
+        {/* Button */}
+        <Skeleton variant="text" className="w-full h-11 mt-2" />
+      </div>
+    )
+  }
   if (loadError) return <Alert variant="error">{loadError}</Alert>
   if (!form) return null
 

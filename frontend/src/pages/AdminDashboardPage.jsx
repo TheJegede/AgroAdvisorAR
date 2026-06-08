@@ -6,7 +6,7 @@ import {
 import { Link } from 'react-router-dom'
 import { useLang } from '../contexts/LangContext'
 import { useAdminMetrics, useDriftReportAdmin } from '../hooks/useAdmin'
-import Spinner from '../components/ui/Spinner'
+import Skeleton from '../components/ui/Skeleton'
 import Alert from '../components/ui/Alert'
 import api from '../lib/api'
 import { AR_COUNTIES } from '../constants/counties'
@@ -68,8 +68,31 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Spinner />
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <Skeleton variant="text" className="w-48 h-8" />
+          <Skeleton variant="text" className="w-32 h-10" />
+        </div>
+        
+        {/* KPI Cards Skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-card p-4 flex flex-col gap-2 dark:bg-hc-surface dark:border-2 dark:border-hc-border">
+              <Skeleton variant="text" className="w-1/2 h-3" />
+              <Skeleton variant="text" className="w-3/4 h-8" />
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="bg-white border border-gray-100 rounded-card p-4 flex flex-col gap-3 dark:bg-hc-surface dark:border-2 dark:border-hc-border">
+              <Skeleton variant="text" className="w-1/3 h-4" />
+              <Skeleton variant="text" className="w-full h-48" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -222,7 +245,9 @@ export default function AdminDashboardPage() {
           {/* Report list */}
           <SectionCard title="Reports">
             {driftLoading ? (
-              <Spinner />
+              <div className="space-y-3 py-2">
+                <Skeleton variant="text" className="w-full h-5" count={3} />
+              </div>
             ) : filteredDrift.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-hc-fg">No drift reports found.</p>
             ) : (

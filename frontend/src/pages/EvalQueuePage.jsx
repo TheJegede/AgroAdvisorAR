@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLang } from '../contexts/LangContext'
 import { useEvalQueue } from '../hooks/useAdmin'
-import Spinner from '../components/ui/Spinner'
+import Skeleton from '../components/ui/Skeleton'
 import Alert from '../components/ui/Alert'
+
 
 function ScoreButtons({ value, onChange }) {
   return (
@@ -270,7 +271,9 @@ export default function EvalQueuePage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       {loading ? (
-        <div className="flex justify-center py-8"><Spinner /></div>
+        <div className="flex flex-col gap-4">
+          <Skeleton count={3} />
+        </div>
       ) : items.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-hc-fg text-center py-8">{t.queueEmpty}</p>
       ) : (
