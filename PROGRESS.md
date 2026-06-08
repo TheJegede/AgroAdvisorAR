@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + 1 + 2 wizard + Phase 3 Gate B map shipped)
+> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 0 + 1 + 2 wizard + Phase 3 Gate B map + Phase 4 record/Gate D shipped)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
@@ -63,6 +63,33 @@
   **Out of scope (later phases):** record save + PDF (Phase 4), Gate D downwind geometry (wind × Gate B
   sites, Phase 4), pro Spanish review (Phase 5). Station coordinates ship **UNVERIFIED** — owner must
   validate before any production/pilot reliance.
+  **Phase 4 — Record Generator + Gate D SHIPPED 2026-06-08** (`docs/superpowers/plans/2026-06-08-f4-dicamba-phase4-record-impl.md`):
+  adds the 4th gate + an immutable PDF-backed spray record. Backend: `weather_thresholds.downwind_half_angle_deg=45`
+  rules-as-data + `spray_rules.downwind_half_angle_deg`; `spray_stations.bearing_deg` + `angular_diff`
+  geometry helpers; `evaluate_gate_d` (verifiable **downwind cone** check — flags a research station only
+  when it sits inside its 1-mi buffer AND within the ±45° downwind cone of the current wind; `needs_confirmation`
+  when wind direction is unavailable — plus 5 human-attested equipment checks: boom height, droplet size,
+  tank clean, additives VRA/DRA+no-AMS, ground-application-only), wired into `run_spray_check` so `/check`
+  now returns gates A,B,C,D. New immutable `spray_records` table (`009_spray_records.sql`, RLS owner
+  SELECT+INSERT only, **no UPDATE/DELETE policy** = append-only, admin SELECT) + `services/spray_record.py`
+  (create/get/list, service-role client, `farmer_id` stamped from JWT never payload = anti-IDOR, no mutate
+  surface) + `generate_spray_record_pdf` (ReportLab). New endpoints `POST /dicamba/record` (re-runs the check
+  server-side authoritatively then persists the frozen snapshot), `GET /dicamba/records`, `GET /dicamba/record/{id}`,
+  `GET /dicamba/record/{id}/pdf`. Frontend: `useSprayCheck.saveRecord`; wizard Step 4 gains 5 Gate D
+  attestation checkboxes (each re-runs `/check`) + **Save record** → **Download record PDF**; new
+  `useSprayRecords` hook (+ standalone `fetchSprayRecords` for the unit test — project has no DOM test env),
+  `SprayRecordsPage` at `/spray-records` (sidebar nav + EN/ES i18n `sprayRecords`). TDD: new
+  `test_spray_record.py` (4) + extended `test_spray_rules.py`/`test_spray_stations.py`/`test_spray_check.py`/
+  `test_dicamba_router.py`/`test_pdf_generator.py`; **backend 201 pass**, **frontend 38 vitest pass**, lint
+  clean, **playwright spray spec 3 pass** (Gate D attest → save → PDF link + records-list). **Deviations:**
+  (1) plan's `test_list_records_uses_owner` lambda used `setdefault(...) or [...]` which returns the truthy
+  fid string not the list — rewrote as a named fn. (2) plan's hook test used `@testing-library/react`
+  `renderHook`, but the repo has no testing-library/DOM env — instead exported `fetchSprayRecords` and
+  unit-tested that; hook UI is covered by e2e. (3) e2e mock keeps overall rollup on Gate B+inversion (Gate D
+  rides alongside) so the Step-4 outcome-banner assertion still holds before Gate D is attested.
+  **Still PENDING (owner):** apply `009_spray_records.sql` to prod Supabase + **HF backend orphan-branch
+  redeploy** so `/record` + the 4th gate go live (same redeploy debt as Phases 1–3). Station coords still
+  **UNVERIFIED**.
 - **Prod: LIVE (2026-05-30).** Frontend Vercel `agroadvisor-eta.vercel.app` → API proxy →
   backend HF Spaces `whoisluwah-agroadvisor-backend.hf.space`.
 - **SIDEBAR SESSIONS AUTO-REFRESH = SHIPPED 2026-06-02 (session 8).** Fixed new chat sessions not appearing in the sidebar until manual refresh. Removed forced key remount from ChatPageWrapper, updated ChatPage to navigate to search query param on session creation, and implemented ref-based activeSessionId synchronization in useEffect. Verified 26/26 frontend tests pass, 108/108 backend tests pass, and ESLint is clean.
