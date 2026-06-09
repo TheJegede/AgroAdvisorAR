@@ -70,11 +70,23 @@ def _build_record_payload(body: SprayCheckRequest, resp: SprayCheckResponse, wea
     }
 
 
+def _require_legal_attestations(body: SprayCheckRequest) -> None:
+    if not (
+        body.attestation.license_attested is True
+        and body.attestation.training_attested is True
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Applicator license and annual dicamba training attestations are required before saving a spray record.",
+        )
+
+
 @router.post("/record", response_model=SprayRecord, status_code=201)
 async def create_spray_record(
     body: SprayCheckRequest,
     user: dict = Depends(get_current_user),
 ):
+    _require_legal_attestations(body)
     try:
         rules = resolve_rules(body.at.date())
     except RulesNotFoundError:

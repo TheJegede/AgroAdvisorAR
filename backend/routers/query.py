@@ -9,6 +9,7 @@ from services.classifier import classify_query
 from services.rag import run_rag_query
 from services.translation import translate_to_en, translate_advisory_to_es
 from services.session import add_message as save_message
+from services.session import get_messages
 from services.user import get_profile
 from services.cache import rate_limit_hit
 from services.sanitizer import sanitize, InjectionDetected, MessageTooLong
@@ -24,6 +25,8 @@ QUERY_WINDOW_SECONDS = 3600
 # User-facing SSE error — never leak raw exception text (provider URLs, internal
 # messages, occasional key fragments in langchain errors) to the browser.
 GENERIC_STREAM_ERROR = "Something went wrong generating your advisory. Please try again."
+TRUSTED_HISTORY_LIMIT = 10
+_HISTORY_ROLES = {"user", "assistant"}
 
 
 class QueryRequest(BaseModel):
@@ -38,6 +41,37 @@ class OutOfScopeResponse(BaseModel):
     message: str
     category: str
     message_id: str | None = None  # populated when session_id provided
+
+
+def _normalize_history(rows: list[dict], *, sanitize_content: bool) -> list[dict]:
+    history: list[dict] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        role = str(row.get("role", "")).strip().lower()
+        if role not in _HISTORY_ROLES:
+            continue
+
+        content = str(row.get("content", ""))
+        if sanitize_content:
+            content = sanitize(content)
+        else:
+            content = content.strip()
+        if not content:
+            continue
+
+        history.append({"role": role, "content": content})
+    return history[-TRUSTED_HISTORY_LIMIT:]
+
+
+def _trusted_rag_history(req: QueryRequest, user_id: str) -> list[dict]:
+    if req.session_id:
+        rows = get_messages(req.session_id, user_id)
+        if rows is None:
+            return []
+        return _normalize_history(rows, sanitize_content=False)
+
+    return _normalize_history(req.session_history, sanitize_content=True)
 
 
 async def maybe_translate_query(message: str, language: str, user_id: str | None = None) -> str:
@@ -76,6 +110,11 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
     except (InjectionDetected, MessageTooLong) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    try:
+        session_history = _trusted_rag_history(req, user["sub"])
+    except (InjectionDetected, MessageTooLong) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
     profile = get_profile(user["sub"])
     county_fips = (profile or {}).get("county_fips") or config.DEFAULT_COUNTY_FIPS
     rice_fields = (profile or {}).get("rice_fields") or []
@@ -111,7 +150,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 county_fips=county_fips,
                 language="en",
                 category=category,
-                session_history=req.session_history,
+                session_history=session_history,
                 rice_fields=rice_fields,
                 user_id=user["sub"],
             )

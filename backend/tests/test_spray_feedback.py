@@ -51,3 +51,19 @@ def test_insert_spray_feedback_stamps_farmer_id(monkeypatch):
     assert sink[0]["record_id"] == "rec-1"
     assert sink[0]["rating"] == 1
     assert sink[0]["comment"] == "good"
+
+
+def test_spray_feedback_rls_is_append_only_for_farmers():
+    migration = (
+        Path(__file__).resolve().parents[1]
+        / "supabase"
+        / "migrations"
+        / "011_spray_feedback_append_only_rls.sql"
+    ).read_text()
+
+    assert 'DROP POLICY IF EXISTS "farmer_all_spray_feedback"' in migration
+    assert "FOR SELECT" in migration
+    assert "FOR INSERT" in migration
+    assert "FOR UPDATE" not in migration
+    assert "FOR DELETE" not in migration
+    assert 'CREATE POLICY "admin reads all spray feedback"' in migration

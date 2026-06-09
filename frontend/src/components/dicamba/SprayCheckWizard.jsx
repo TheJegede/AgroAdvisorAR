@@ -252,6 +252,8 @@ export default function SprayCheckWizard() {
         lon: merged.lon,
         product: merged.product,
         attestation: {
+          license_attested: merged.license_attested,
+          training_attested: merged.training_attested,
           no_inversion_observed: merged.no_inversion_observed,
           sensitive_crops_checked: merged.sensitive_crops_checked,
           organic_specialty_checked: merged.organic_specialty_checked,
@@ -301,6 +303,8 @@ export default function SprayCheckWizard() {
         lon: form.lon,
         product: form.product,
         attestation: {
+          license_attested: form.license_attested,
+          training_attested: form.training_attested,
           no_inversion_observed: form.no_inversion_observed,
           sensitive_crops_checked: form.sensitive_crops_checked,
           organic_specialty_checked: form.organic_specialty_checked,

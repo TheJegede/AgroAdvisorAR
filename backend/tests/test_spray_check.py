@@ -207,7 +207,14 @@ def test_runup_includes_gate_b_and_rolls_up():
 
 def test_attestation_has_gate_d_fields():
     from models.spray import ApplicatorAttestation
-    a = ApplicatorAttestation(additives_ok=True, ground_application_only=True)
+    a = ApplicatorAttestation(
+        license_attested=True,
+        training_attested=True,
+        additives_ok=True,
+        ground_application_only=True,
+    )
+    assert a.license_attested is True
+    assert a.training_attested is True
     assert a.additives_ok is True
     assert a.ground_application_only is True
 

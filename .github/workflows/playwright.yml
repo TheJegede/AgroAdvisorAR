@@ -29,7 +29,6 @@ jobs:
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
@@ -38,7 +37,8 @@ jobs:
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
           ADMIN_USER_IDS: ${{ secrets.ADMIN_USER_IDS }}
-          EMBEDDING_MODEL_PATH: sentence-transformers/all-MiniLM-L6-v2
+          EMBEDDING_MODEL_PATH: thenlper/gte-base
+          PINECONE_INDEX_NAME: agroar-prod-gte-v2
         run: uvicorn main:app --host 0.0.0.0 --port 8000 &
 
       - name: Set up Node

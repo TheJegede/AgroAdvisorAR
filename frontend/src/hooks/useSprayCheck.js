@@ -1,6 +1,16 @@
 import { useState, useCallback } from 'react'
 import api from '../lib/api'
 
+export function buildSprayRequestPayload({ lat, lon, product, at, attestation }) {
+  return {
+    lat,
+    lon,
+    product,
+    at: at || new Date().toISOString(),
+    attestation: attestation || {},
+  }
+}
+
 // Per-step validation, mirrors getDriftStepErrors. Exported standalone so the
 // step gating is unit-testable without mounting the wizard.
 export function getSprayStepErrors(form, step) {
@@ -28,14 +38,13 @@ export function useSprayCheck() {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.post('/dicamba/check', {
+      const res = await api.post('/dicamba/check', buildSprayRequestPayload({
         lat,
         lon,
         product,
-        // Default to now if the caller does not pin a time.
-        at: at || new Date().toISOString(),
-        attestation: attestation || {},
-      })
+        at,
+        attestation,
+      }))
       return res.data
     } catch (err) {
       const msg = err.response?.data?.detail || 'Failed to run the spray check'
@@ -54,13 +63,13 @@ export function useSprayCheck() {
 
   // Persist the decision as an immutable record; returns the saved row (with id).
   const saveRecord = useCallback(async ({ lat, lon, product, at, attestation }) => {
-    const res = await api.post('/dicamba/record', {
+    const res = await api.post('/dicamba/record', buildSprayRequestPayload({
       lat,
       lon,
       product,
-      at: at || new Date().toISOString(),
-      attestation: attestation || {},
-    })
+      at,
+      attestation,
+    }))
     return res.data
   }, [])
 

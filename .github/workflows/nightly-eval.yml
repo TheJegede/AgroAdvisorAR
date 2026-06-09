@@ -20,9 +20,9 @@ jobs:
       # Set RUN_ANSWER_EVAL=0 in this block to skip (cost / time reduction).
       RUN_ANSWER_EVAL: "1"
       ANSWER_EVAL_SAMPLE: "20"
-      EMBEDDING_MODEL_PATH: sentence-transformers/all-MiniLM-L6-v2
+      EMBEDDING_MODEL_PATH: thenlper/gte-base
       PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-      PINECONE_INDEX_NAME: ${{ secrets.PINECONE_INDEX_NAME }}
+      PINECONE_INDEX_NAME: agroar-prod-gte-v2
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       # Needed only when RUN_ANSWER_EVAL=1 (RAG chain + judge call out to LLMs)

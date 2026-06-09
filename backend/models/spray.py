@@ -16,6 +16,8 @@ CheckStatus = Literal["pass", "fail", "needs_confirmation"]
 
 
 class ApplicatorAttestation(BaseModel):
+    license_attested: Optional[bool] = None          # Legal attestation — current applicator license
+    training_attested: Optional[bool] = None         # Legal attestation — annual dicamba training
     no_inversion_observed: Optional[bool] = None     # Gate C confirmation
     boom_height_ok: Optional[bool] = None            # Gate D — boom at/below label max
     droplet_setup_ok: Optional[bool] = None          # Gate D — Ultra Coarse or coarser

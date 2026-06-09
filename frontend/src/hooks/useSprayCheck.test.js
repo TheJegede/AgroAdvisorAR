@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getSprayStepErrors } from './useSprayCheck'
+import { buildSprayRequestPayload, getSprayStepErrors } from './useSprayCheck'
 
 describe('getSprayStepErrors', () => {
   it('flags missing product on step 1', () => {
@@ -46,5 +46,33 @@ describe('getSprayStepErrors', () => {
   it('imposes no required fields on step 4 (result)', () => {
     const errs = getSprayStepErrors({}, 4)
     expect(Object.keys(errs)).toHaveLength(0)
+  })
+})
+
+describe('buildSprayRequestPayload', () => {
+  it('preserves license and training attestations for check and save payloads', () => {
+    const payload = buildSprayRequestPayload({
+      lat: 34.7,
+      lon: -91.8,
+      product: 'engenia',
+      at: '2026-06-08T09:00:00.000Z',
+      attestation: {
+        license_attested: true,
+        training_attested: true,
+        no_inversion_observed: true,
+      },
+    })
+
+    expect(payload).toEqual({
+      lat: 34.7,
+      lon: -91.8,
+      product: 'engenia',
+      at: '2026-06-08T09:00:00.000Z',
+      attestation: {
+        license_attested: true,
+        training_attested: true,
+        no_inversion_observed: true,
+      },
+    })
   })
 })

@@ -44,9 +44,20 @@ WEATHER_OK = {
 }
 
 
-def _body(product="engenia", at=datetime(2026, 5, 1, 9, 0)):
-    from models.spray import SprayCheckRequest
-    return SprayCheckRequest(lat=34.7, lon=-91.8, product=product, at=at)
+def _body(product="engenia", at=datetime(2026, 5, 1, 9, 0), attestation=None):
+    from models.spray import ApplicatorAttestation, SprayCheckRequest
+    return SprayCheckRequest(
+        lat=34.7,
+        lon=-91.8,
+        product=product,
+        at=at,
+        attestation=attestation or ApplicatorAttestation(),
+    )
+
+
+def _legal_attestation():
+    from models.spray import ApplicatorAttestation
+    return ApplicatorAttestation(license_attested=True, training_attested=True)
 
 
 def test_check_returns_gates_a_and_c(monkeypatch):
@@ -129,11 +140,39 @@ def test_create_record_persists_and_uses_authenticated_owner(monkeypatch):
 
     monkeypatch.setattr(router_mod, "create_record", _fake_create)
 
-    rec = asyncio.run(router_mod.create_spray_record(_body(), user=FAKE_USER))
+    rec = asyncio.run(router_mod.create_spray_record(
+        _body(attestation=_legal_attestation()), user=FAKE_USER
+    ))
     assert captured["farmer_id"] == FAKE_USER["sub"]
     assert captured["payload"]["rule_version"] == "2026-AR-OTT"
     assert {g["gate"] for g in captured["payload"]["gates"]} == {"A", "B", "C", "D"}
+    assert captured["payload"]["attestation"]["license_attested"] is True
+    assert captured["payload"]["attestation"]["training_attested"] is True
     assert rec["id"] == "rec-1"
+
+
+def test_create_record_requires_license_and_training_attestations():
+    router_mod = importlib.import_module("routers.dicamba")
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(router_mod.create_spray_record(_body(), user=FAKE_USER))
+
+    assert exc_info.value.status_code == 422
+    assert "license" in exc_info.value.detail.lower()
+    assert "training" in exc_info.value.detail.lower()
+
+
+def test_check_preview_allows_missing_license_and_training(monkeypatch):
+    router_mod = importlib.import_module("routers.dicamba")
+    monkeypatch.setattr(router_mod, "resolve_rules", lambda on_date: RULES)
+    monkeypatch.setattr(
+        router_mod, "fetch_forecast_conditions", AsyncMock(return_value=WEATHER_OK)
+    )
+    monkeypatch.setattr(router_mod, "load_stations", lambda: [])
+
+    resp = asyncio.run(router_mod.check_spray(_body(), user=FAKE_USER))
+
+    assert resp.rule_version == "2026-AR-OTT"
 
 
 def test_get_record_404_when_foreign(monkeypatch):
