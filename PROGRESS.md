@@ -225,6 +225,30 @@ NEXT (human): produce gold_labels.jsonl (transcribe-don't-invent, 4 parts +
 rule_type tag + human_bucket on the calibration slice), then read the split to
 gate Phase 3 (Ingest / L1 / L2 / L3).
 
+### Pillar 2 PWA channel — SHIPPED 2026-06-09
+The SPA is now an installable, mobile-first, offline-tolerant PWA. **Design = offline
+is abstention:** no server → no guard → no verification, so time-sensitive content
+(rates/spray/dicamba/warnings/diagnostic) is NEVER shown offline as an actionable
+answer. Instead `AdvisoryCard` renders an `OfflineSafetyStub` ("connect to verify" +
+the advisory's escalation contact, or a generic county-Extension fallback). Only
+`isCacheableAsReference` advisories (informational, no rates/warnings/timing keywords —
+default-FALSE when unsure) may be cached for offline reading, badged "reference only".
+**API advisories are never runtime-cached** — Workbox precaches the app shell only
+(`/api/*` denylisted). Files: `frontend/vite.config.js` (VitePWA + manifest + Workbox +
+dev manifest), pure tested helpers `frontend/src/lib/offlineTiering.js` /
+`offlineCache.js` / `offlineSafety.js` (+ `.test.js`), hooks
+`frontend/src/hooks/useOnlineStatus.js` / `useInstallPrompt.js` (reducer unit-tested),
+UI `frontend/src/components/pwa/InstallButton.jsx` /
+`frontend/src/components/advisory/OfflineSafetyStub.jsx`, EN/ES strings in
+`frontend/src/constants/i18n.js`. E2E `frontend/e2e/pwa-offline.spec.js` (manifest
+linked + offline-stub-replaces-frozen-rate, 2 pass). Vitest 71 green, lint clean,
+build emits `dist/manifest.webmanifest` + `dist/sw.js`.
+**Deferred (owner/CI):** `farm-bg` is already `.webp` and referenced as such (no PNG
+to convert; ImageMagick `magick` not on this machine) — nothing to do there; a
+Lighthouse mobile/PWA audit pass is the remaining manual check.
+**PRD M5 note:** M5 ("last-N answers readable offline") narrowed to *reference* answers
+only — time-sensitive answers deliberately show the stub, not a frozen number.
+
 ---
 
 ## ✅ 70B Prod Eval Results (2026-06-05)
