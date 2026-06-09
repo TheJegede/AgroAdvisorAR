@@ -27,4 +27,17 @@ describe('Skeleton', () => {
     expect(el.props.className).toContain('flex-col')
     expect(el.props.children).toHaveLength(3)
   });
+
+  it('marks a single skeleton as a loading status for screen readers', () => {
+    const el = Skeleton({})
+    expect(el.props.role).toBe('status')
+    expect(el.props['aria-label']).toBe('Loading')
+  });
+
+  it('exposes the status on the wrapper and hides list items from screen readers', () => {
+    const el = Skeleton({ count: 3 })
+    expect(el.props.role).toBe('status')
+    expect(el.props['aria-label']).toBe('Loading')
+    expect(el.props.children[0].props['aria-hidden']).toBe('true')
+  });
 })
