@@ -49,3 +49,8 @@ test-results/*
 Tier1_Implementation_PlanAddition.md
 status-bar.md
 codex-command-skills/
+# Pilot-readiness PRD + plans kept local (like AgroAdvisor_AR_PRD_v2.md); referenced from PROGRESS.md/CLAUDE.md
+AgroAdvisor_pilot_readiness_PRD.md
+AgroAdvisor_pilot_readiness_IMPLEMENTATION_PLAN.md
+docs/superpowers/plans/2026-06-09-diagnostic-harness.md
+docs/superpowers/plans/2026-06-09-pwa-channel.md
