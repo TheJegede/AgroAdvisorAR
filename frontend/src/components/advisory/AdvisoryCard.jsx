@@ -1,5 +1,10 @@
 import { Component } from 'react'
 import { useLang } from '../../contexts/LangContext'
+import { LABELS } from '../../constants/i18n'
+import { useOnlineStatus } from '../../hooks/useOnlineStatus'
+import { offlineSafetyMessage } from '../../lib/offlineSafety'
+import { isCacheableAsReference } from '../../lib/offlineTiering'
+import OfflineSafetyStub from './OfflineSafetyStub'
 import ConfidenceBadge from './ConfidenceBadge'
 import NLIConfidenceBadge from './NLIConfidenceBadge'
 import EscalationCard from './EscalationCard'
@@ -47,11 +52,31 @@ function DetailSection({ heading, children }) {
 }
 
 function AdvisoryCardInner({ response, messageId, category }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
+  const online = useOnlineStatus()
   const cleanCat = category ? category.split(':')[0] : category
   const chipConfig = CROP_CHIP_CONFIG[cleanCat]
+
+  // Offline = abstention. When offline AND the content is time-sensitive
+  // (rates/spray/warnings/diagnostic), never show the frozen actionable body —
+  // route to the human via the verify + escalation stub instead.
+  const offlineStub = !online ? offlineSafetyMessage(response, lang) : null
+  if (offlineStub) {
+    return (
+      <div className="bg-white dark:bg-hc-surface rounded-card shadow-sm dark:shadow-none border border-gray-100 dark:border-2 dark:border-hc-border p-4 my-2 w-full max-w-2xl">
+        <OfflineSafetyStub message={offlineStub} />
+      </div>
+    )
+  }
+  const showReferenceBadge = !online && isCacheableAsReference(response)
+
   return (
     <div className="bg-white dark:bg-hc-surface rounded-card shadow-sm dark:shadow-none border border-gray-100 dark:border-2 dark:border-hc-border p-4 my-2 w-full max-w-2xl">
+      {showReferenceBadge && (
+        <span className="mb-2 inline-block rounded bg-stone-200 px-2 py-0.5 text-xs text-stone-700">
+          {(LABELS[lang] || LABELS.en).offlineReferenceBadge}
+        </span>
+      )}
       {/* Orientation row: crop chip + context meta only — no confidence badges */}
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
