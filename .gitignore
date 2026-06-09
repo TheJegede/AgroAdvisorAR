@@ -24,6 +24,7 @@ ingestion/corpus_manifest.json
 /models/
 /checkpoints/
 evals/results/
+evals/scratch/
 node_modules/
 .DS_Store
 *.log
