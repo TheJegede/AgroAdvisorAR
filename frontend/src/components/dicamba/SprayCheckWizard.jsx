@@ -7,6 +7,7 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import { useLang } from '../../contexts/LangContext'
 import { useSprayCheck, getSprayStepErrors } from '../../hooks/useSprayCheck'
+import { downloadSprayPdf } from '../../hooks/useSprayRecords'
 import Alert from '../ui/Alert'
 import { SPRAY_DISCLAIMER_EN, SPRAY_DISCLAIMER_ES } from '../../lib/disclaimers'
 import SprayFeedbackWidget from './SprayFeedbackWidget'
@@ -213,6 +214,7 @@ export default function SprayCheckWizard() {
   const [result, setResult] = useState(null)
   const [stations, setStations] = useState([])
   const [savedRecord, setSavedRecord] = useState(null)
+  const [pdfError, setPdfError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     product: '',
@@ -314,6 +316,15 @@ export default function SprayCheckWizard() {
       // surfaced via hook error state
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDownloadPdf() {
+    setPdfError(null)
+    try {
+      await downloadSprayPdf(savedRecord.id)
+    } catch (err) {
+      setPdfError(err.response?.data?.detail || (es ? 'No se pudo descargar el PDF' : 'Failed to download PDF'))
     }
   }
 
@@ -604,13 +615,15 @@ export default function SprayCheckWizard() {
 
               {savedRecord ? (
                 <>
-                  <a
-                    href={`/api/v1/dicamba/record/${savedRecord.id}/pdf`}
+                  <button
+                    type="button"
+                    onClick={handleDownloadPdf}
                     className={BTN_PRIMARY_CLS}
                     data-testid="download-pdf-link"
                   >
                     {es ? 'Descargar PDF del registro' : 'Download record PDF'}
-                  </a>
+                  </button>
+                  {pdfError && <Alert variant="error" className="mt-2">{pdfError}</Alert>}
                   <SprayFeedbackWidget recordId={savedRecord.id} />
                 </>
               ) : (

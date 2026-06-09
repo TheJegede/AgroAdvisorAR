@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useLang } from '../contexts/LangContext'
-import { useSprayRecords } from '../hooks/useSprayRecords'
+import { useSprayRecords, downloadSprayPdf } from '../hooks/useSprayRecords'
 import Alert from '../components/ui/Alert'
 
 const STATUS_BADGE = {
@@ -12,6 +13,16 @@ export default function SprayRecordsPage() {
   const { lang } = useLang()
   const es = lang === 'es'
   const { records, loading, error } = useSprayRecords()
+  const [pdfError, setPdfError] = useState(null)
+
+  const handleDownload = async (id) => {
+    setPdfError(null)
+    try {
+      await downloadSprayPdf(id)
+    } catch (err) {
+      setPdfError(err.response?.data?.detail || (es ? 'No se pudo descargar el PDF' : 'Failed to download PDF'))
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-parchment dark:bg-hc-bg">
@@ -21,6 +32,7 @@ export default function SprayRecordsPage() {
             {es ? 'Registros de aplicación' : 'Spray records'}
           </h1>
           {error && <Alert variant="error" className="mb-4">{error}</Alert>}
+          {pdfError && <Alert variant="error" className="mb-4">{pdfError}</Alert>}
           {loading ? (
             <p className="text-sm text-gray-500 dark:text-hc-fg">{es ? 'Cargando...' : 'Loading...'}</p>
           ) : records.length === 0 ? (
@@ -36,12 +48,13 @@ export default function SprayRecordsPage() {
                       {r.overall_status}
                     </span>
                   </div>
-                  <a
-                    href={`/api/v1/dicamba/record/${r.id}/pdf`}
+                  <button
+                    type="button"
+                    onClick={() => handleDownload(r.id)}
                     className="text-sm font-semibold text-field-dark underline min-h-touch flex items-center"
                   >
                     PDF
-                  </a>
+                  </button>
                 </li>
               ))}
             </ul>

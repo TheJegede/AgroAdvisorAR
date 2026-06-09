@@ -8,6 +8,31 @@ export async function fetchSprayRecords() {
   return res.data
 }
 
+// Fetch the record PDF through the axios client (responseType blob) so the
+// Bearer token is attached. A plain <a href> nav sent no Authorization header
+// and the backend returned 401 "Not authenticated". Standalone for unit tests
+// (no DOM env — see fetchSprayRecords note above).
+export async function fetchSprayPdfBlob(recordId) {
+  const res = await api.get(`/dicamba/record/${recordId}/pdf`, {
+    responseType: 'blob',
+  })
+  return res.data
+}
+
+// Trigger a browser download of the authed PDF blob. Mirrors
+// useDriftReports.downloadPdf (the working drift-report path).
+export async function downloadSprayPdf(recordId) {
+  const blob = await fetchSprayPdfBlob(recordId)
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `spray_record_${recordId.slice(0, 8)}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 export function useSprayRecords() {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)

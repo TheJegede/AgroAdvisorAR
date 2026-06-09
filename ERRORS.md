@@ -5,6 +5,33 @@ One entry per issue: **Symptom → Root cause → Fix → Prevention**. Newest f
 
 ---
 
+## 2026-06-08 — Spray-record PDF download returns `{"detail":"Not authenticated"}` (401)
+
+**Symptom:** During the S1 prod authed walk, saving a spray record worked
+(`/record` 201, `/records` list rendered) but clicking **PDF** showed
+`{"detail":"Not authenticated"}`. Backend `/dicamba/record/{id}/pdf` is fine;
+records persisted in prod.
+
+**Root cause:** Frontend downloaded the PDF via a plain `<a href="/api/v1/dicamba/record/{id}/pdf">`
+navigation. A browser nav carries no `Authorization` header — the JWT lives in
+localStorage and is only attached by the axios client — so the authed GET reached
+the backend tokenless → `get_current_user` → 401. Two spots affected:
+`SprayCheckWizard.jsx` Step 4 + `SprayRecordsPage.jsx`. The drift-report PDF
+(`useDriftReports.downloadPdf`) never hit this because it already fetched a blob
+through axios.
+
+**Fix:** Added `fetchSprayPdfBlob` + `downloadSprayPdf` to `hooks/useSprayRecords.js`
+(axios `responseType: 'blob'` → object URL → anchor click), mirroring the working
+drift path. Replaced both `<a href>` with buttons calling `downloadSprayPdf`.
+TDD: `useSprayRecords.test.js` asserts the blob GET. Needs frontend redeploy
+(`git push origin main` → Vercel) to go live in prod.
+
+**Prevention:** Any authed file download must go through the axios client (blob),
+never a plain `<a href>`/`window.open` to an auth-gated endpoint — those send no
+Bearer token.
+
+---
+
 ## 2026-06-06 — E2E Playwright: injectAuth specs redirect to /login in CI (textarea/aside timeouts)
 
 **Symptom:** ~10/22 Playwright e2e tests fail in CI only. `submitQuery` times out
