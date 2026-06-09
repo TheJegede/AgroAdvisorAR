@@ -217,6 +217,7 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
    for soybeans sub-topics, (c) arXiv preprint draft using honest 20% 70B number.
 
 ### Pillar 0 diagnostic harness — SHIPPED 2026-06-09
+> Source: PRD `AgroAdvisor_pilot_readiness_PRD.md` + roadmap `AgroAdvisor_pilot_readiness_IMPLEMENTATION_PLAN.md` + TDD plan `docs/superpowers/plans/2026-06-09-diagnostic-harness.md` (all three kept local/gitignored). Built on branch `pilot-readiness-tracks` (8 commits, 33 pytest green).
 `evals/diagnostic/` classifies a human gold-labeled sample into buckets (D2/D3).
 Re-scoped to solo: SAMPLE (~30-40), not census; search the index don't read it;
 quarantine hard cases (no Extension expert). Run:
@@ -226,6 +227,7 @@ rule_type tag + human_bucket on the calibration slice), then read the split to
 gate Phase 3 (Ingest / L1 / L2 / L3).
 
 ### Pillar 2 PWA channel — SHIPPED 2026-06-09
+> Source: PRD `AgroAdvisor_pilot_readiness_PRD.md` + roadmap `AgroAdvisor_pilot_readiness_IMPLEMENTATION_PLAN.md` + TDD plan `docs/superpowers/plans/2026-06-09-pwa-channel.md` (all three kept local/gitignored). Built on branch `pilot-readiness-tracks` (10 commits, 71 vitest + 2 playwright green).
 The SPA is now an installable, mobile-first, offline-tolerant PWA. **Design = offline
 is abstention:** no server → no guard → no verification, so time-sensitive content
 (rates/spray/dicamba/warnings/diagnostic) is NEVER shown offline as an actionable
