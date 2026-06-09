@@ -41,6 +41,19 @@ def test_load_stations_reads_seed_file():
     assert all({"id", "name", "lat", "lon"} <= set(s) for s in stations)
 
 
+# Arkansas bounding box (slightly padded): lat 33.0–36.55 N, lon -94.65–-89.6 W.
+# Catches gross coordinate errors (sign flips, transposed lat/lon, wrong state)
+# so a bad seed-file edit can't silently place a "research station" outside AR.
+AR_LAT = (33.0, 36.55)
+AR_LON = (-94.65, -89.6)
+
+
+def test_all_station_coords_within_arkansas():
+    for s in spray_stations.load_stations():
+        assert AR_LAT[0] <= s["lat"] <= AR_LAT[1], f"{s['id']} lat {s['lat']} outside AR"
+        assert AR_LON[0] <= s["lon"] <= AR_LON[1], f"{s['id']} lon {s['lon']} outside AR"
+
+
 def test_bearing_due_north_is_zero():
     b = spray_stations.bearing_deg(34.70, -91.80, 34.85, -91.80)
     assert abs(b - 0.0) < 0.5 or abs(b - 360.0) < 0.5

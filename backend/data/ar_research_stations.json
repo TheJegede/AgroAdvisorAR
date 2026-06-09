@@ -1,5 +1,5 @@
 {
-  "source": "UNVERIFIED — curated from public UA System Division of Agriculture / USDA-ARS station listings; re-confirm coordinates before production (PRD v3 §6/§8)",
+  "source": "Station identities + addresses VERIFIED 2026-06-08 against authoritative UA System Division of Agriculture AAES research-locations listings (aaes.uada.edu). Coordinates are address-plausible + Arkansas-bbox-checked, but NOT yet certified to sub-mile gate precision — re-place from satellite/GPS on-site before pilot reliance (PRD v3 §6/§8). FLAGGED: rohwer_res physical site is 140 Experiment Station Loop, Watson AR (near Hwy 138 & Hwy 1) → stored coord may be ~5 mi off; main_fayetteville renamed to Milo J. Shult AREC. See docs/f4-station-coord-verification.md.",
   "stations": [
     {"id": "rrec_stuttgart", "name": "Rice Research & Extension Center — Stuttgart", "lat": 34.4664, "lon": -91.4151},
     {"id": "nerec_keiser", "name": "Northeast Research & Extension Center — Keiser", "lat": 35.6797, "lon": -90.0856},
@@ -10,6 +10,6 @@
     {"id": "vres_kibler", "name": "Vegetable Research Station — Kibler", "lat": 35.4262, "lon": -94.2305},
     {"id": "fres_clarksville", "name": "Fruit Research Station — Clarksville", "lat": 35.5312, "lon": -93.4663},
     {"id": "newport_ext", "name": "Newport Extension Center — Newport", "lat": 35.6045, "lon": -91.2818},
-    {"id": "main_fayetteville", "name": "Main Station — Fayetteville", "lat": 36.0972, "lon": -94.1733}
+    {"id": "main_fayetteville", "name": "Milo J. Shult Agricultural Research & Extension Center — Fayetteville", "lat": 36.0972, "lon": -94.1733}
   ]
 }
