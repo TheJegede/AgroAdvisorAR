@@ -216,6 +216,15 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
    Levers: (a) inspect suppressed soybeans items for guard miscalibration, (b) re-examine corpus coverage
    for soybeans sub-topics, (c) arXiv preprint draft using honest 20% 70B number.
 
+### Pillar 0 diagnostic harness — SHIPPED 2026-06-09
+`evals/diagnostic/` classifies a human gold-labeled sample into buckets (D2/D3).
+Re-scoped to solo: SAMPLE (~30-40), not census; search the index don't read it;
+quarantine hard cases (no Extension expert). Run:
+`python -m evals.diagnostic.runner --gold evals/diagnostic/gold_labels.jsonl`.
+NEXT (human): produce gold_labels.jsonl (transcribe-don't-invent, 4 parts +
+rule_type tag + human_bucket on the calibration slice), then read the split to
+gate Phase 3 (Ingest / L1 / L2 / L3).
+
 ---
 
 ## ✅ 70B Prod Eval Results (2026-06-05)
