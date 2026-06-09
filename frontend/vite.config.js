@@ -27,6 +27,12 @@ export default defineConfig({
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],
       },
+      // Inject the manifest link + SW in dev too, so the installable metadata is
+      // present when running `npm run dev` (e.g. under Playwright). Prod is
+      // unaffected.
+      devOptions: {
+        enabled: true,
+      },
     }),
   ],
   server: {
