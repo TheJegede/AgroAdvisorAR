@@ -4,27 +4,32 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (F4 dicamba rebuild — Phase 6 code track shipped: central disclaimer, gate stats endpoint, spray feedback widget; shimmering skeleton screen loading states; Spanish parity; Gates A-D)
+> **Last updated:** 2026-06-08 (**F4 BACKEND PROD CUTOVER COMPLETE** — migrations 009/010 applied + HF
+> redeployed; all `/dicamba/*` live in prod [smoke-verified: 8 routes in OpenAPI, 401 auth-gated, Vercel
+> proxy intact]. Station identities verified vs UA AAES + AR-bbox guard test [C2]. Earlier same day: Phase 6
+> code track shipped; CLAUDE.md Priorities synced [F4 reframed SHIPPED, answer-quality = real open front].
+> Remaining: S1 authed functional walk, station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
 ---
 
-## ⏸ DEFERRED OPS — tend AFTER Phase 6 (owner decision 2026-06-08)
+## ▶ DEFERRED OPS — PROD CUTOVER DONE 2026-06-08 (remaining = pilot-data + external + no-code)
 
-These are intentionally parked, NOT forgotten. Do not action until Phases 5 + 6 land.
+Tracking plan: `~/.claude/plans/so-i-want-you-wobbly-kay.md` (owner-vs-Claude checklist).
+**✅ F4 BACKEND IS LIVE IN PROD 2026-06-08** — #1 + #2 closed; all `/dicamba/*` endpoints serve
+(verified: prod OpenAPI lists 8 routes, `/check`+`/stations` 401 auth-gated not 404/500, Vercel proxy
+reaches the new backend). Remaining items are pilot-data integrity, external APIs, and the no-code track.
 
-1. **Apply migration `009_spray_records.sql` to prod Supabase** — the `spray_records` table + RLS
-   only exist in the repo; prod has no table yet, so `POST /dicamba/record` will 500 in prod until
-   applied. (Local/test fine — tests mock the client.)
-2. **HF backend orphan-branch redeploy** — accumulated debt for Phases 1→4. The live HF Space still
-   serves the pre-F4 backend, so `/dicamba/check` (4 gates), `/dicamba/stations`, and all
-   `/dicamba/record*` endpoints are NOT live in prod. Redeploy procedure: CLAUDE.md Priorities §2.
-   Frontend (Vercel) auto-deploys on push, so the wizard is live but calls endpoints that 404 in prod
-   until this redeploy.
-3. **Research-station coordinates UNVERIFIED** — `backend/data/ar_research_stations.json` ships with a
-   top-level `source` marked UNVERIFIED; validate the 10 UA/USDA-ARS coords against an authoritative
-   source before any pilot reliance (Gate B + Gate D both depend on them).
+1. ✅ **DONE — migrations `009_spray_records` + `010_spray_feedback` applied to prod Supabase** (owner,
+   dashboard SQL editor, 2026-06-08). O1 found only these two missing.
+2. ✅ **DONE — HF backend redeployed** (owner pushed verified `hf-deploy` orphan branch → HF Space,
+   2026-06-08; Claude built+verified the branch, backend suite 219 pass on it).
+3. **Research-station coordinates — identities/addresses VERIFIED, exact GPS pending** (C2, 2026-06-08).
+   All 10 confirmed vs authoritative UA AAES listings; `source` field rewritten (no longer blanket
+   UNVERIFIED); `main_fayetteville` renamed Milo J. Shult AREC; added AR-bbox guard test. **Owner residual:**
+   re-place `rohwer_res` (real site at Watson, ~5 mi off) + spot-confirm 9 pins from satellite to sub-mile
+   precision before pilot. Full report `docs/f4-station-coord-verification.md` (gitignored, local).
 4. **FieldWatch registry API** (Phase 5 deferred) — owner must contact FieldWatch for access. Until then
    the wizard deep-links FieldCheck + keeps the Gate B `human_attested` confirmation. If pullable → new
    `sensitive_sites` cache feeding Gate B verifiable/partial checks.
