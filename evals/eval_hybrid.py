@@ -44,7 +44,8 @@ def main() -> None:
                     default=Path(__file__).parent / "eval_set_v2_remap.jsonl")
     args = ap.parse_args()
 
-    items = [json.loads(l) for l in open(args.eval_set, encoding="utf-8")]
+    with args.eval_set.open(encoding="utf-8") as f:
+        items = [json.loads(l) for l in f]
     print(f"Items: {len(items)} | model: {MODEL_NAME} | index: {INDEX_NAME}")
 
     print("Re-chunking PDFs for BM25 corpus...")

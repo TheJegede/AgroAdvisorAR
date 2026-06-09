@@ -5,12 +5,12 @@ load_dotenv()
 
 GOOGLE_API_KEY = os.environ["GOOGLE_API_KEY"]
 PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
-PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod")
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod-gte-v2")
 UPSTASH_REDIS_REST_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
 UPSTASH_REDIS_REST_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 EMBEDDING_MODEL_PATH = os.environ.get(
-    "EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2"
+    "EMBEDDING_MODEL_PATH", "thenlper/gte-base"
 )
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")

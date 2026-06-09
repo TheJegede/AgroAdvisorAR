@@ -188,13 +188,11 @@ async def _postprocess_async(
     if not isinstance(result, AdvisoryResponse):
         result = AdvisoryResponse(**result.model_dump())
     # Step 1: title-match citation guard.
-    # Only meaningful when retrieval carries `document_title` metadata. The gte
-    # index (agroar-prod-gte) stores only {text, namespace} — no titles — so this
-    # guard can validate NO citation there and would force every grounded answer
-    # to Low (NLI 0.34/0.54 notwithstanding). When no retrieved doc carries a
-    # title, skip the title guard entirely and let the NLI confidence_score
-    # (Step 3) govern. Re-enable fully once gte is re-ingested with title/section
-    # metadata (fix 1B).
+    # Only meaningful when retrieval carries `document_title` metadata. Legacy
+    # gte indexes stored only {text, namespace}, so this guard would validate no
+    # citation there and force every grounded answer to Low. When no retrieved
+    # doc carries a title, skip the title guard entirely and let the NLI
+    # confidence_score (Step 3) govern.
     # Run the title-match guard only when the retrieval set RELIABLY carries
     # titles (every doc), not when a single stray titled doc appears among
     # titleless gte results — `any()` there forced a false "Low" on answers

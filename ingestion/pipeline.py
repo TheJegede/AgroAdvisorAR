@@ -15,7 +15,7 @@ from chunker import chunk_document
 from embedder import embed_and_upsert, MODEL_NAME
 
 PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
-PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod")
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod-gte-v2")
 
 RAW_PDFS_DIR = Path(__file__).parent / "raw_pdfs"
 LOGS_DIR = Path(__file__).parent / "logs"
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--index", default=None,
-        help="Override PINECONE_INDEX_NAME env var (e.g. agroar-prod-gte)",
+        help="Override PINECONE_INDEX_NAME env var (e.g. agroar-prod-gte-v2)",
     )
     args = parser.parse_args()
     run_pipeline(force_reindex=args.force, source_lang=args.lang, index_override=args.index)

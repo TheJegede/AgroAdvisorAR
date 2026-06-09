@@ -38,6 +38,20 @@ function SectionCard({ title, children }) {
 }
 
 const PAGE_SIZE = 20
+const TAB_KEYS = ['overview', 'drift']
+
+const TAB_LABEL_KEYS = {
+  overview: 'adminOverview',
+  drift: 'adminDriftReports',
+}
+
+const MAP_LAYER_LABEL_KEYS = {
+  queries: 'adminQueryVolume',
+  drift: 'adminDriftReports',
+  aquifer: 'adminAquiferStress',
+}
+
+const MAP_LAYERS = Object.keys(MAP_LAYER_LABEL_KEYS)
 
 function countyName(fips) {
   return AR_COUNTIES[fips]?.name || fips
@@ -48,6 +62,24 @@ function truncate(str, n) {
   return str.length > n ? str.slice(0, n) + '…' : str
 }
 
+export async function loadAquiferStress(apiClient = api) {
+  const res = await apiClient.get('/admin/aquifer-stress')
+  return res.data.data || {}
+}
+
+function mapLayerButtonClass(layer, activeLayer) {
+  if (activeLayer !== layer) {
+    return 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-hc-bg dark:text-hc-fg dark:border-hc-border'
+  }
+  if (layer === 'drift') return 'bg-harvest text-white border-harvest'
+  if (layer === 'aquifer') return 'bg-blue-600 text-white border-blue-600'
+  return 'bg-field text-white border-field'
+}
+
+function reportCountLabel(count, t) {
+  return count === 1 ? t.adminReportSingular : t.adminReportPlural.replace('{count}', count)
+}
+
 export default function AdminDashboardPage() {
   const { t } = useLang()
   const { metrics, loading, error } = useAdminMetrics()
@@ -55,11 +87,13 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const [mapLayer, setMapLayer] = useState('queries')
   const [aquiferData, setAquiferData] = useState({})
+  const [aquiferError, setAquiferError] = useState(null)
   useEffect(() => {
     if (mapLayer !== 'aquifer' || Object.keys(aquiferData).length > 0) return
-    api.get('/admin/aquifer-stress')
-      .then(res => setAquiferData(res.data.data || {}))
-      .catch(() => {})
+    setAquiferError(null)
+    loadAquiferStress()
+      .then(setAquiferData)
+      .catch(() => setAquiferError(t.adminAquiferLoadError))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapLayer])
   const [dateFrom, setDateFrom] = useState('')
@@ -114,8 +148,8 @@ export default function AdminDashboardPage() {
   }))
 
   const feedbackData = [
-    { name: 'positive', value: metrics.feedback_distribution.positive, color: FEEDBACK_COLORS.positive },
-    { name: 'negative', value: metrics.feedback_distribution.negative, color: FEEDBACK_COLORS.negative },
+    { name: t.adminFeedbackPositive, value: metrics.feedback_distribution.positive, color: FEEDBACK_COLORS.positive },
+    { name: t.adminFeedbackNegative, value: metrics.feedback_distribution.negative, color: FEEDBACK_COLORS.negative },
   ]
 
   const evalRunsData = [...metrics.recent_eval_runs]
@@ -155,7 +189,7 @@ export default function AdminDashboardPage() {
 
       {/* Tab bar */}
       <div className="flex gap-1 mb-4 border-b border-gray-200 dark:border-hc-border">
-        {['overview', 'drift'].map((tab) => (
+        {TAB_KEYS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -166,7 +200,7 @@ export default function AdminDashboardPage() {
                 : 'border-transparent text-gray-600 hover:text-charcoal dark:text-hc-fg',
             ].join(' ')}
           >
-            {tab === 'overview' ? 'Overview' : 'Drift Reports'}
+            {t[TAB_LABEL_KEYS[tab]]}
           </button>
         ))}
       </div>
@@ -176,27 +210,22 @@ export default function AdminDashboardPage() {
           {driftError && <Alert variant="error">{driftError}</Alert>}
 
           {/* Choropleth toggle + map */}
-          <SectionCard title="Drift incident map">
+          <SectionCard title={t.adminDriftIncidentMap}>
             <div className="flex gap-2 mb-3">
-              {[['queries', 'Query Volume'], ['drift', 'Drift Reports'], ['aquifer', 'Aquifer Stress']].map(([layer, label]) => (
+              {MAP_LAYERS.map((layer) => (
                 <button
                   key={layer}
                   onClick={() => setMapLayer(layer)}
                   className={[
                     'px-3 py-1.5 rounded-lg text-sm font-semibold border transition-colors',
-                    mapLayer === layer
-                      ? layer === 'drift'
-                        ? 'bg-harvest text-white border-harvest'
-                        : layer === 'aquifer'
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-field text-white border-field'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-hc-bg dark:text-hc-fg dark:border-hc-border',
+                    mapLayerButtonClass(layer, mapLayer),
                   ].join(' ')}
                 >
-                  {label}
+                  {t[MAP_LAYER_LABEL_KEYS[layer]]}
                 </button>
               ))}
             </div>
+            {aquiferError && <Alert variant="warning">{aquiferError}</Alert>}
             <Suspense fallback={<MapFallback />}>
               <ARCountyMap
                 countyData={metrics?.county_query_volume ?? []}
@@ -208,10 +237,10 @@ export default function AdminDashboardPage() {
           </SectionCard>
 
           {/* Date filter */}
-          <SectionCard title="Filter by incident date">
+          <SectionCard title={t.adminFilterByIncidentDate}>
             <div className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs text-gray-500 dark:text-hc-fg mb-1">From</label>
+                <label className="block text-xs text-gray-500 dark:text-hc-fg mb-1">{t.adminFrom}</label>
                 <input
                   type="date"
                   value={dateFrom}
@@ -220,7 +249,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 dark:text-hc-fg mb-1">To</label>
+                <label className="block text-xs text-gray-500 dark:text-hc-fg mb-1">{t.adminTo}</label>
                 <input
                   type="date"
                   value={dateTo}
@@ -233,34 +262,34 @@ export default function AdminDashboardPage() {
                   onClick={() => { setDateFrom(''); setDateTo(''); setPage(0) }}
                   className="text-sm text-gray-500 hover:text-charcoal dark:text-hc-fg underline"
                 >
-                  Clear
+                  {t.adminClear}
                 </button>
               )}
               <span className="text-xs text-gray-400 dark:text-hc-fg ml-auto">
-                {filteredDrift.length} report{filteredDrift.length !== 1 ? 's' : ''}
+                {reportCountLabel(filteredDrift.length, t)}
               </span>
             </div>
           </SectionCard>
 
           {/* Report list */}
-          <SectionCard title="Reports">
+          <SectionCard title={t.adminReports}>
             {driftLoading ? (
               <div className="space-y-3 py-2">
                 <Skeleton variant="text" className="w-full h-5" count={3} />
               </div>
             ) : filteredDrift.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-hc-fg">No drift reports found.</p>
+              <p className="text-sm text-gray-500 dark:text-hc-fg">{t.adminNoDriftReports}</p>
             ) : (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-left text-xs text-gray-500 dark:text-hc-fg border-b border-gray-100 dark:border-hc-border">
-                        <th className="pb-2 pr-3 font-semibold">County</th>
-                        <th className="pb-2 pr-3 font-semibold">Date</th>
-                        <th className="pb-2 pr-3 font-semibold">Crop</th>
-                        <th className="pb-2 pr-3 font-semibold">Symptoms</th>
-                        <th className="pb-2 font-semibold">ASPB</th>
+                        <th className="pb-2 pr-3 font-semibold">{t.county}</th>
+                        <th className="pb-2 pr-3 font-semibold">{t.adminDate}</th>
+                        <th className="pb-2 pr-3 font-semibold">{t.adminCrop}</th>
+                        <th className="pb-2 pr-3 font-semibold">{t.adminSymptoms}</th>
+                        <th className="pb-2 font-semibold">{t.adminAspb}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50 dark:divide-hc-border">
@@ -283,17 +312,17 @@ export default function AdminDashboardPage() {
                       disabled={page === 0}
                       className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-40 hover:bg-gray-50 dark:border-hc-border dark:bg-hc-bg dark:text-hc-fg"
                     >
-                      ← Prev
+                      ← {t.adminPrev}
                     </button>
                     <span className="text-xs text-gray-500 dark:text-hc-fg">
-                      Page {page + 1} / {totalPages}
+                      {t.adminPage} {page + 1} / {totalPages}
                     </span>
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                       disabled={page >= totalPages - 1}
                       className="px-3 py-1 rounded-lg border border-gray-200 text-sm disabled:opacity-40 hover:bg-gray-50 dark:border-hc-border dark:bg-hc-bg dark:text-hc-fg"
                     >
-                      Next →
+                      {t.next} →
                     </button>
                   </div>
                 )}
@@ -315,10 +344,10 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
         <SectionCard title={t.metricsLanguage}>
           {languageData.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-hc-fg">No data yet.</p>
+            <p className="text-sm text-gray-500 dark:text-hc-fg">{t.adminNoDataYet}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
-              <PieChart role="img" aria-label="Language split chart">
+              <PieChart role="img" aria-label={t.adminLanguageSplitChart}>
                 <Pie data={languageData} dataKey="value" nameKey="name" outerRadius={80} label>
                   {languageData.map((d) => (
                     <Cell key={d.name} fill={d.color} role="presentation" />
@@ -333,7 +362,7 @@ export default function AdminDashboardPage() {
 
         <SectionCard title={t.metricsFeedback}>
           {feedbackData[0].value + feedbackData[1].value === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-hc-fg">No feedback yet.</p>
+            <p className="text-sm text-gray-500 dark:text-hc-fg">{t.adminNoFeedbackYet}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={feedbackData}>
@@ -355,7 +384,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SectionCard title={t.metricsCounty}>
           {metrics.county_query_volume.length === 0 ? (
-            <p className="text-sm text-gray-500">No data yet.</p>
+            <p className="text-sm text-gray-500">{t.adminNoDataYet}</p>
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(220, metrics.county_query_volume.length * 24)}>
               <BarChart layout="vertical" data={metrics.county_query_volume} margin={{ left: 60 }}>
@@ -380,11 +409,11 @@ export default function AdminDashboardPage() {
         <SectionCard title={t.metricsHumanEval}>
           <div className="flex flex-col gap-2 text-sm text-charcoal dark:text-hc-fg">
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-hc-fg">{t.queueScore} count</span>
+              <span className="text-gray-500 dark:text-hc-fg">{t.adminScoreCount}</span>
               <span className="font-semibold">{metrics.human_eval_summary.score_count}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-hc-fg">Mean accuracy</span>
+              <span className="text-gray-500 dark:text-hc-fg">{t.adminMeanAccuracy}</span>
               <span className="font-semibold">
                 {metrics.human_eval_summary.mean_accuracy_score ?? '—'}
               </span>
@@ -394,7 +423,7 @@ export default function AdminDashboardPage() {
 
         <SectionCard title={t.metricsEvalRuns}>
           {evalRunsData.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-hc-fg">No automated eval runs logged yet.</p>
+            <p className="text-sm text-gray-500 dark:text-hc-fg">{t.adminNoEvalRuns}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={evalRunsData}>
@@ -410,7 +439,7 @@ export default function AdminDashboardPage() {
           )}
           {evalRunsData.some((r) => r.status !== 'ok') && (
             <p className="text-xs text-gray-500 dark:text-hc-fg mt-2">
-              Latest status: {evalRunsData[evalRunsData.length - 1]?.status}
+              {t.adminLatestStatus}: {evalRunsData[evalRunsData.length - 1]?.status}
             </p>
           )}
         </SectionCard>
@@ -418,7 +447,7 @@ export default function AdminDashboardPage() {
 
       <SectionCard title={t.metricsTopQueries}>
         {metrics.top_user_queries.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-hc-fg">No queries yet.</p>
+          <p className="text-sm text-gray-500 dark:text-hc-fg">{t.adminNoQueriesYet}</p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-hc-border">
             {metrics.top_user_queries.map((q, i) => (

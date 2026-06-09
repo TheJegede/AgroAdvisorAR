@@ -3,7 +3,7 @@ English gold chunk, per namespace. Validates the translate-bridge end of F1.
 
 Run (local, free):
   LLM_PRIMARY=local EMBEDDING_MODEL_PATH=thenlper/gte-base \
-  PINECONE_INDEX_NAME=agroar-prod-gte python evals/eval_bridge.py
+  PINECONE_INDEX_NAME=agroar-prod-gte-v2 python evals/eval_bridge.py
 """
 import asyncio, json, os, sys
 from collections import defaultdict
@@ -19,13 +19,14 @@ from sentence_transformers import SentenceTransformer  # noqa: E402
 from pinecone import Pinecone  # noqa: E402
 
 EVAL = Path(__file__).parent / "ar_agqa_es.jsonl"
-INDEX = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod-gte")
+INDEX = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod-gte-v2")
 MODEL = os.environ.get("EMBEDDING_MODEL_PATH", "thenlper/gte-base")
 KS = [1, 5, 20]
 
 
 async def main():
-    ev = [json.loads(l) for l in open(EVAL, encoding="utf-8")]
+    with EVAL.open(encoding="utf-8") as f:
+        ev = [json.loads(l) for l in f]
     m = SentenceTransformer(MODEL, device="cuda")
     idx = Pinecone(api_key=os.environ["PINECONE_API_KEY"]).Index(INDEX)
     hits = defaultdict(lambda: {k: 0 for k in KS})

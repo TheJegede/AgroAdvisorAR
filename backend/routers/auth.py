@@ -7,6 +7,7 @@ from supabase import create_client, Client
 from models.user import (
     ForgotPasswordRequest,
     LoginRequest,
+    RefreshTokenRequest,
     RegisterRequest,
     ResetPasswordRequest,
     TokenResponse,
@@ -29,6 +30,10 @@ def _get_anon_client() -> Client:
     if _anon_client is None:
         _anon_client = create_client(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
     return _anon_client
+
+
+def _new_anon_client() -> Client:
+    return create_client(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -85,7 +90,7 @@ async def forgot_password(body: ForgotPasswordRequest):
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
 async def reset_password(body: ResetPasswordRequest):
     """Apply a new password using the recovery tokens from the magic link."""
-    client = _get_anon_client()
+    client = _new_anon_client()
     try:
         client.auth.set_session(body.access_token, body.refresh_token)
         client.auth.update_user({"password": body.new_password})
@@ -120,6 +125,24 @@ async def login(body: LoginRequest):
 
     if auth_resp.session is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    return TokenResponse(
+        access_token=auth_resp.session.access_token,
+        refresh_token=auth_resp.session.refresh_token,
+    )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(body: RefreshTokenRequest):
+    """Issue a fresh access token from a Supabase refresh token."""
+    client = _new_anon_client()
+    try:
+        auth_resp = client.auth.refresh_session(body.refresh_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+    if auth_resp.session is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
     return TokenResponse(
         access_token=auth_resp.session.access_token,

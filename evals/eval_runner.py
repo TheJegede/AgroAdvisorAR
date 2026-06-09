@@ -23,13 +23,13 @@ from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone
 
 EMBEDDING_MODEL_PATH = os.environ.get(
-    "EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2"
+    "EMBEDDING_MODEL_PATH", "thenlper/gte-base"
 )
 PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
 # `or` (not get-default): a present-but-empty env var (e.g. an unset GitHub
 # secret injected as "") must still fall back, otherwise Pinecone .Index("")
 # fails with the opaque "Either name or host must be specified".
-PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME") or "agroar-prod"
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME") or "agroar-prod-gte-v2"
 
 DEFAULT_EVAL_SET = Path(__file__).parent / "eval_set.jsonl"
 RESULTS_DIR = Path(__file__).parent / "results"

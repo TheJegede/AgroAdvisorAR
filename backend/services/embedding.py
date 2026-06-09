@@ -1,7 +1,7 @@
 """Singleton sentence-transformer embedder for English retrieval.
 
-The model is whatever EMBEDDING_MODEL_PATH points at (MiniLM by default,
-thenlper/gte-base for the gte index) — the class name is historical.
+The model is whatever EMBEDDING_MODEL_PATH points at (thenlper/gte-base by
+default for the current gte index) — the class name is historical.
 """
 from sentence_transformers import SentenceTransformer
 from langchain_core.embeddings import Embeddings

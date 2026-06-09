@@ -65,7 +65,8 @@ async def score_corpus(
     seed: int = 7,
     verbose: bool = False,
 ) -> dict:
-    items = [json.loads(l) for l in open(eval_set_path)]
+    with eval_set_path.open(encoding="utf-8") as f:
+        items = [json.loads(l) for l in f]
     sampled = sample_items(items, sample_size, seed=seed)
 
     scores: list[float] = []

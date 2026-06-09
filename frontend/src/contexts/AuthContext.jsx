@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { clearAuthStorage, getAccessToken, setAuthTokens } from '../lib/authTokens'
 
 const AuthContext = createContext(null)
 
@@ -7,20 +8,18 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const stored = localStorage.getItem('access_token')
+    const stored = getAccessToken()
     if (stored) setToken(stored)
     setIsLoading(false)
   }, [])
 
   function login(accessToken, refreshToken) {
-    localStorage.setItem('access_token', accessToken)
-    localStorage.setItem('refresh_token', refreshToken)
+    setAuthTokens(accessToken, refreshToken)
     setToken(accessToken)
   }
 
   function logout() {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    clearAuthStorage()
     setToken(null)
   }
 

@@ -1,4 +1,10 @@
 import axios from 'axios'
+import {
+  clearAuthStorage,
+  getAccessToken,
+  redirectToLogin,
+  refreshAuthToken,
+} from './authTokens'
 
 // Base path is relative; in prod the Vercel rewrite proxies /api/* to the HF backend.
 const api = axios.create({
@@ -6,21 +12,30 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
+  const token = getAccessToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
+  async (err) => {
     if (err.response?.status === 401) {
       const isAuthEndpoint = err.config?.url?.includes('/auth/')
-      if (!isAuthEndpoint) {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('agro_lang')
-        window.location.href = '/login'
+      if (!isAuthEndpoint && !err.config?._retry) {
+        try {
+          const accessToken = await refreshAuthToken()
+          err.config._retry = true
+          err.config.headers = err.config.headers ?? {}
+          err.config.headers.Authorization = `Bearer ${accessToken}`
+          return api(err.config)
+        } catch {
+          clearAuthStorage()
+          redirectToLogin()
+        }
+      } else if (!isAuthEndpoint) {
+        clearAuthStorage()
+        redirectToLogin()
       }
     }
     return Promise.reject(err)

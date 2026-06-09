@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone, ServerlessSpec
 from langchain_core.documents import Document
 
-MODEL_NAME = os.environ.get("EMBEDDING_MODEL_PATH", "sentence-transformers/all-MiniLM-L6-v2")
+MODEL_NAME = os.environ.get("EMBEDDING_MODEL_PATH", "thenlper/gte-base")
 BATCH_SIZE = 64
 
 

@@ -1,4 +1,10 @@
 import { useState, useCallback, useRef } from 'react'
+import {
+  clearAuthStorage,
+  getAccessToken,
+  redirectToLogin,
+  refreshAuthToken,
+} from '../lib/authTokens'
 
 export function parseSSEPayload(payload) {
   try {
@@ -17,6 +23,41 @@ export function beginRequest(abortRef) {
   const controller = new AbortController()
   abortRef.current = controller
   return controller
+}
+
+function queryHeaders(token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  return headers
+}
+
+export async function fetchQueryWithAuth({ payload, signal }) {
+  const runFetch = (token) => fetch('/api/v1/query', {
+    method: 'POST',
+    headers: queryHeaders(token),
+    body: JSON.stringify(payload),
+    signal,
+  })
+
+  let res = await runFetch(getAccessToken())
+  if (res.status !== 401) return res
+
+  try {
+    const refreshedToken = await refreshAuthToken()
+    res = await runFetch(refreshedToken)
+  } catch {
+    clearAuthStorage()
+    redirectToLogin()
+    return null
+  }
+
+  if (res.status === 401) {
+    clearAuthStorage()
+    redirectToLogin()
+    return null
+  }
+
+  return res
 }
 
 export function useSSEQuery() {
@@ -43,32 +84,22 @@ export function useSSEQuery() {
     lastQueryRef.current = { message, language, sessionHistory, sessionId, lastCategory, onResult, onOOS, onError, onCategory }
 
     const controller = beginRequest(abortRef)
-    const token = localStorage.getItem('access_token')
 
     try {
-      const res = await fetch('/api/v1/query', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      const res = await fetchQueryWithAuth({
+        payload: {
           message,
           language,
           session_history: sessionHistory,
           session_id: sessionId ?? null,
           last_category: lastCategory ?? null,
-        }),
+        },
         signal: controller.signal,
       })
 
+      if (!res) return
+
       if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          window.location.href = '/login'
-          return
-        }
         const body = await res.json().catch(() => ({}))
         throw new Error(body.detail || `Request failed: ${res.status}`)
       }

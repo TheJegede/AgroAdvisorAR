@@ -9,7 +9,7 @@ appends a row to the `eval_runs` Supabase table. The admin dashboard
 1. Checks out the repo
 2. Installs Python 3.11 + `evals/requirements.txt` + `backend/requirements.txt`
 3. **Retrieval eval (always runs):** embeds every query in
-   `evals/eval_set_v2.jsonl` with the base `all-MiniLM-L6-v2`, queries
+   `evals/eval_set_v2.jsonl` with `thenlper/gte-base`, queries
    Pinecone top-5, computes MRR@5 + NDCG@5 + Hit@1 + Hit@5
 4. **Answer eval (when `RUN_ANSWER_EVAL=1`):** samples 20 items, runs the
    full RAG chain on each (Gemini → Groq fallback), then judges each
@@ -33,7 +33,7 @@ Add at GitHub → repo → Settings → Secrets and variables → Actions →
 | Name                  | Value                                                  |
 |-----------------------|--------------------------------------------------------|
 | `PINECONE_API_KEY`    | Same as your `.env` value                              |
-| `PINECONE_INDEX_NAME` | `agroar-prod`                                          |
+| `PINECONE_INDEX_NAME` | `agroar-prod-gte-v2`                                   |
 | `SUPABASE_URL`        | `https://fxncwvrplzlhrmbxvrfu.supabase.co`             |
 | `SUPABASE_SERVICE_KEY`| The `sb_secret_…` key (service role — bypasses RLS)    |
 
@@ -63,15 +63,16 @@ If the job fails, open the Actions tab → click the failed run → expand
 - **`No module named …`:** `evals/requirements.txt` missing a dep. Add it,
   push, re-run.
 
-## Why the workflow uses the base model, not the fine-tuned one
+## Why the workflow uses gte-base, not the fine-tuned one
 
 The fine-tuned model `models/agroar-embeddings-v2/` is `.gitignored`
 (~60MB, too heavy for git). GitHub Actions runners don't have it on disk,
-so the workflow falls back to the upstream HuggingFace model. Result: the
+so the workflow uses the upstream HuggingFace gte-base model. Result: the
 nightly metric reflects **corpus-side drift**, not model quality.
 
-Numbers will look low compared to production (base MRR@5 ≈ 0.17 vs v2 ≈ 0.66).
-That is expected. The point is to catch *regressions* — e.g. if someone
+Numbers should be interpreted as retrieval-regression checks for the current
+`agroar-prod-gte-v2` corpus, not as a final answer-quality score. The point is
+to catch *regressions* — e.g. if someone
 re-ingests the corpus and breaks retrieval, the metric drops vs yesterday.
 
 The `model_version` column in `eval_runs` records the exact model path used
@@ -103,7 +104,7 @@ Run this when you want nightly numbers to match production.
 
    ```yaml
    env:
-     EMBEDDING_MODEL_PATH: <YOUR_HF_USER>/agroar-embeddings-v2
+EMBEDDING_MODEL_PATH: <YOUR_HF_USER>/agroar-embeddings-v2
      HF_TOKEN: ${{ secrets.HF_TOKEN }}
      # … other env unchanged
    ```
@@ -137,7 +138,8 @@ To replicate what CI does, set the same env vars and run:
 ```bash
 EVAL_WRITE_TO_DB=1 \
 RUN_ANSWER_EVAL=1 \
-EMBEDDING_MODEL_PATH=sentence-transformers/all-MiniLM-L6-v2 \
+EMBEDDING_MODEL_PATH=thenlper/gte-base \
+PINECONE_INDEX_NAME=agroar-prod-gte-v2 \
 python evals/eval_runner.py --eval-set evals/eval_set_v2.jsonl
 ```
 
