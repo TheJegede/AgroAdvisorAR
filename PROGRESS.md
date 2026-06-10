@@ -216,6 +216,9 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
    Levers: (a) inspect suppressed soybeans items for guard miscalibration, (b) re-examine corpus coverage
    for soybeans sub-topics, (c) arXiv preprint draft using honest 20% 70B number.
 
+### ▶ NEXT SESSION KICKOFF — pilot-readiness next steps
+> Plan: `docs/superpowers/plans/2026-06-09-pilot-readiness-next-steps.md` (local/gitignored). Critical path: gold-label ~30-40 items (scaffold via new `evals/diagnostic/scaffold_gold.py`) → run `python -m evals.diagnostic.runner` → read D3 split → build ONLY the answer-quality lever the split earns (L1/L2/L3/ingestion still deferred until then). Plus PWA prod-verify + Lighthouse + PRD M5 wording.
+
 ### Pillar 0 diagnostic harness — SHIPPED 2026-06-09
 > Source: PRD `AgroAdvisor_pilot_readiness_PRD.md` + roadmap `AgroAdvisor_pilot_readiness_IMPLEMENTATION_PLAN.md` + TDD plan `docs/superpowers/plans/2026-06-09-diagnostic-harness.md` (all three kept local/gitignored). Built on branch `pilot-readiness-tracks` (8 commits, 33 pytest green).
 `evals/diagnostic/` classifies a human gold-labeled sample into buckets (D2/D3).

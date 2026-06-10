@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from models.advisory import AdvisoryDraft, AdvisoryResponse, ContextMeta
+from models.advisory import AdvisoryDraft, AdvisoryResponse, ContextMeta, Citation
 
 
 # Guard-computed fields must NOT be on the LLM-facing schema — exposing them to
@@ -28,6 +28,13 @@ def test_draft_carries_all_llm_authored_fields():
         "confidence_explanation", "language", "context_meta",
     }
     assert expected.issubset(AdvisoryDraft.model_fields)
+
+
+def test_citation_section_is_optional():
+    # Fallback models (8b/Gemini) legitimately emit section=null; a required
+    # str crashed generation with OutputParserException. Mirror the url field.
+    c = Citation(document_title="MP44", section=None)
+    assert c.section is None
 
 
 def test_response_is_constructable_from_draft_dump():

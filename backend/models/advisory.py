@@ -16,7 +16,7 @@ class Product(BaseModel):
 
 class Citation(BaseModel):
     document_title: str
-    section: str
+    section: str | None = None
     url: str | None = None
 
 

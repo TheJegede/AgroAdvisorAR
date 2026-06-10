@@ -54,3 +54,7 @@ AgroAdvisor_pilot_readiness_PRD.md
 AgroAdvisor_pilot_readiness_IMPLEMENTATION_PLAN.md
 docs/superpowers/plans/2026-06-09-diagnostic-harness.md
 docs/superpowers/plans/2026-06-09-pwa-channel.md
+docs/superpowers/plans/2026-06-09-pilot-readiness-next-steps.md
+# Diagnostic gold-label scratch (one-shot generators + intermediates)
+evals/diagnostic/_*
+evals/diagnostic/dump_detail.py
