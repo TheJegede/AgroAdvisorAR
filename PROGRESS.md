@@ -27,6 +27,12 @@ reaches the new backend). Remaining items are pilot-data integrity, external API
    dashboard SQL editor, 2026-06-08). O1 found only these two missing.
 2. ✅ **DONE — HF backend redeployed** (owner pushed verified `hf-deploy` orphan branch → HF Space,
    2026-06-08; Claude built+verified the branch, backend suite 219 pass on it).
+   **▶ AUTOMATED 2026-06-10 — backend redeploy NO LONGER owner-blocked.** GitHub Action
+   `.github/workflows/deploy-backend.yml` (commit `5455182`) replays the orphan-push to the HF Space on
+   every push to `main` touching `backend/**`/`Dockerfile`/`.dockerignore`/`README-space.md` (+ manual
+   `workflow_dispatch`), auth via repo secret `HF_TOKEN`. Mirrors the Vercel frontend auto-deploy. So any
+   backend change now ships itself on push — e.g. the pending SSE-heartbeat fix will deploy automatically
+   once merged. Manual orphan-push remains the fallback if the Action breaks (steps in CLAUDE.md #4).
 3. **Research-station coordinates — identities/addresses VERIFIED, exact GPS pending** (C2, 2026-06-08).
    All 10 confirmed vs authoritative UA AAES listings; `source` field rewritten (no longer blanket
    UNVERIFIED); `main_fayetteville` renamed Milo J. Shult AREC; added AR-bbox guard test. **Owner residual:**
@@ -247,6 +253,19 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 | AFTER (directive live) | **0.429** (3/7) |
 
 **Verdict: L1 prompt directive moved the metric by 0.0.** 4/7 conditionals still collapse their branch-structure to a bare value with the directive in place. A single output-instruction directive is insufficient to fix dropped-condition generation. The measure-half (answer-side `conditional_completeness_rate` judge) is validated and now the live instrument for the next lever. **NEXT = L2: few-shot conditional exemplars** (show the model 2-3 worked multi-branch examples in the prompt), re-measure on the same 7-row gold via `python -m evals.diagnostic.runner --gold evals/diagnostic/gold_conditional.jsonl` (conditional-only subset, ~7 gen calls vs 40). Keep the directive (cheap, harmless, may compound with L2). Run was fast once warm; earlier 30-min "hang" was a transient slow first call (runner now logs per-record progress to stderr).
+
+#### ▶ SSE HEARTBEAT + DISCONNECT RESILIENCE — SHIPPED 2026-06-10 (silent-vanish fix)
+> Plan: `docs/superpowers/plans/2026-06-10-sse-heartbeat-disconnect-resilience.md`. Built inline TDD, 5 tasks, 4 commits on `main` (NOT yet pushed to origin).
+
+Root cause (LangSmith): novel/freeform advisory queries showed the tractor then vanished — `event_stream()` awaited `run_rag_query` (~6s LLM) yielding ZERO bytes; idle SSE through the Vercel `/api/*` rewrite → HF Space got reaped at ~6s; the `CancelledError` (a `BaseException`) slipped past `except Exception` so no error frame, and the frontend loop ended without adding a message. Cached/suggested queries survive (Redis first byte); novel ones didn't.
+
+**Three independent fixes, all green:**
+- **T1 backend heartbeat** (`backend/routers/query.py`): immediate `: keepalive` first byte + ping every `HEARTBEAT_INTERVAL_SECONDS=2` while `run_rag_query` runs as `asyncio.create_task`; defeats the proxy idle reap.
+- **T2 cancel-safety**: `except asyncio.CancelledError` cancels the in-flight rag task + re-raises (no longer masked as generic error); `finally` cancels if still running. Test `backend/tests/test_query_heartbeat.py` (3 new).
+- **T3/T4 frontend**: extracted pure `consumeSSEStream(reader,{onResult,onCategory})` → returns `delivered` bool, throws on `{error}` frame, skips comment/malformed lines; `STREAM_EMPTY_CODE` export. `sendQuery` now flags empty streams retryable → `onError(STREAM_EMPTY_CODE)`; ChatPage maps to `t.connectionInterrupted` (EN+ES i18n). Tests in `useSSEQuery.test.js` (4 new).
+- **T5 e2e** `frontend/e2e/sse-resilience.spec.js`: empty `data: [DONE]` stream renders a visible Retry + error, not a silent vanish.
+
+**Verified:** backend `pytest -q` 236 pass · frontend `vitest run` 75 pass + lint clean · playwright `chat`+`sse-resilience` 6 pass. **Deploy:** frontend ships on Vercel push immediately; backend heartbeat auto-deploys to HF via `.github/workflows/deploy-backend.yml` on push to `main` (`backend/**` touched). Post-deploy check: ask a novel uncached freeform query, confirm the advisory streams through without the tractor vanishing.
 
 > Ungated PWA doc loose-end done: PRD M5 + P2 wording now state offline=abstention (reference-only cache; time-sensitive → verify stub). PWA prod phone-verify + Lighthouse (D1/D2) still owner-side/manual.
 
