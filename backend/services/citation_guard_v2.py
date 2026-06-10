@@ -141,6 +141,63 @@ CLAIMS:
 """
 
 
+_MERGED_JUDGE_PROMPT = """You are auditing an agricultural advisory for groundedness.
+From the ANSWER, extract up to 8 atomic factual claims (one fact each). Then label
+each claim against the EVIDENCE passages:
+- ENTAILED: the evidence supports the claim (paraphrase and equivalent numbers count).
+- NEUTRAL: the evidence neither supports nor contradicts it.
+- CONTRADICTED: the evidence states the opposite (e.g. a different rate/product, a negation).
+Return ONLY a JSON array, one object per claim:
+[{{"claim": "...", "label": "ENTAILED|NEUTRAL|CONTRADICTED", "score": 0.0-1.0}}]
+score = your confidence the claim is supported (1.0 fully supported, 0.0 unsupported/contradicted).
+
+EVIDENCE:
+{evidence}
+
+ANSWER:
+{answer}
+"""
+
+
+def _postprocess_judge_array(raw: str, claims: list[str], chunks: list[str]) -> list[ClaimResult] | None:
+    """Parse a judge LLM's JSON array of {claim,label,score} into ClaimResults,
+    applying the lexical backstop and false-contradiction demotion. Returns None
+    if the response can't be coerced into one object per claim (caller falls back).
+    """
+    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.MULTILINE).strip()
+    parsed = json.loads(raw)
+    # Normalize common deviations: a wrapped object, or a dict keyed by claim text.
+    if isinstance(parsed, dict):
+        for _key in ("claims", "results", "data"):
+            if isinstance(parsed.get(_key), list):
+                parsed = parsed[_key]
+                break
+        else:
+            if parsed and all(isinstance(v, dict) for v in parsed.values()):
+                parsed = [parsed.get(c, {}) for c in claims]
+    if not isinstance(parsed, list):
+        raise ValueError("judge response is not a list")
+    out: list[ClaimResult] = []
+    for claim, obj in zip(claims, parsed):
+        if not isinstance(obj, dict):
+            obj = {}
+        label = obj.get("label", "NEUTRAL")
+        if label not in _NLI_LABELS:
+            label = "NEUTRAL"
+        llm_score = float(obj.get("score", 0.0))
+        if llm_score > 1.0:
+            llm_score = llm_score / 100.0
+        llm_score = min(1.0, max(0.0, llm_score))
+        lexical = _lexical_support(claim, chunks[:3])
+        score = max(llm_score, lexical)
+        if label == "CONTRADICTED" and lexical >= LEXICAL_CONTRADICTION_GUARD:
+            label = "NEUTRAL"
+        out.append(ClaimResult(claim=claim, label=label, score=score))
+    if len(out) != len(claims):
+        return None
+    return out
+
+
 async def judge_claims_llm(claims: list[str], chunks: list[str], run_config: dict | None = None) -> list[ClaimResult]:
     """Score claims for groundedness with an LLM judge (provider chain), with a
     lexical backstop so specific grounded numbers/products are never under-scored."""
@@ -156,45 +213,52 @@ async def judge_claims_llm(claims: list[str], chunks: list[str], run_config: dic
             continue
         try:
             resp = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
-            raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", resp.content.strip(), flags=re.MULTILINE).strip()
-            parsed = json.loads(raw)
-            # Normalize common deviations so a recoverable response does not crash
-            # into the retired NLI fallback (F5): a wrapped object, or a dict keyed
-            # by claim text rather than a JSON array.
-            if isinstance(parsed, dict):
-                for _key in ("claims", "results", "data"):
-                    if isinstance(parsed.get(_key), list):
-                        parsed = parsed[_key]
-                        break
-                else:
-                    if parsed and all(isinstance(v, dict) for v in parsed.values()):
-                        parsed = [parsed.get(c, {}) for c in claims]
-            if not isinstance(parsed, list):
-                raise ValueError("judge response is not a list")
-            out: list[ClaimResult] = []
-            for claim, obj in zip(claims, parsed):
-                if not isinstance(obj, dict):
-                    obj = {}
-                label = obj.get("label", "NEUTRAL")
-                if label not in _NLI_LABELS:
-                    label = "NEUTRAL"
-                # Clamp to [0,1]; tolerate a 0–100 scale (F5b).
-                llm_score = float(obj.get("score", 0.0))
-                if llm_score > 1.0:
-                    llm_score = llm_score / 100.0
-                llm_score = min(1.0, max(0.0, llm_score))
-                lexical = _lexical_support(claim, chunks[:3])
-                score = max(llm_score, lexical)
-                # Lexical backstop also vetoes false contradictions on restated content.
-                if label == "CONTRADICTED" and lexical >= LEXICAL_CONTRADICTION_GUARD:
-                    label = "NEUTRAL"
-                out.append(ClaimResult(claim=claim, label=label, score=score))
-            if len(out) == len(claims):
+            out = _postprocess_judge_array(resp.content, claims, chunks)
+            if out is not None:
                 return out
         except Exception as e:
             logger.warning("LLM groundedness judge failed, trying next: %s", str(e)[:150])
     # Fallback: legacy NLI per-claim (sync CrossEncoder → run off the event loop).
     return await asyncio.to_thread(lambda: [verify_claim(c, chunks) for c in claims])
+
+
+async def judge_answer_llm(answer: str, chunks: list[str], run_config: dict | None = None) -> list[ClaimResult]:
+    """One-call guard: extract atomic claims from `answer` AND label each for
+    groundedness vs `chunks`, returning ClaimResults. Same model/post-processing
+    as the two-step path, one fewer round-trip. Raises if every provider fails
+    (caller in verify_answer falls back to decompose+judge)."""
+    if not chunks:
+        return []
+    evidence = "\n---\n".join(chunk[:CHUNK_PREVIEW_LENGTH] for chunk in chunks[:3])
+    prompt = _MERGED_JUDGE_PROMPT.format(evidence=evidence, answer=answer[:2000])
+    last_err: Exception | None = None
+    for llm in _providers():
+        if llm is None:
+            continue
+        try:
+            resp = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
+            # Re-derive the claim list from the response so post-processing aligns
+            # one object per claim (the LLM both produced and labeled them).
+            raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", resp.content.strip(), flags=re.MULTILINE).strip()
+            parsed = json.loads(raw)
+            if isinstance(parsed, dict):
+                for _key in ("claims", "results", "data"):
+                    if isinstance(parsed.get(_key), list):
+                        parsed = parsed[_key]
+                        break
+            if not isinstance(parsed, list):
+                raise ValueError("merged judge response is not a list")
+            claims = [str(obj.get("claim", "")) for obj in parsed if isinstance(obj, dict)][:8]
+            if not claims:
+                return []
+            out = _postprocess_judge_array(json.dumps(parsed[:8]), claims, chunks)
+            if out is not None:
+                return out
+            raise ValueError("merged judge post-processing produced misaligned results")
+        except Exception as e:
+            last_err = e
+            logger.warning("Merged guard judge provider failed, trying next: %s", str(e)[:150])
+    raise last_err or RuntimeError("merged guard judge: no providers available")
 
 
 def verify_claim(claim: str, chunks: list[str]) -> ClaimResult:

@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from pathlib import Path
 
@@ -660,3 +661,67 @@ def test_postprocess_scrubs_document_prefix_from_displayed_fields(monkeypatch):
     # Real content preserved.
     assert "Scout weekly." in result.recommended_actions[0]
     assert result.citations[0].document_title == "Rice Guide"
+
+
+from services import citation_guard_v2 as g
+
+
+def test_postprocess_judge_array_applies_lexical_backstop():
+    # LLM under-scores a grounded numeric claim; lexical overlap must lift it.
+    claims = ["Apply 32 oz per acre of product X."]
+    chunks = ["Use product X at 32 oz per acre during early season."]
+    raw = '[{"claim": "Apply 32 oz per acre of product X.", "label": "NEUTRAL", "score": 0.1}]'
+    results = g._postprocess_judge_array(raw, claims, chunks)
+    assert len(results) == 1
+    assert results[0].score >= 0.6  # lexical backstop lifted it
+
+
+def test_postprocess_judge_array_demotes_false_contradiction():
+    claims = ["Rice needs flooding at 4 inch depth."]
+    chunks = ["Maintain a 4 inch flood depth on rice."]
+    raw = '[{"claim": "Rice needs flooding at 4 inch depth.", "label": "CONTRADICTED", "score": 0.0}]'
+    results = g._postprocess_judge_array(raw, claims, chunks)
+    assert results[0].label == "NEUTRAL"  # high lexical overlap vetoes contradiction
+
+
+class _FakeLLM:
+    def __init__(self, content):
+        self._content = content
+
+    async def ainvoke(self, messages, config=None):
+        class _Resp:
+            pass
+        r = _Resp()
+        r.content = self._content
+        return r
+
+
+def test_judge_answer_llm_extracts_and_labels_in_one_call(monkeypatch):
+    content = (
+        '[{"claim": "Soybeans in NE Arkansas are seeded at 140k seeds per acre.",'
+        ' "label": "ENTAILED", "score": 0.9}]'
+    )
+    monkeypatch.setattr(g, "_providers", lambda: [_FakeLLM(content)])
+    answer = "Soybeans in NE Arkansas are seeded at 140k seeds per acre."
+    chunks = ["Recommended soybean seeding rate in northeast Arkansas is ~140,000 seeds/acre."]
+    results = asyncio.run(g.judge_answer_llm(answer, chunks))
+    assert len(results) == 1
+    assert results[0].label == "ENTAILED"
+    assert results[0].score >= 0.9
+
+
+def test_judge_answer_llm_empty_chunks_returns_neutral(monkeypatch):
+    monkeypatch.setattr(g, "_providers", lambda: [_FakeLLM("[]")])
+    results = asyncio.run(g.judge_answer_llm("Some claim.", []))
+    assert results == [] or all(r.label == "NEUTRAL" for r in results)
+
+
+def test_judge_answer_llm_raises_when_all_providers_fail(monkeypatch):
+    class _BadLLM:
+        async def ainvoke(self, messages, config=None):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr(g, "_providers", lambda: [_BadLLM()])
+    import pytest
+    with pytest.raises(Exception):
+        asyncio.run(g.judge_answer_llm("Some claim.", ["evidence"]))
