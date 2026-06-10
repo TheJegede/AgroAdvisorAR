@@ -58,7 +58,7 @@ async def fetch_ssurgo(fips: str) -> dict:
         area_symbol = fips_to_areasymbol(fips)
         query = SSURGO_QUERY.format(area_symbol=area_symbol).strip()
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
+            async with httpx.AsyncClient(timeout=config.CONTEXT_FETCH_TIMEOUT) as client:
                 resp = await client.post(
                     config.SSURGO_ENDPOINT,
                     data={"query": query, "format": "json+columnname+metadata"},
@@ -100,7 +100,7 @@ async def fetch_noaa(fips: str) -> dict:
 
         try:
             async with httpx.AsyncClient(
-                timeout=3.0,
+                timeout=config.CONTEXT_FETCH_TIMEOUT,
                 headers={"User-Agent": config.NOAA_USER_AGENT},
             ) as client:
                 # Step 1: resolve gridpoint

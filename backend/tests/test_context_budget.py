@@ -51,3 +51,28 @@ def test_get_context_returns_real_data_within_budget(monkeypatch):
     ctx = asyncio.run(context.get_context("05055"))
     assert ctx["soil"]["available"] is True
     assert ctx["weather"]["available"] is True
+
+
+def test_fetchers_use_config_fetch_timeout(monkeypatch):
+    monkeypatch.setattr(config, "CONTEXT_FETCH_TIMEOUT", 1.5)
+    captured = {}
+
+    real_client = context.httpx.AsyncClient
+
+    def spy_client(*args, **kwargs):
+        captured.setdefault("timeouts", []).append(kwargs.get("timeout"))
+        return real_client(*args, **kwargs)
+
+    monkeypatch.setattr(context.httpx, "AsyncClient", spy_client)
+
+    # Force a cache miss and a quick network failure so the fetcher constructs a
+    # client then returns unavailable. county 05055 is valid; the URL will be hit
+    # but we only assert on the timeout passed to AsyncClient.
+    monkeypatch.setattr(context, "cache_get", lambda k: None)
+    monkeypatch.setattr(context, "cache_set", lambda *a, **k: None)
+
+    asyncio.run(context.fetch_ssurgo("05055"))
+    asyncio.run(context.fetch_noaa("05055"))
+
+    assert captured["timeouts"], "AsyncClient was never constructed"
+    assert all(t == 1.5 for t in captured["timeouts"])
