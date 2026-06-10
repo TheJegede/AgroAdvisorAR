@@ -32,6 +32,20 @@ compliance, prepend a safety warning to the warnings array regardless of other c
 "WARNING: Chemical handling errors can cause serious injury. Consult product label and
 your county extension agent before mixing or applying any pesticide." """
 
+CONDITIONAL_RULE_BLOCK = """CONDITIONAL RULES — PRESERVE EVERY CONDITION:
+Many recommendations in the retrieved context are conditional: a rate, threshold,
+timing, or restriction that only holds under a stated condition. Examples of the
+conditions you must keep: soil texture (coarse/medium/fine), crop growth stage or
+weeks after heading, crop variety (e.g. Clearfield-only), water clarity, and
+application timing (e.g. before bud break).
+When the context states a conditional rule you MUST:
+- State each condition together with its matching value or branch. Never collapse a
+  multi-branch rule to a single number.
+- If the rule has multiple branches (e.g. different rates per soil texture, or
+  different thresholds per growth stage), list every branch with its condition.
+- Never give a bare rate, threshold, or restriction without the condition that
+  governs it when the context attaches one."""
+
 OUT_OF_SCOPE_MESSAGES = {
     "en": (
         "AgroAdvisor AR is specialized for rice, soybean, and poultry questions in Arkansas. "
@@ -113,5 +127,8 @@ def build_system_prompt(
     if is_safety_critical:
         parts.append("")
         parts.append(SAFETY_OVERRIDE)
+
+    parts.append("")
+    parts.append(CONDITIONAL_RULE_BLOCK)
 
     return "\n".join(parts)
