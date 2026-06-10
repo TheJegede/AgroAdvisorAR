@@ -29,10 +29,13 @@ def classify(record: GoldRecord, judge: JudgeResult, span_verified: bool) -> Buc
         return Bucket.QUARANTINED
     if not record.gold_found:
         return Bucket.B_ABSENT
-    if judge.partial:
-        return Bucket.B4
+    # Hard deterministic signal first: if the gold fact is verifiably in the
+    # retrieved chunks it is answerable (B2), regardless of the judge's soft
+    # `partial` opinion. Only honour `partial` when the span did NOT verify.
     if span_verified:
         return Bucket.B2
+    if judge.partial:
+        return Bucket.B4
     # Span absent or failed deterministic verification → not in retrieved chunks.
     if record.source_in_index:
         return Bucket.B_MISS

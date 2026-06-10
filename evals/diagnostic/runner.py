@@ -15,7 +15,7 @@ from typing import Optional
 
 from evals.diagnostic.gold_schema import load_gold_records, GoldRecord
 from evals.diagnostic.buckets import Bucket, classify, JudgeResult
-from evals.diagnostic.span_verify import span_in_chunks
+from evals.diagnostic.span_verify import fact_retrieved
 from evals.diagnostic.pipeline_flags import is_abstention
 from evals.diagnostic.containment_judge import judge_containment
 
@@ -91,7 +91,7 @@ async def _classify_record(record: GoldRecord, run_rag_query) -> ClassifiedItem:
         verified = False
     else:
         judge = judge_containment(record.gold_answer, chunks)
-        verified = span_in_chunks(judge.span, chunks)
+        verified = fact_retrieved(record.gold_snippet, judge.span, chunks)
 
     bucket = classify(record, judge, span_verified=verified)
     return ClassifiedItem(

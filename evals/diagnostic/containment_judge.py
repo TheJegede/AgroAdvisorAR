@@ -7,11 +7,21 @@ only a quoted span (or null) + a partial flag. It is never asked to author
 the answer.
 """
 import os
+import re
 import json
+import time
 from dataclasses import dataclass
 from typing import Optional
 
 from evals.diagnostic.buckets import JudgeResult
+
+# Gemini returns transient 503 UNAVAILABLE ("high demand") / 429 spikes that
+# resolve on their own; a single one must not crash a whole gate run.
+_TRANSIENT_RE = re.compile(r"\b(503|429|unavailable|overloaded|deadline)\b", re.I)
+
+
+def _is_transient(err: Exception) -> bool:
+    return bool(_TRANSIENT_RE.search(str(err)))
 
 JUDGE_MODEL = os.environ.get("CONTAINMENT_JUDGE_MODEL", "gemini-2.5-flash")
 
@@ -68,11 +78,19 @@ def _get_judge():
     return _judge_llm
 
 
-def judge_containment(gold_answer: str, chunks: list[dict]) -> JudgeResult:
+def judge_containment(gold_answer: str, chunks: list[dict], llm=None,
+                      max_attempts: int = 3, sleep=time.sleep) -> JudgeResult:
     from langchain_core.messages import SystemMessage, HumanMessage
     messages = [
         SystemMessage(content=JUDGE_SYSTEM),
         HumanMessage(content=build_judge_prompt(gold_answer, chunks)),
     ]
-    resp = _get_judge().invoke(messages)
-    return parse_judge_response(resp.content)
+    judge = llm if llm is not None else _get_judge()
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = judge.invoke(messages)
+            return parse_judge_response(resp.content)
+        except Exception as err:  # noqa: BLE001 — re-raised below if not retryable
+            if attempt >= max_attempts or not _is_transient(err):
+                raise
+            sleep(2 ** (attempt - 1))  # 1s, 2s backoff

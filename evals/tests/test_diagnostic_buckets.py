@@ -24,9 +24,18 @@ def test_gold_not_found_is_absent():
     assert classify(rec, JudgeResult(span=None, partial=False), span_verified=False) is Bucket.B_ABSENT
 
 
-def test_partial_is_b4():
+def test_partial_without_verified_span_is_b4():
+    # partial only governs when the deterministic span did NOT verify.
     rec = _gold()
-    assert classify(rec, JudgeResult(span="snip", partial=True), span_verified=True) is Bucket.B4
+    assert classify(rec, JudgeResult(span="snip", partial=True), span_verified=False) is Bucket.B4
+
+
+def test_verified_span_dominates_partial():
+    # The hard deterministic signal (verbatim gold span in chunks) beats the
+    # judge's soft partial opinion. Regression: item [7] — span_verified=True
+    # but partial=True was wrongly bucketed B4 instead of B2.
+    rec = _gold()
+    assert classify(rec, JudgeResult(span="snip", partial=True), span_verified=True) is Bucket.B2
 
 
 def test_verified_span_is_b2():

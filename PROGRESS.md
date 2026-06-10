@@ -216,8 +216,22 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
    Levers: (a) inspect suppressed soybeans items for guard miscalibration, (b) re-examine corpus coverage
    for soybeans sub-topics, (c) arXiv preprint draft using honest 20% 70B number.
 
-### ▶ NEXT SESSION KICKOFF — pilot-readiness next steps
-> Plan: `docs/superpowers/plans/2026-06-09-pilot-readiness-next-steps.md` (local/gitignored). Critical path: gold-label ~30-40 items (scaffold via new `evals/diagnostic/scaffold_gold.py`) → run `python -m evals.diagnostic.runner` → read D3 split → build ONLY the answer-quality lever the split earns (L1/L2/L3/ingestion still deferred until then). Plus PWA prod-verify + Lighthouse + PRD M5 wording.
+### ▶ D3 GATE RUN — 2026-06-10 (split read, lever named)
+> Plan: `docs/superpowers/plans/2026-06-09-pilot-readiness-next-steps.md` (local/gitignored). Ran the gate on the 40-item gold sample with DeepInfra 70B generator (`LLM_PRIMARY=deepinfra` — Groq 70B was TPD-exhausted; matches the n=20 baseline generator) + Gemini 2.5-flash containment judge.
+
+**Authoritative split (corrected gold):** `B2=14 B_MISS=4 B3=1 B4=4 QUARANTINED=15 B_ABSENT=0 B_ABSENT_answered=2`; `judge_error_rate=0.0` (calibration_n=8); `lever1_conditional_fraction_of_b2=0.357`.
+
+**Lever named = GENERATION (answer-quality), NOT retrieval/ingestion.** B2 (gold fact verifiably retrieved, yet answer still wrong) dominates the 25 judged items ⇒ generation is the ceiling — confirms the 70B prod-eval correctness=20% finding with a clean instrument. Conditional-rule handling (L1) = 0.357 of B2 (~5/14). B_MISS=4 (retrieval; 5 levers already rejected) + B3=1 (corpus gap) both small. **Next session = write the generation-lever TDD plan (L1 conditional-rule first); do NOT build before the plan.**
+
+**Calibration root-cause (judge_error_rate 0.6→0.0), 2 real code bugs found + fixed (TDD):**
+- `buckets.classify` checked the judge's soft `partial` flag BEFORE the deterministic `span_verified` → a verbatim-retrieved fact wrongly bucketed B4. Fix: hard signal wins (span_verified→B2 first). (regression item [7]).
+- `span_verify` verified the *judge's* returned span (LLM output, stitches across the `\n---\n` chunk join / drifts whitespace) → false B_MISS when the gold fact WAS present. Fix: new `fact_retrieved(gold_snippet, judge_span, chunks)` anchors on the verbatim human gold_snippet first, judge span as paraphrase fallback (regression item [8]).
+- Also hardened `judge_containment` with bounded retry on transient Gemini 503/429 (was crashing whole gate runs).
+- Residual disagreements were a B4 *rubric* gap (owner decision: B4 = containment `partial` only, not holistic answer-quality). Relabeled [1]→B2, [4]→B_MISS; set_aside [0] (derived computation) + [6] (generic-header gold, needs re-transcription). 
+
+**SAFETY FLAG (open):** `B_ABSENT_answered=2` — pipeline answered the 2 corn questions (rice/soy namespaces) instead of abstaining = scope-abstention gap (hallucination signal). Investigate separately.
+
+> Ungated PWA doc loose-end done: PRD M5 + P2 wording now state offline=abstention (reference-only cache; time-sensitive → verify stub). PWA prod phone-verify + Lighthouse (D1/D2) still owner-side/manual.
 
 ### Pillar 0 diagnostic harness — SHIPPED 2026-06-09
 > Source: PRD `AgroAdvisor_pilot_readiness_PRD.md` + roadmap `AgroAdvisor_pilot_readiness_IMPLEMENTATION_PLAN.md` + TDD plan `docs/superpowers/plans/2026-06-09-diagnostic-harness.md` (all three kept local/gitignored). Built on branch `pilot-readiness-tracks` (8 commits, 33 pytest green).
