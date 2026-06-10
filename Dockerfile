@@ -18,14 +18,16 @@ WORKDIR /app
 COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# Copy the backend source.
-COPY backend/ /app/
-
 # Pre-download the embedding + NLI models at build time so cold starts are fast
-# (otherwise they download on first request). Safe to remove if the build is slow.
+# (otherwise they download on first request). Placed BEFORE `COPY backend/` so a
+# backend code change doesn't bust this ~500MB layer — only a requirements.txt
+# change re-downloads. Depends solely on sentence-transformers + the cache ENV.
 RUN python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; \
 SentenceTransformer('thenlper/gte-base'); \
 CrossEncoder('cross-encoder/nli-MiniLM2-L6-H768')"
+
+# Copy the backend source (changes most often -> kept last to preserve caches above).
+COPY backend/ /app/
 
 EXPOSE 7860
 # main.py defines `app` (FastAPI). Bind 0.0.0.0:7860 for HF.
