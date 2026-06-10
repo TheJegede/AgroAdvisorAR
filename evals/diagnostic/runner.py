@@ -18,6 +18,9 @@ from evals.diagnostic.buckets import Bucket, classify, JudgeResult
 from evals.diagnostic.span_verify import fact_retrieved
 from evals.diagnostic.pipeline_flags import is_abstention
 from evals.diagnostic.containment_judge import judge_containment
+from evals.diagnostic.conditional_judge import (
+    judge_conditional, flatten_advisory, CompletenessResult,
+)
 
 _NAMESPACE_TO_CATEGORY = {
     "rice": "IN_SCOPE_RICE",
@@ -105,9 +108,17 @@ async def _classify_record(record: GoldRecord, run_rag_query) -> ClassifiedItem:
         verified = fact_retrieved(record.gold_snippet, judge.span, chunks)
 
     bucket = classify(record, judge, span_verified=verified)
+
+    cond_preserved = None
+    if (record.rule_type == "conditional" and record.gold_found
+            and not record.set_aside):
+        candidate = flatten_advisory(advisory_dict)
+        cond_preserved = judge_conditional(record.gold_answer, candidate).preserved
+
     return ClassifiedItem(
         query=record.query, bucket=bucket, human_bucket=record.human_bucket,
         abstained=abstained, rule_type=record.rule_type,
+        cond_preserved=cond_preserved,
     )
 
 

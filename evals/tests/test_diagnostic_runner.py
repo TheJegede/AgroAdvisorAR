@@ -76,3 +76,59 @@ def test_conditional_completeness_rate_none_when_unscored():
     report = build_report(items)
     assert report["conditional_completeness_rate"] is None
     assert report["conditional_scored_n"] == 0
+
+
+import asyncio
+import evals.diagnostic.runner as runner_mod
+from evals.diagnostic.gold_schema import GoldRecord
+
+
+def _gold(**kw):
+    base = dict(
+        query="how many stink bugs before I spray?", namespace="rice",
+        source_in_index=True, gold_found=True,
+        gold_answer="5 per 10 sweeps weeks 1-2, 10 per 10 sweeps weeks 3-4",
+        gold_source="rice insect thresholds", gold_snippet="10 RSB per 10 sweeps",
+        rule_type="conditional", human_bucket=None, set_aside=False,
+        set_aside_reason=None,
+    )
+    base.update(kw)
+    return GoldRecord(**base)
+
+
+def test_classify_scores_conditional_item(monkeypatch):
+    advisory = {"problem_summary": "Treat at 10 per 10 sweeps.",
+                "key_points": [], "recommended_actions": [], "warnings": [],
+                "products_rates": [], "detailed_explanation": None}
+
+    async def fake_rag(**kwargs):
+        return advisory, [{"snippet": "our threshold is 10 RSB per 10 sweeps"}]
+
+    monkeypatch.setattr(runner_mod, "judge_containment",
+                        lambda *a, **k: runner_mod.JudgeResult(span="10 RSB per 10 sweeps", partial=False))
+    monkeypatch.setattr(runner_mod, "fact_retrieved", lambda *a, **k: True)
+    monkeypatch.setattr(runner_mod, "judge_conditional",
+                        lambda *a, **k: runner_mod.CompletenessResult(preserved=False, missing="weeks 1-2 branch"))
+
+    item = asyncio.run(runner_mod._classify_record(_gold(), fake_rag))
+    assert item.bucket is Bucket.B2
+    assert item.cond_preserved is False
+
+
+def test_classify_skips_conditional_scoring_for_flat_rule(monkeypatch):
+    advisory = {"problem_summary": "x", "key_points": [], "recommended_actions": [],
+                "warnings": [], "products_rates": [], "detailed_explanation": None}
+
+    async def fake_rag(**kwargs):
+        return advisory, [{"snippet": "y"}]
+
+    monkeypatch.setattr(runner_mod, "judge_containment",
+                        lambda *a, **k: runner_mod.JudgeResult(span="y", partial=False))
+    monkeypatch.setattr(runner_mod, "fact_retrieved", lambda *a, **k: True)
+
+    def _boom(*a, **k):
+        raise AssertionError("judge_conditional must not run for flat rules")
+    monkeypatch.setattr(runner_mod, "judge_conditional", _boom)
+
+    item = asyncio.run(runner_mod._classify_record(_gold(rule_type="flat"), fake_rag))
+    assert item.cond_preserved is None
