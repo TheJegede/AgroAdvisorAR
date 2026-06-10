@@ -49,3 +49,30 @@ def test_conditional_rule_fraction_for_lever1():
     report = build_report(items)
     # Of answerable (B2) items, 1 of 2 is conditional.
     assert report["lever1_conditional_fraction_of_b2"] == 0.5
+
+
+def _item_cond(bucket, rule_type="conditional", cond_preserved=None):
+    return ClassifiedItem(query="q", bucket=bucket, human_bucket=None,
+                          abstained=False, rule_type=rule_type,
+                          cond_preserved=cond_preserved)
+
+
+def test_conditional_completeness_rate():
+    items = [
+        _item_cond(Bucket.B2, cond_preserved=True),
+        _item_cond(Bucket.B2, cond_preserved=False),
+        _item_cond(Bucket.B2, cond_preserved=True),
+        _item_cond(Bucket.B2, rule_type="flat", cond_preserved=None),  # excluded
+        _item_cond(Bucket.QUARANTINED, cond_preserved=None),           # excluded
+    ]
+    report = build_report(items)
+    # 2 of 3 scored conditional items preserved the condition.
+    assert report["conditional_completeness_rate"] == round(2 / 3, 3)
+    assert report["conditional_scored_n"] == 3
+
+
+def test_conditional_completeness_rate_none_when_unscored():
+    items = [_item_cond(Bucket.B2, rule_type="flat", cond_preserved=None)]
+    report = build_report(items)
+    assert report["conditional_completeness_rate"] is None
+    assert report["conditional_scored_n"] == 0

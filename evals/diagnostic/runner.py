@@ -35,6 +35,7 @@ class ClassifiedItem:
     human_bucket: Optional[str]
     abstained: bool
     rule_type: Optional[str]
+    cond_preserved: Optional[bool] = None
 
 
 def build_report(items: list[ClassifiedItem]) -> dict:
@@ -64,12 +65,22 @@ def build_report(items: list[ClassifiedItem]) -> dict:
     else:
         lever1_fraction = None
 
+    scored = [it for it in items
+              if it.rule_type == "conditional" and it.cond_preserved is not None]
+    if scored:
+        kept = sum(1 for it in scored if it.cond_preserved)
+        cond_rate = round(kept / len(scored), 3)
+    else:
+        cond_rate = None
+
     return {
         "counts": counts,
         "total": len(items),
         "judge_error_rate": error_rate,
         "calibration_n": len(labeled),
         "lever1_conditional_fraction_of_b2": lever1_fraction,
+        "conditional_completeness_rate": cond_rate,
+        "conditional_scored_n": len(scored),
     }
 
 
