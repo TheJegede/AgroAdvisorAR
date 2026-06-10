@@ -126,7 +126,17 @@ async def run_diagnostic(gold_path: Path) -> dict:
     sys.path.insert(0, str(Path(__file__).parent.parent.parent / "backend"))
     from services.rag import run_rag_query
     records = load_gold_records(gold_path)
-    items = [await _classify_record(r, run_rag_query) for r in records]
+    items = []
+    total = len(records)
+    for i, r in enumerate(records, 1):
+        print(f"[{i}/{total}] {r.namespace}: {r.query[:60]}...",
+              file=sys.stderr, flush=True)
+        item = await _classify_record(r, run_rag_query)
+        print(f"    -> {item.bucket.name}"
+              + (f" cond_preserved={item.cond_preserved}"
+                 if item.cond_preserved is not None else ""),
+              file=sys.stderr, flush=True)
+        items.append(item)
     return build_report(items)
 
 
