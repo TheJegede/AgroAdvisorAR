@@ -14,6 +14,43 @@ export function parseSSEPayload(payload) {
   }
 }
 
+// Returned to onError when a stream ends without delivering an advisory/oos/error.
+// ChatPage maps this code to a friendly, localized message.
+export const STREAM_EMPTY_CODE = 'stream_empty'
+
+// Reads the SSE body. Returns true if at least one advisory was delivered via
+// onResult, false if the stream ended (reader done or [DONE]) with nothing.
+// Throws Error(message) on a streamed {error} frame. Comment lines (": ...")
+// and malformed payloads are skipped.
+export async function consumeSSEStream(reader, { onResult, onCategory }) {
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let delivered = false
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop()
+
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue
+      const payload = line.slice(5).trim()
+      if (payload === '[DONE]') return delivered
+      const { parsed, malformed } = parseSSEPayload(payload)
+      if (malformed) continue
+      if (parsed.error) throw new Error(parsed.error)
+      if (parsed.category) onCategory?.(parsed.category)
+      onResult(parsed.advisory ?? parsed, parsed.message_id ?? null, parsed.category ?? null)
+      delivered = true
+    }
+  }
+
+  return delivered
+}
+
 // Abort any in-flight stream before starting a new one, then store the new
 // controller. A double-submit (chip + Enter) would otherwise run two streams,
 // both calling onResult (duplicate cards / out-of-order history) with only the

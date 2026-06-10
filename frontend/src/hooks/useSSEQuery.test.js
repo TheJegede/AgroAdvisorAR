@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { parseSSEPayload, beginRequest, fetchQueryWithAuth } from './useSSEQuery'
+import {
+  parseSSEPayload,
+  beginRequest,
+  fetchQueryWithAuth,
+  consumeSSEStream,
+} from './useSSEQuery'
 
 function makeStorage() {
   const values = new Map()
@@ -101,5 +106,57 @@ describe('parseSSEPayload', () => {
 
     expect(malformed).toBe(true)
     expect(parsed).toBeNull()
+  })
+})
+
+function readerFrom(chunks) {
+  const enc = new TextEncoder()
+  let i = 0
+  return {
+    read: async () =>
+      i < chunks.length
+        ? { done: false, value: enc.encode(chunks[i++]) }
+        : { done: true, value: undefined },
+  }
+}
+
+describe('consumeSSEStream', () => {
+  it('delivers an advisory and reports delivered=true', async () => {
+    const onResult = vi.fn()
+    const reader = readerFrom([
+      `data: ${JSON.stringify({ advisory: { problem_summary: 'ok' }, message_id: 'm1', category: 'IN_SCOPE_RICE:DIAG' })}\n\n`,
+      'data: [DONE]\n\n',
+    ])
+
+    const delivered = await consumeSSEStream(reader, { onResult })
+
+    expect(delivered).toBe(true)
+    expect(onResult).toHaveBeenCalledWith({ problem_summary: 'ok' }, 'm1', 'IN_SCOPE_RICE:DIAG')
+  })
+
+  it('reports delivered=false when the stream is only [DONE]', async () => {
+    const onResult = vi.fn()
+    const reader = readerFrom(['data: [DONE]\n\n'])
+
+    const delivered = await consumeSSEStream(reader, { onResult })
+
+    expect(delivered).toBe(false)
+    expect(onResult).not.toHaveBeenCalled()
+  })
+
+  it('reports delivered=false when the connection closes with nothing', async () => {
+    const onResult = vi.fn()
+    const reader = readerFrom([': keepalive\n\n', ': keepalive\n\n'])
+
+    const delivered = await consumeSSEStream(reader, { onResult })
+
+    expect(delivered).toBe(false)
+    expect(onResult).not.toHaveBeenCalled()
+  })
+
+  it('throws on a streamed error frame', async () => {
+    const reader = readerFrom([`data: ${JSON.stringify({ error: 'RAG failed' })}\n\n`])
+
+    await expect(consumeSSEStream(reader, { onResult: vi.fn() })).rejects.toThrow('RAG failed')
   })
 })
