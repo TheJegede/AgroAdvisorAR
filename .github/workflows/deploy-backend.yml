@@ -1,0 +1,57 @@
+name: Deploy backend to HF Space
+
+# Mirrors the manual orphan-branch deploy in CLAUDE.md. HF rejects the full repo
+# history (xet/LFS binaries), so we push a fresh orphan containing only the files
+# the Space needs. Auto-runs on push to main that touches backend artifacts.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'README-space.md'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:  # manual trigger from the Actions tab
+
+# Never run two deploys at once; cancel an in-progress one if a newer push lands.
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build orphan deploy commit and push to HF Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${HF_TOKEN:-}" ]; then
+            echo "::error::HF_TOKEN secret is not set"
+            exit 1
+          fi
+
+          git config user.name "Taiwo Jegede"
+          git config user.email "jegedetaiwo95@gmail.com"
+
+          # Orphan = no parents = no binary repo history HF would reject.
+          git checkout --orphan hf-deploy
+          git reset
+          cp README-space.md README.md
+          git add backend Dockerfile .dockerignore README.md
+          git commit -m "deploy: backend ${GITHUB_SHA::7}"
+
+          # Token injected via env (GitHub masks it in logs); not embedded in any
+          # committed file.
+          git push --force \
+            "https://WhoIsLuwah:${HF_TOKEN}@huggingface.co/spaces/WhoIsLuwah/agroadvisor-backend" \
+            HEAD:main
