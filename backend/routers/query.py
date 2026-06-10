@@ -1,4 +1,5 @@
 """POST /api/v1/query — core query endpoint with SSE streaming."""
+import asyncio
 import json
 import logging
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,6 +28,11 @@ QUERY_WINDOW_SECONDS = 3600
 GENERIC_STREAM_ERROR = "Something went wrong generating your advisory. Please try again."
 TRUSTED_HISTORY_LIMIT = 10
 _HISTORY_ROLES = {"user", "assistant"}
+
+# SSE keepalive: yield a comment line this often while the LLM call runs so an
+# intermediary proxy (Vercel /api/* rewrite -> HF Space) never sees a silent
+# connection. Must stay well under the observed ~6s proxy reap timeout.
+HEARTBEAT_INTERVAL_SECONDS = 2
 
 
 class QueryRequest(BaseModel):
@@ -144,8 +150,13 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
         )
 
     async def event_stream():
-        try:
-            result, retrieved_chunks = await run_rag_query(
+        # First byte immediately — defeats the proxy first-byte/idle timeout that
+        # was reaping the connection at ~6s during the LLM call. Comment lines
+        # (starting with ':') are ignored by the SSE client.
+        yield ": keepalive\n\n"
+
+        rag_task = asyncio.create_task(
+            run_rag_query(
                 message=en_message,
                 county_fips=county_fips,
                 language="en",
@@ -154,6 +165,16 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 rice_fields=rice_fields,
                 user_id=user["sub"],
             )
+        )
+        try:
+            while not rag_task.done():
+                done, _ = await asyncio.wait(
+                    {rag_task}, timeout=HEARTBEAT_INTERVAL_SECONDS
+                )
+                if not done:
+                    yield ": keepalive\n\n"
+
+            result, retrieved_chunks = rag_task.result()
             if language == "es":
                 result = await translate_advisory_to_es(result, user_id=user["sub"])
 
@@ -181,11 +202,19 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
             payload = json.dumps(envelope, ensure_ascii=False)
             yield f"data: {payload}\n\n"
             yield "data: [DONE]\n\n"
+        except asyncio.CancelledError:
+            # Client/proxy disconnected — free the in-flight LLM task and let
+            # cancellation propagate (do NOT mask as a generic error frame).
+            rag_task.cancel()
+            raise
         except Exception:
             logger.exception("Query stream failed")
             error_payload = json.dumps({"error": GENERIC_STREAM_ERROR})
             yield f"data: {error_payload}\n\n"
             yield "data: [DONE]\n\n"
+        finally:
+            if not rag_task.done():
+                rag_task.cancel()
 
     return StreamingResponse(
         event_stream(),
