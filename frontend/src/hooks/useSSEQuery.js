@@ -150,30 +150,11 @@ export function useSSEQuery() {
       }
 
       const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop()
-
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue
-          const payload = line.slice(5).trim()
-          if (payload === '[DONE]') return
-          const { parsed, malformed } = parseSSEPayload(payload)
-          if (malformed) {
-            continue
-          }
-          if (parsed.error) throw new Error(parsed.error)
-          // Envelope shape: { advisory: AdvisoryResponse, message_id: uuid|null, category: string }
-          if (parsed.category) onCategory?.(parsed.category)
-          onResult(parsed.advisory ?? parsed, parsed.message_id ?? null, parsed.category ?? null)
-        }
+      const delivered = await consumeSSEStream(reader, { onResult, onCategory })
+      if (!delivered) {
+        setError(STREAM_EMPTY_CODE)
+        setRetryable(true)
+        onError?.(STREAM_EMPTY_CODE)
       }
     } catch (err) {
       if (err.name === 'AbortError') return

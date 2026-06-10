@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useLang } from '../contexts/LangContext'
-import { useSSEQuery } from '../hooks/useSSEQuery'
+import { useSSEQuery, STREAM_EMPTY_CODE } from '../hooks/useSSEQuery'
 import { useSessions } from '../hooks/useSessions'
 import { deriveFollowUps } from '../utils/deriveFollowUps'
 import ChatHistory from '../components/chat/ChatHistory'
@@ -137,10 +137,15 @@ export default function ChatPage() {
         ])
       },
       onError: (errMsg) => {
-        const isTechnical = TECHNICAL_ERROR_RE.test(errMsg)
+        let display
+        if (errMsg === STREAM_EMPTY_CODE) {
+          display = t.connectionInterrupted
+        } else {
+          display = TECHNICAL_ERROR_RE.test(errMsg) ? t.errorGeneric : errMsg
+        }
         setMessages((prev) => [
           ...prev,
-          makeMessage('assistant', 'error', isTechnical ? t.errorGeneric : errMsg),
+          makeMessage('assistant', 'error', display),
         ])
       },
     })
