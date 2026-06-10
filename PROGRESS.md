@@ -231,6 +231,15 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 
 **SAFETY FLAG (open):** `B_ABSENT_answered=2` — pipeline answered the 2 corn questions (rice/soy namespaces) instead of abstaining = scope-abstention gap (hallucination signal). Investigate separately.
 
+#### ▶ L1 CONDITIONAL-RULE LEVER — CODE TRACK BUILT 2026-06-10 (branch `l1-conditional-rule-lever`)
+> Plan: `docs/superpowers/plans/2026-06-10-l1-conditional-rule-generation-lever.md`. Built subagent-driven TDD, 5 commits (`ce4c2b9..e21bdf5`), per-task spec + code-quality review, final whole-impl review = ready to merge.
+
+**Two halves, both built + green (6 prompt tests + 16 diagnostic conditional tests; full evals suite 77 passed):**
+- **FIX (generation):** `CONDITIONAL_RULE_BLOCK` directive in `backend/utils/prompt.py`, appended in `build_system_prompt` for BOTH diagnostic + informational intents — tells the model never to collapse a multi-branch conditional (rate-by-soil / threshold-by-stage / restriction-by-variety / timing-by-stage) to a bare number; state every condition with its branch. No schema change.
+- **MEASURE (instrument):** new `evals/diagnostic/conditional_judge.py` — answer-side judge (`flatten_advisory`, `build_conditional_prompt`, `parse_conditional_response`, `judge_conditional`, `CompletenessResult`), Gemini 2.5-flash (≠ 70B generator, no self-grading), garbage→`preserved=False` fail-safe, transient retry mirrors `containment_judge`. Wired into `runner.py`: `ClassifiedItem.cond_preserved`, scored in `_classify_record` for non-set-aside conditional gold items, new gate metric `conditional_completeness_rate` (+ `conditional_scored_n`) in `build_report`. This is the FIRST harness signal that reads the GENERATED answer (containment only reads chunks).
+
+**PENDING (Task 6, owner-blocked — needs keys):** before/after measurement run NOT done — no `GOOGLE_API_KEY` (judge) / `DEEPINFRA_API_KEY` (generator) in env, and it makes live billable API calls. Run `LLM_PRIMARY=deepinfra python -m evals.diagnostic.runner --gold evals/diagnostic/gold_labels.jsonl` with + without the directive (`git stash` prompt.py for baseline) to capture baseline→after `conditional_completeness_rate`. All 7 `rule_type=="conditional"` gold rows are `gold_found` + not `set_aside` ⇒ expect `conditional_scored_n==7` (plan's "2 are set_aside" was stale — actual gold has 0). Record honestly; if directive doesn't move the metric, escalate to L2 (few-shot conditional exemplars).
+
 > Ungated PWA doc loose-end done: PRD M5 + P2 wording now state offline=abstention (reference-only cache; time-sensitive → verify stub). PWA prod phone-verify + Lighthouse (D1/D2) still owner-side/manual.
 
 ### Pillar 0 diagnostic harness — SHIPPED 2026-06-09
