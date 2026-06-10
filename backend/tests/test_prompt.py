@@ -60,3 +60,27 @@ def test_titleless_docs_get_stable_handle_not_unknown():
     out = _build(retrieved_docs=titleless)
     assert "[Unknown]" not in out
     assert "Arkansas Extension source 1" in out
+
+
+# --- Task L1.1: conditional-rule directive --------------------------------
+
+from utils.prompt import CONDITIONAL_RULE_BLOCK
+
+
+def test_conditional_directive_present_in_diagnostic_prompt():
+    prompt = _build()  # default diagnostic intent
+    assert CONDITIONAL_RULE_BLOCK in prompt
+    low = CONDITIONAL_RULE_BLOCK.lower()
+    # The directive must name the failure mode it prevents.
+    assert "condition" in low
+    assert "soil" in low and "variety" in low and "stage" in low
+
+
+def test_conditional_directive_present_in_informational_prompt():
+    prompt = build_system_prompt(
+        soil_context={"available": False}, weather_context={"available": False},
+        retrieved_docs=[_doc("Rice Guide", "Thresholds", "treat at 6 per sq ft")],
+        session_history=[], language="English", is_safety_critical=False,
+        county_name="Arkansas", intent="informational",
+    )
+    assert CONDITIONAL_RULE_BLOCK in prompt
