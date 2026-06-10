@@ -86,6 +86,12 @@ NLI_CITATION_GUARD_ENABLED = os.environ.get("NLI_CITATION_GUARD_ENABLED", "1") n
 # legacy CrossEncoder for offline/no-API runs.
 GROUNDEDNESS_JUDGE = os.environ.get("GROUNDEDNESS_JUDGE", "llm")
 
+# When true, the citation guard does claim-extraction AND groundedness-judging
+# in ONE LLM call (judge_answer_llm) instead of two serial calls
+# (decompose_claims -> judge_claims_llm). Falls back to the two-step path on any
+# failure. Set false to roll back instantly without a deploy.
+GUARD_MERGED_JUDGE = os.environ.get("GUARD_MERGED_JUDGE", "1") not in {"0", "false", "False"}
+
 # Citation-guard operating thresholds (recalibrated from per-namespace eval data).
 # Below ESCALATION → attach an Extension-agent escalation; below SUPPRESSION → blank
 # the body (force Low). Env-overridable so calibration doesn't need a code change.

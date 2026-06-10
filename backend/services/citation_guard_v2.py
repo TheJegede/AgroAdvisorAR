@@ -381,30 +381,29 @@ def escalation_cue(county_fips: str) -> Optional[str]:
 
 
 async def verify_answer(answer: str, chunks: list[dict], run_config: dict | None = None) -> dict:
-    """Orchestrate claim decomposition, groundedness scoring (LLM judge or NLI
-    per config), and escalation lookup.
-
-    Args:
-        answer: Farmer-facing prose (problem_summary + recommended_actions joined).
-        chunks: Retrieved chunks as dicts with 'snippet' key.
-
-    Returns:
-        {confidence_score: float, claim_verification: list[ClaimResult], escalation: None}
-        Caller stamps escalation after checking fips.
-    """
+    """Orchestrate groundedness scoring. Prefers the one-call merged judge
+    (GUARD_MERGED_JUDGE); falls back to decompose -> judge (or NLI) on any
+    failure. Returns {confidence_score, claim_verification, escalation: None}."""
     chunk_texts = [c.get("snippet", "") for c in chunks if c.get("snippet")]
 
-    claims_text = await decompose_claims(answer, run_config)
+    results = None
+    if config.GUARD_MERGED_JUDGE:
+        try:
+            results = await judge_answer_llm(answer, chunk_texts, run_config)
+        except Exception as e:
+            logger.warning("Merged guard failed, falling back to two-step: %s", str(e)[:150])
+            results = None
 
-    if not claims_text:
-        return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
-
-    if config.GROUNDEDNESS_JUDGE == "llm":
-        results = await judge_claims_llm(claims_text, chunk_texts, run_config)
-    else:
-        results = await asyncio.to_thread(
-            lambda: [verify_claim(c, chunk_texts) for c in claims_text]
-        )
+    if not results:
+        claims_text = await decompose_claims(answer, run_config)
+        if not claims_text:
+            return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
+        if config.GROUNDEDNESS_JUDGE == "llm":
+            results = await judge_claims_llm(claims_text, chunk_texts, run_config)
+        else:
+            results = await asyncio.to_thread(
+                lambda: [verify_claim(c, chunk_texts) for c in claims_text]
+            )
 
     confidence_score = score_answer(results)
     return {

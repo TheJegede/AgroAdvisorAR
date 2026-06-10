@@ -6,6 +6,8 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+import config
+
 from models.advisory import AdvisoryResponse, ClaimResult, ContextMeta
 
 
@@ -595,6 +597,7 @@ def test_verify_answer_uses_llm_judge_when_configured(monkeypatch):
     monkeypatch.setattr(mod, "decompose_claims", fake_decompose)
     monkeypatch.setattr(mod, "judge_claims_llm", fake_judge)
     monkeypatch.setattr(mod.config, "GROUNDEDNESS_JUDGE", "llm")
+    monkeypatch.setattr(mod.config, "GUARD_MERGED_JUDGE", False)
 
     out = asyncio.run(mod.verify_answer("some answer", [{"snippet": "evidence"}]))
     assert out["confidence_score"] == 0.88
@@ -725,3 +728,47 @@ def test_judge_answer_llm_raises_when_all_providers_fail(monkeypatch):
     import pytest
     with pytest.raises(Exception):
         asyncio.run(g.judge_answer_llm("Some claim.", ["evidence"]))
+
+
+def test_verify_answer_uses_merged_when_flag_on(monkeypatch):
+    monkeypatch.setattr(config, "GUARD_MERGED_JUDGE", True)
+    called = {"merged": 0, "decompose": 0}
+
+    async def fake_merged(answer, chunks, run_config=None):
+        called["merged"] += 1
+        return [g.ClaimResult(claim="c", label="ENTAILED", score=0.9)]
+
+    async def fake_decompose(answer, run_config=None):
+        called["decompose"] += 1
+        return ["c"]
+
+    monkeypatch.setattr(g, "judge_answer_llm", fake_merged)
+    monkeypatch.setattr(g, "decompose_claims", fake_decompose)
+    out = asyncio.run(g.verify_answer("an answer", [{"snippet": "evidence"}]))
+    assert called["merged"] == 1
+    assert called["decompose"] == 0  # two-step NOT used
+    assert "confidence_score" in out
+
+
+def test_verify_answer_falls_back_when_merged_raises(monkeypatch):
+    monkeypatch.setattr(config, "GUARD_MERGED_JUDGE", True)
+    monkeypatch.setattr(config, "GROUNDEDNESS_JUDGE", "llm")
+    used = {"decompose": 0, "judge": 0}
+
+    async def boom(answer, chunks, run_config=None):
+        raise RuntimeError("merged failed")
+
+    async def fake_decompose(answer, run_config=None):
+        used["decompose"] += 1
+        return ["c"]
+
+    async def fake_judge(claims, chunks, run_config=None):
+        used["judge"] += 1
+        return [g.ClaimResult(claim="c", label="ENTAILED", score=0.8)]
+
+    monkeypatch.setattr(g, "judge_answer_llm", boom)
+    monkeypatch.setattr(g, "decompose_claims", fake_decompose)
+    monkeypatch.setattr(g, "judge_claims_llm", fake_judge)
+    out = asyncio.run(g.verify_answer("an answer", [{"snippet": "evidence"}]))
+    assert used["decompose"] == 1 and used["judge"] == 1  # fell back
+    assert "confidence_score" in out
