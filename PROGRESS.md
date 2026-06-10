@@ -4,12 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (**F4 BACKEND PROD CUTOVER COMPLETE** — migrations 009/010 applied + HF
-> redeployed; all `/dicamba/*` live in prod [smoke-verified: 8 routes in OpenAPI, 401 auth-gated, Vercel
-> proxy intact]. Station identities verified vs UA AAES + AR-bbox guard test [C2]. **S1 authed functional
-> walk GREEN** (owner browser, EN+ES: drop pin → Gates A–D → save record → PDF → feedback, zero 500;
-> fixed a PDF-download 401 — plain `<a href>` carried no Bearer, now axios blob, `943ce7b`). Earlier same
-> day: Phase 6 code track shipped; CLAUDE.md Priorities synced [F4 reframed SHIPPED, answer-quality = real open front].
+> **Last updated:** 2026-06-10 (**LATENCY L4 BOUNDED CONTEXT FETCH SHIPPED** — context budget + tighter timeouts implemented and unit-tested). F4 backend is live in prod as of 2026-06-08 (migrations 009/010 applied + HF redeployed; all `/dicamba/*` live in prod).
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
@@ -434,6 +429,7 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 
 ## ✅ Recently shipped (earlier this arc)
 
+- **Latency L4 Bounded Context Fetch**: Implemented tight timeouts for NOAA and SSURGO context fetching clients and wrapped concurrent fetches with `asyncio.wait_for`. Prevents slow/hanging upstream requests from stalling the RAG critical path, safely falling back to the "unavailable" state on breach. Unit tests (3 passed) written in `backend/tests/test_context_budget.py`. 2026-06-10
 - **Shimmering Skeleton Screens**: Replaced standard loading spinners with highly responsive, custom-animated shimmering skeleton screens across all fetching/loading states. Includes custom CSS `@keyframes` in `index.css` supporting high-contrast accessibility mode. Handled loading layouts for past sessions, chat history, profile form, admin dashboard widgets, drift reports table, evaluation queue, and route guards. All 42 frontend tests pass, 0 lint errors. 2026-06-08
 - **Sidebar Sessions Auto-Refresh**: Fixed new chat sessions not appearing in the sidebar until manual page refresh. Removed forced key remounting on `ChatPageWrapper` in `App.jsx`, updated `ChatPage` to push the new session ID to the URL on session creation, and implemented synchronized active session state in `useEffect` using `useRef`. All unit tests and lint checks pass clean. 2026-06-02
 - **Cartoonish Tractor Loader Animation**: Replaced default three-dot bouncing typing indicator with a custom CSS-animated SVG tractor in `TypingIndicator.jsx`. Configured dynamic color mappings for Light and High Contrast modes. All frontend (26/26) and backend (108/108) unit tests pass. 2026-06-01
