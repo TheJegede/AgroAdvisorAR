@@ -1,0 +1,1717 @@
+{
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\config.py": {
+    "mtime": 1781019088.1801634,
+    "ast_hash": "4a7e8dc761b249e0c6ed8d9e2d17e269",
+    "semantic_hash": "4a7e8dc761b249e0c6ed8d9e2d17e269"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\data\\alert_rules.json": {
+    "mtime": 1780028345.1515496,
+    "ast_hash": "72e12cabc99f0200edb0b20dddbe8025",
+    "semantic_hash": "72e12cabc99f0200edb0b20dddbe8025"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\data\\ar_research_stations.json": {
+    "mtime": 1780967885.2252972,
+    "ast_hash": "5f3a84dd22cd670ccdc2d4193e32c564",
+    "semantic_hash": "5f3a84dd22cd670ccdc2d4193e32c564"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\data\\awd_thresholds.json": {
+    "mtime": 1780010805.3757658,
+    "ast_hash": "3609f724ce90748e111d280440558aac",
+    "semantic_hash": "3609f724ce90748e111d280440558aac"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\data\\county_agents.json": {
+    "mtime": 1780006403.4401116,
+    "ast_hash": "8a1aa8ce799ef389298d2239fd2e8e37",
+    "semantic_hash": "8a1aa8ce799ef389298d2239fd2e8e37"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\data\\dicamba_rules.json": {
+    "mtime": 1780953986.8416593,
+    "ast_hash": "dae504c5e4d8878c6e06a2a7d020ceea",
+    "semantic_hash": "dae504c5e4d8878c6e06a2a7d020ceea"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\main.py": {
+    "mtime": 1780946760.436625,
+    "ast_hash": "3d1ed8f23bf8bd82dcdff600534dc932",
+    "semantic_hash": "3d1ed8f23bf8bd82dcdff600534dc932"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\models\\__init__.py": {
+    "mtime": 1778867032.509749,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\models\\advisory.py": {
+    "mtime": 1781052065.6945958,
+    "ast_hash": "59ecf00ff6ae9dc682d5a5592600d388",
+    "semantic_hash": "59ecf00ff6ae9dc682d5a5592600d388"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\models\\feedback.py": {
+    "mtime": 1778937136.184848,
+    "ast_hash": "6f0855f5e67212958484b7201c6e0750",
+    "semantic_hash": "6f0855f5e67212958484b7201c6e0750"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\models\\session.py": {
+    "mtime": 1778904226.894406,
+    "ast_hash": "0115e6654e016fea212c0348fa840b8e",
+    "semantic_hash": "0115e6654e016fea212c0348fa840b8e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\models\\spray.py": {
+    "mtime": 1781016551.9683802,
+    "ast_hash": "23959fd332e1421e68c062de20df3b90",
+    "semantic_hash": "23959fd332e1421e68c062de20df3b90"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\models\\spray_feedback.py": {
+    "mtime": 1780960879.2236192,
+    "ast_hash": "e4da3c1e8fba619615905f4e9246a4b2",
+    "semantic_hash": "e4da3c1e8fba619615905f4e9246a4b2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\models\\user.py": {
+    "mtime": 1781019063.129878,
+    "ast_hash": "051ec67ef8b3aca176049aa7c5e3e469",
+    "semantic_hash": "051ec67ef8b3aca176049aa7c5e3e469"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\__init__.py": {
+    "mtime": 1778867174.1696553,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\admin.py": {
+    "mtime": 1779318999.3151422,
+    "ast_hash": "eb47f9800f68137eabc06a0147437c09",
+    "semantic_hash": "eb47f9800f68137eabc06a0147437c09"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\admin_aquifer.py": {
+    "mtime": 1780021227.7397711,
+    "ast_hash": "997ad9d696c7a6158541f3809a1d1622",
+    "semantic_hash": "997ad9d696c7a6158541f3809a1d1622"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\alerts.py": {
+    "mtime": 1779938593.506437,
+    "ast_hash": "5fc09939ca01421b1e7fa4751ec5d85b",
+    "semantic_hash": "5fc09939ca01421b1e7fa4751ec5d85b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\auth.py": {
+    "mtime": 1781019076.5782738,
+    "ast_hash": "ded4d4666b096997b3acbdc2bb52ca49",
+    "semantic_hash": "ded4d4666b096997b3acbdc2bb52ca49"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\dicamba.py": {
+    "mtime": 1781016565.1406066,
+    "ast_hash": "c1a16059f1e3567c0539494e0037c071",
+    "semantic_hash": "c1a16059f1e3567c0539494e0037c071"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\drift_reports.py": {
+    "mtime": 1779318765.6501217,
+    "ast_hash": "70cb492508d9691d3f1d063fb21ae9ea",
+    "semantic_hash": "70cb492508d9691d3f1d063fb21ae9ea"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\feedback.py": {
+    "mtime": 1778937155.1098976,
+    "ast_hash": "de87b6129c68bd04e9e673bf1972aa6f",
+    "semantic_hash": "de87b6129c68bd04e9e673bf1972aa6f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\profile.py": {
+    "mtime": 1778986580.322902,
+    "ast_hash": "cf757ac14247469bf47fc0879373321b",
+    "semantic_hash": "cf757ac14247469bf47fc0879373321b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\query.py": {
+    "mtime": 1781016677.3449583,
+    "ast_hash": "23fcb180f2102c2b6c1e2afab4868f54",
+    "semantic_hash": "23fcb180f2102c2b6c1e2afab4868f54"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\routers\\sessions.py": {
+    "mtime": 1780260211.2099497,
+    "ast_hash": "df2aca7e8796bd1b8b5d1f8f5fa0eeae",
+    "semantic_hash": "df2aca7e8796bd1b8b5d1f8f5fa0eeae"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\__init__.py": {
+    "mtime": 1778867234.8892884,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\admin.py": {
+    "mtime": 1778966470.0316815,
+    "ast_hash": "0c63399bbd50eca51cf3b92b83e6113e",
+    "semantic_hash": "0c63399bbd50eca51cf3b92b83e6113e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\alert_engine.py": {
+    "mtime": 1780752693.8442862,
+    "ast_hash": "aebf17e676097942efc6cba3b082cb8f",
+    "semantic_hash": "aebf17e676097942efc6cba3b082cb8f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\auth.py": {
+    "mtime": 1780752693.8453155,
+    "ast_hash": "8b02f3437c0efb0a36d22274ba0e4e6c",
+    "semantic_hash": "8b02f3437c0efb0a36d22274ba0e4e6c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\awd_scheduler.py": {
+    "mtime": 1780011225.248805,
+    "ast_hash": "efec0f378f485f14a63b5afbad3bf945",
+    "semantic_hash": "efec0f378f485f14a63b5afbad3bf945"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\cache.py": {
+    "mtime": 1780752693.8458335,
+    "ast_hash": "a539b7a1d306193878b07fe05ffc18fb",
+    "semantic_hash": "a539b7a1d306193878b07fe05ffc18fb"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\citation_guard_v2.py": {
+    "mtime": 1780752693.8463538,
+    "ast_hash": "f89faa49618a916634219e3d717aee19",
+    "semantic_hash": "f89faa49618a916634219e3d717aee19"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\classifier.py": {
+    "mtime": 1780752693.8468764,
+    "ast_hash": "cea33f2284006570de9f927274b7659e",
+    "semantic_hash": "cea33f2284006570de9f927274b7659e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\context.py": {
+    "mtime": 1780277187.201437,
+    "ast_hash": "01d1a2c99b4612dbb87ca403d870d56b",
+    "semantic_hash": "01d1a2c99b4612dbb87ca403d870d56b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\drift_service.py": {
+    "mtime": 1779318312.3100207,
+    "ast_hash": "d78d056366d995d11f54371db553d64a",
+    "semantic_hash": "d78d056366d995d11f54371db553d64a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\embedding.py": {
+    "mtime": 1781019109.2836447,
+    "ast_hash": "c46a7fdc9da792c6cbb4e626d3994803",
+    "semantic_hash": "c46a7fdc9da792c6cbb4e626d3994803"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\feedback.py": {
+    "mtime": 1778937146.057097,
+    "ast_hash": "ed4cc9a0d67780e8af36e3762fb15648",
+    "semantic_hash": "ed4cc9a0d67780e8af36e3762fb15648"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\gdd_calculator.py": {
+    "mtime": 1780752693.847909,
+    "ast_hash": "187fe3ec09b45d4bf49f48002da34adf",
+    "semantic_hash": "187fe3ec09b45d4bf49f48002da34adf"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\local_llm.py": {
+    "mtime": 1780113510.713825,
+    "ast_hash": "f1772859b2872d25cdfd9d305ffe050a",
+    "semantic_hash": "f1772859b2872d25cdfd9d305ffe050a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\pdf_generator.py": {
+    "mtime": 1780960778.4373157,
+    "ast_hash": "5401752c53ac50c5bb2caf807c7683db",
+    "semantic_hash": "5401752c53ac50c5bb2caf807c7683db"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\rag.py": {
+    "mtime": 1781019698.8353956,
+    "ast_hash": "64a10b299797b28b615ab89b69ec9eac",
+    "semantic_hash": "64a10b299797b28b615ab89b69ec9eac"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\reranker.py": {
+    "mtime": 1780081329.7521305,
+    "ast_hash": "92baad0f2177529c566828cceec04536",
+    "semantic_hash": "92baad0f2177529c566828cceec04536"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\sanitizer.py": {
+    "mtime": 1780752693.849453,
+    "ast_hash": "009475ef9cab5a729fd5ea2f89d82810",
+    "semantic_hash": "009475ef9cab5a729fd5ea2f89d82810"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\session.py": {
+    "mtime": 1780752693.849972,
+    "ast_hash": "18604adf6cc81693de6cf739da391912",
+    "semantic_hash": "18604adf6cc81693de6cf739da391912"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\spray_check.py": {
+    "mtime": 1780953950.5744781,
+    "ast_hash": "97615287e596afe1b6f8c9ef4e1d9c4d",
+    "semantic_hash": "97615287e596afe1b6f8c9ef4e1d9c4d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\spray_feedback.py": {
+    "mtime": 1780960883.1300604,
+    "ast_hash": "dd6a06232718d1badfbcf87abca29265",
+    "semantic_hash": "dd6a06232718d1badfbcf87abca29265"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\spray_record.py": {
+    "mtime": 1780952890.0669577,
+    "ast_hash": "4df8da91d7a55eeb342cf0421c1a4a22",
+    "semantic_hash": "4df8da91d7a55eeb342cf0421c1a4a22"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\spray_rules.py": {
+    "mtime": 1780953983.013707,
+    "ast_hash": "78e4552b16850268585c1ef4951e338c",
+    "semantic_hash": "78e4552b16850268585c1ef4951e338c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\spray_stations.py": {
+    "mtime": 1780952670.8603802,
+    "ast_hash": "83facbad3d46def29730249fe82ca983",
+    "semantic_hash": "83facbad3d46def29730249fe82ca983"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\spray_stats.py": {
+    "mtime": 1780960833.2103748,
+    "ast_hash": "9bef771df94b1d6ddfa64baabbb186f2",
+    "semantic_hash": "9bef771df94b1d6ddfa64baabbb186f2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\translation.py": {
+    "mtime": 1780420655.1585321,
+    "ast_hash": "e85d937e99c4462257e581a1b961fdba",
+    "semantic_hash": "e85d937e99c4462257e581a1b961fdba"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\user.py": {
+    "mtime": 1780277191.549995,
+    "ast_hash": "699db365cadf14959ebe39a4c660eee3",
+    "semantic_hash": "699db365cadf14959ebe39a4c660eee3"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\weather_history.py": {
+    "mtime": 1780752693.85049,
+    "ast_hash": "81331fef26c934349b1d0142a221c151",
+    "semantic_hash": "81331fef26c934349b1d0142a221c151"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\services\\weather_now.py": {
+    "mtime": 1780954055.1185508,
+    "ast_hash": "3e2a2c0f729d40711ae8c2e5eb3f992b",
+    "semantic_hash": "3e2a2c0f729d40711ae8c2e5eb3f992b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\001_farmer_profiles.sql": {
+    "mtime": 1778887235.6601532,
+    "ast_hash": "b9deecb698695e5303ce5cbd91b6801b",
+    "semantic_hash": "b9deecb698695e5303ce5cbd91b6801b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\002_chat_sessions.sql": {
+    "mtime": 1778934293.8869708,
+    "ast_hash": "20793fb07e3b04be716fc3728739e323",
+    "semantic_hash": "20793fb07e3b04be716fc3728739e323"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\003_response_feedback.sql": {
+    "mtime": 1778937060.7549,
+    "ast_hash": "7987f2734ed782105006ad68a67cdfe2",
+    "semantic_hash": "7987f2734ed782105006ad68a67cdfe2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\004_eval_tables.sql": {
+    "mtime": 1778994272.6362998,
+    "ast_hash": "e6c250c7a1c2577b7f9031cb44d70b21",
+    "semantic_hash": "e6c250c7a1c2577b7f9031cb44d70b21"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\005_alerts.sql": {
+    "mtime": 1779938593.5079856,
+    "ast_hash": "1d7012eec458fb5bba532142a47545e1",
+    "semantic_hash": "1d7012eec458fb5bba532142a47545e1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\006_drift_reports.sql": {
+    "mtime": 1779317702.075812,
+    "ast_hash": "82c1642449c017ea768e57e35cfc0ce8",
+    "semantic_hash": "82c1642449c017ea768e57e35cfc0ce8"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\007_rice_fields.sql": {
+    "mtime": 1780010807.0013504,
+    "ast_hash": "e2d7a97a312d0f012e4f5489c3ee56d1",
+    "semantic_hash": "e2d7a97a312d0f012e4f5489c3ee56d1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\008_confidence_scores.sql": {
+    "mtime": 1780004336.538101,
+    "ast_hash": "01ad75c80dd224e8f020b494ee37c480",
+    "semantic_hash": "01ad75c80dd224e8f020b494ee37c480"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\009_spray_records.sql": {
+    "mtime": 1780952868.422372,
+    "ast_hash": "d392eed45df3fa0b834397d940132c6d",
+    "semantic_hash": "d392eed45df3fa0b834397d940132c6d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\010_spray_feedback.sql": {
+    "mtime": 1780968583.0638273,
+    "ast_hash": "00dae77393dcb277143fc070ba4ed1be",
+    "semantic_hash": "00dae77393dcb277143fc070ba4ed1be"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\supabase\\migrations\\011_spray_feedback_append_only_rls.sql": {
+    "mtime": 1781016667.1483154,
+    "ast_hash": "d9e5017027087c2609b9c36cf9502208",
+    "semantic_hash": "d9e5017027087c2609b9c36cf9502208"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\locustfile.py": {
+    "mtime": 1778976340.9254873,
+    "ast_hash": "a286768d44bd844746b62817e7281cad",
+    "semantic_hash": "a286768d44bd844746b62817e7281cad"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_advisory_schema.py": {
+    "mtime": 1781052055.9042304,
+    "ast_hash": "c4bc2532aee3394153fe5265cdb417ec",
+    "semantic_hash": "c4bc2532aee3394153fe5265cdb417ec"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_alert_engine.py": {
+    "mtime": 1780752693.8515253,
+    "ast_hash": "0f1b35130ec88e7435c825d6cd60913e",
+    "semantic_hash": "0f1b35130ec88e7435c825d6cd60913e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_alerts_router.py": {
+    "mtime": 1779938593.5090296,
+    "ast_hash": "d805083cda6d6c826fe168fc0127dbb9",
+    "semantic_hash": "d805083cda6d6c826fe168fc0127dbb9"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_awd_scheduler.py": {
+    "mtime": 1780011593.8261325,
+    "ast_hash": "04c79b97f01227bd317dbfbc3f67f790",
+    "semantic_hash": "04c79b97f01227bd317dbfbc3f67f790"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_cache.py": {
+    "mtime": 1780752693.8515253,
+    "ast_hash": "68acac4b375d4253332975dffae1b51c",
+    "semantic_hash": "68acac4b375d4253332975dffae1b51c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_citation_guard_v2.py": {
+    "mtime": 1780752693.8525388,
+    "ast_hash": "26e73beb46c329de9d39be1f9ff53cb1",
+    "semantic_hash": "26e73beb46c329de9d39be1f9ff53cb1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_dicamba_router.py": {
+    "mtime": 1781016806.0067883,
+    "ast_hash": "70a5ff39c8bea27c2ccaf8f5e6875611",
+    "semantic_hash": "70a5ff39c8bea27c2ccaf8f5e6875611"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_drift_reports_router.py": {
+    "mtime": 1779318949.8816226,
+    "ast_hash": "ad302ebd0010b95aeb62055045de8fdf",
+    "semantic_hash": "ad302ebd0010b95aeb62055045de8fdf"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_drift_service.py": {
+    "mtime": 1779318318.1973531,
+    "ast_hash": "1e2cb8fd8ccde60bfb68eda72c660cde",
+    "semantic_hash": "1e2cb8fd8ccde60bfb68eda72c660cde"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_gdd_calculator.py": {
+    "mtime": 1780752693.8525388,
+    "ast_hash": "7c11dc7057d54f40c0646b3ba0ce3032",
+    "semantic_hash": "7c11dc7057d54f40c0646b3ba0ce3032"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_informational_routing.py": {
+    "mtime": 1780256784.211648,
+    "ast_hash": "82b5ddca5f88016d84124508b99f7e07",
+    "semantic_hash": "82b5ddca5f88016d84124508b99f7e07"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_pdf_generator.py": {
+    "mtime": 1780960783.6926827,
+    "ast_hash": "1863c6a8cf3842da9021d92d935f8062",
+    "semantic_hash": "1863c6a8cf3842da9021d92d935f8062"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_prompt.py": {
+    "mtime": 1781098294.4170144,
+    "ast_hash": "91425680a07bd067907af0784ea2b66e",
+    "semantic_hash": "91425680a07bd067907af0784ea2b66e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_query_bridge.py": {
+    "mtime": 1780420720.9104502,
+    "ast_hash": "de25f00533c2fa42e19db58369ce93a5",
+    "semantic_hash": "de25f00533c2fa42e19db58369ce93a5"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_query_stream_error.py": {
+    "mtime": 1780752693.853822,
+    "ast_hash": "cbe03b2f4e6275b895e3c77399318067",
+    "semantic_hash": "cbe03b2f4e6275b895e3c77399318067"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_rag_retrieval.py": {
+    "mtime": 1780752693.8548193,
+    "ast_hash": "bc4fd29657088e22372b8ec7eaecf7e2",
+    "semantic_hash": "bc4fd29657088e22372b8ec7eaecf7e2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_reranker.py": {
+    "mtime": 1780166015.4897504,
+    "ast_hash": "764255f02db13435ba1fabbbab0f92fe",
+    "semantic_hash": "764255f02db13435ba1fabbbab0f92fe"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_review_fixes.py": {
+    "mtime": 1781019220.3491955,
+    "ast_hash": "c4d731df32a3eb9394c839da9fa87753",
+    "semantic_hash": "c4d731df32a3eb9394c839da9fa87753"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_sanitizer.py": {
+    "mtime": 1780752693.8548193,
+    "ast_hash": "8667ac5645e753a9646da11ff3cb2ee3",
+    "semantic_hash": "8667ac5645e753a9646da11ff3cb2ee3"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_session_ownership.py": {
+    "mtime": 1780752693.8558192,
+    "ast_hash": "8e3f5bab239e4b9ed23311da02177d66",
+    "semantic_hash": "8e3f5bab239e4b9ed23311da02177d66"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_sessions_deletion.py": {
+    "mtime": 1780260250.8538141,
+    "ast_hash": "c2bbad4ae64b2c1ade73ecf609964425",
+    "semantic_hash": "c2bbad4ae64b2c1ade73ecf609964425"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_spray_check.py": {
+    "mtime": 1781016824.4799192,
+    "ast_hash": "d3f1ff12dbbc86b0fa7e6dbe42c37c46",
+    "semantic_hash": "d3f1ff12dbbc86b0fa7e6dbe42c37c46"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_spray_feedback.py": {
+    "mtime": 1781016838.1115868,
+    "ast_hash": "ca4f91b1cdac6caa33080f405485b6cf",
+    "semantic_hash": "ca4f91b1cdac6caa33080f405485b6cf"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_spray_record.py": {
+    "mtime": 1780952901.9375694,
+    "ast_hash": "e2ae435b13390ab38e7f9f5881ded96d",
+    "semantic_hash": "e2ae435b13390ab38e7f9f5881ded96d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_spray_rules.py": {
+    "mtime": 1780954038.988767,
+    "ast_hash": "a7b00a02ab852f99b3501c9a743e17b2",
+    "semantic_hash": "a7b00a02ab852f99b3501c9a743e17b2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_spray_stations.py": {
+    "mtime": 1780967895.7879834,
+    "ast_hash": "b978f54c24ece4a75fbecfefd5bdfca3",
+    "semantic_hash": "b978f54c24ece4a75fbecfefd5bdfca3"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_spray_stats.py": {
+    "mtime": 1780960837.8007376,
+    "ast_hash": "ef310b1fafd526eb2bd8959d2ab38f82",
+    "semantic_hash": "ef310b1fafd526eb2bd8959d2ab38f82"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_translation.py": {
+    "mtime": 1780420717.75905,
+    "ast_hash": "8dce8d4f00cf8e08492d1327a950c6f2",
+    "semantic_hash": "8dce8d4f00cf8e08492d1327a950c6f2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_weather_history.py": {
+    "mtime": 1780752693.8558192,
+    "ast_hash": "115a291d4280d5e771a928bacc06d59c",
+    "semantic_hash": "115a291d4280d5e771a928bacc06d59c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\test_weather_now.py": {
+    "mtime": 1780954066.4791856,
+    "ast_hash": "ff0525c4c43f2f01b3d0f25776f8de55",
+    "semantic_hash": "ff0525c4c43f2f01b3d0f25776f8de55"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\utils\\__init__.py": {
+    "mtime": 1778867139.357419,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\utils\\counties.py": {
+    "mtime": 1778867073.2722137,
+    "ast_hash": "88e09549569cf8c30fe2228ed1e3acbd",
+    "semantic_hash": "88e09549569cf8c30fe2228ed1e3acbd"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\utils\\crops.py": {
+    "mtime": 1780028344.8872647,
+    "ast_hash": "a965d12837d17388dc8ac93e7be25748",
+    "semantic_hash": "a965d12837d17388dc8ac93e7be25748"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\utils\\db.py": {
+    "mtime": 1780276931.833476,
+    "ast_hash": "d9d7eb5928b64f78fb9641922e9bfd1c",
+    "semantic_hash": "d9d7eb5928b64f78fb9641922e9bfd1c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\utils\\llm.py": {
+    "mtime": 1780530295.930662,
+    "ast_hash": "c74476000160c5c5332781ebb8968287",
+    "semantic_hash": "c74476000160c5c5332781ebb8968287"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\utils\\prompt.py": {
+    "mtime": 1781105430.1205232,
+    "ast_hash": "8fe3f4983ba80d5a6d7d1576f3661d98",
+    "semantic_hash": "8fe3f4983ba80d5a6d7d1576f3661d98"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\__init__.py": {
+    "mtime": 1780968654.9436467,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\answer_eval.py": {
+    "mtime": 1781019158.5328534,
+    "ast_hash": "8c3077393734896ffc658548ebec2391",
+    "semantic_hash": "8c3077393734896ffc658548ebec2391"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\answer_eval_full.py": {
+    "mtime": 1780968654.9458618,
+    "ast_hash": "a3120f74cf604ee3cc0a4ea21c2ba6e3",
+    "semantic_hash": "a3120f74cf604ee3cc0a4ea21c2ba6e3"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\audit_namespace.py": {
+    "mtime": 1780968654.949052,
+    "ast_hash": "15d62fa5f97b3b6afb443948b71baed7",
+    "semantic_hash": "15d62fa5f97b3b6afb443948b71baed7"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\audit_retrieval_v3_failures.py": {
+    "mtime": 1780968654.9500525,
+    "ast_hash": "b48f99efcb499e8cddbf88d56162b7e1",
+    "semantic_hash": "b48f99efcb499e8cddbf88d56162b7e1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\buckets.py": {
+    "mtime": 1781065578.6172047,
+    "ast_hash": "e5f5002b6038ac284e4154e177f7b89a",
+    "semantic_hash": "e5f5002b6038ac284e4154e177f7b89a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\conditional_judge.py": {
+    "mtime": 1781098294.4185803,
+    "ast_hash": "02c405e9dd9d8b73d27bc14ad70bef4d",
+    "semantic_hash": "02c405e9dd9d8b73d27bc14ad70bef4d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\containment_judge.py": {
+    "mtime": 1781064559.8770328,
+    "ast_hash": "ad987cbeef6029dc9d76c38404e54751",
+    "semantic_hash": "ad987cbeef6029dc9d76c38404e54751"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\gold_schema.py": {
+    "mtime": 1781046134.559033,
+    "ast_hash": "6b3088dd553c7df3fa54a3bad7ff3114",
+    "semantic_hash": "6b3088dd553c7df3fa54a3bad7ff3114"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\pipeline_flags.py": {
+    "mtime": 1781046134.559551,
+    "ast_hash": "45f88ff5626facaaacdbb0cd2d292f61",
+    "semantic_hash": "45f88ff5626facaaacdbb0cd2d292f61"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\runner.py": {
+    "mtime": 1781100947.74457,
+    "ast_hash": "420a86e3cc183d297254a95c4ff519f4",
+    "semantic_hash": "420a86e3cc183d297254a95c4ff519f4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\scaffold_gold.py": {
+    "mtime": 1781048663.7045028,
+    "ast_hash": "2698cd35e05db372f43ecfbe9d7155fe",
+    "semantic_hash": "2698cd35e05db372f43ecfbe9d7155fe"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\source_index.py": {
+    "mtime": 1781046134.560583,
+    "ast_hash": "44ace8bd727bba6734909e483a64646f",
+    "semantic_hash": "44ace8bd727bba6734909e483a64646f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\diagnostic\\span_verify.py": {
+    "mtime": 1781065552.041891,
+    "ast_hash": "7798f6a0154789665307b264ecfe208b",
+    "semantic_hash": "7798f6a0154789665307b264ecfe208b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\eval_bridge.py": {
+    "mtime": 1781019165.081021,
+    "ast_hash": "2a85b515c88ee31da53f652c53036536",
+    "semantic_hash": "2a85b515c88ee31da53f652c53036536"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\eval_hybrid.py": {
+    "mtime": 1781019171.7562242,
+    "ast_hash": "59304bc2e87c6cc663abbf91b6096076",
+    "semantic_hash": "59304bc2e87c6cc663abbf91b6096076"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\eval_query_expansion.py": {
+    "mtime": 1780968654.9527087,
+    "ast_hash": "92aff266d5651b1ec80b86e62652dc18",
+    "semantic_hash": "92aff266d5651b1ec80b86e62652dc18"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\eval_retrieval_matrix.py": {
+    "mtime": 1780968654.9549146,
+    "ast_hash": "68a28e5918adc36ff139b2350714964a",
+    "semantic_hash": "68a28e5918adc36ff139b2350714964a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\eval_runner.py": {
+    "mtime": 1781019139.8649795,
+    "ast_hash": "a9fb60fe10a6682b2b4b55625d83cf06",
+    "semantic_hash": "a9fb60fe10a6682b2b4b55625d83cf06"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\eval_v3_ablation.py": {
+    "mtime": 1780968654.9650826,
+    "ast_hash": "25023ad987d677039f612d8d7d98559a",
+    "semantic_hash": "25023ad987d677039f612d8d7d98559a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\filter_eval_by_section.py": {
+    "mtime": 1780968654.9656203,
+    "ast_hash": "c95e4698ed6aef221152a09a43d29193",
+    "semantic_hash": "c95e4698ed6aef221152a09a43d29193"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\finetune.py": {
+    "mtime": 1780968654.9666667,
+    "ast_hash": "863f743cb305afefd8e843bdcf637fab",
+    "semantic_hash": "863f743cb305afefd8e843bdcf637fab"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\finetune_synth.py": {
+    "mtime": 1780968654.9681528,
+    "ast_hash": "e2a3fba33c8381896d5f46f49d40c589",
+    "semantic_hash": "e2a3fba33c8381896d5f46f49d40c589"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\finetune_v2.py": {
+    "mtime": 1780968654.9686568,
+    "ast_hash": "d82e09e238dd4b3be91f77153c387c93",
+    "semantic_hash": "d82e09e238dd4b3be91f77153c387c93"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\generate_eval_set.py": {
+    "mtime": 1780968654.9686568,
+    "ast_hash": "cfe3488c5fe38ace72929bcb90cb060d",
+    "semantic_hash": "cfe3488c5fe38ace72929bcb90cb060d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\generate_eval_set_v2.py": {
+    "mtime": 1780968654.9696608,
+    "ast_hash": "039a0ae5b56b26ea6bbc4ef5b3c882ce",
+    "semantic_hash": "039a0ae5b56b26ea6bbc4ef5b3c882ce"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\generate_synthetic_queries.py": {
+    "mtime": 1780968654.97092,
+    "ast_hash": "1cad2ab5a4f9008750bb83afc53d1be4",
+    "semantic_hash": "1cad2ab5a4f9008750bb83afc53d1be4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\generate_triplets.py": {
+    "mtime": 1780968654.9712381,
+    "ast_hash": "affb73aa02ff04b090ce35ed4fc3e8e2",
+    "semantic_hash": "affb73aa02ff04b090ce35ed4fc3e8e2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\generate_triplets_v2.py": {
+    "mtime": 1780968654.9723034,
+    "ast_hash": "f0e94e93b7a00b55703118f45c2d6c36",
+    "semantic_hash": "f0e94e93b7a00b55703118f45c2d6c36"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\hybrid_core.py": {
+    "mtime": 1780968654.973303,
+    "ast_hash": "efd6786d37bb4266d324b7ee1a4d7a9f",
+    "semantic_hash": "efd6786d37bb4266d324b7ee1a4d7a9f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\judge.py": {
+    "mtime": 1780968654.973809,
+    "ast_hash": "96b0a7b8de5e93fdfe7c1303b7c8c8a5",
+    "semantic_hash": "96b0a7b8de5e93fdfe7c1303b7c8c8a5"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\local_llm.py": {
+    "mtime": 1780968654.9748108,
+    "ast_hash": "ef546ae1a0cf83025f513050cfa94fed",
+    "semantic_hash": "ef546ae1a0cf83025f513050cfa94fed"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\remap_eval_set.py": {
+    "mtime": 1780968654.9768112,
+    "ast_hash": "d0d94432d1945253ce1a17b7af8705ad",
+    "semantic_hash": "d0d94432d1945253ce1a17b7af8705ad"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\test_per_namespace_breakdown.py": {
+    "mtime": 1780968654.9812822,
+    "ast_hash": "25b01dced3c7c7565d104b576aaaab2e",
+    "semantic_hash": "25b01dced3c7c7565d104b576aaaab2e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_buckets.py": {
+    "mtime": 1781065572.9881017,
+    "ast_hash": "18a0761307d31cb45ece12565ad24bfb",
+    "semantic_hash": "18a0761307d31cb45ece12565ad24bfb"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_conditional_judge.py": {
+    "mtime": 1781098294.420137,
+    "ast_hash": "5b9044f45400fec9b356515a557e469e",
+    "semantic_hash": "5b9044f45400fec9b356515a557e469e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_containment_judge.py": {
+    "mtime": 1781064547.9232588,
+    "ast_hash": "4bc75711155bf4939df54cc122dc9785",
+    "semantic_hash": "4bc75711155bf4939df54cc122dc9785"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_gold_schema.py": {
+    "mtime": 1781046134.5626452,
+    "ast_hash": "82ba4b4899b29d9fa33f2f97ec367453",
+    "semantic_hash": "82ba4b4899b29d9fa33f2f97ec367453"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_pipeline_flags.py": {
+    "mtime": 1781046134.5626452,
+    "ast_hash": "4235fa51e24c8f2dce00a5b272ea500e",
+    "semantic_hash": "4235fa51e24c8f2dce00a5b272ea500e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_runner.py": {
+    "mtime": 1781098294.4206548,
+    "ast_hash": "236a3ad24f488903e1d94984849eb993",
+    "semantic_hash": "236a3ad24f488903e1d94984849eb993"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_scaffold_gold.py": {
+    "mtime": 1781048641.3598273,
+    "ast_hash": "9a9c9f3b966a6e6d3c0068cae67a0f34",
+    "semantic_hash": "9a9c9f3b966a6e6d3c0068cae67a0f34"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_source_index.py": {
+    "mtime": 1781046134.5641904,
+    "ast_hash": "0431419c177978bd2398ab8bb1ecc843",
+    "semantic_hash": "0431419c177978bd2398ab8bb1ecc843"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_diagnostic_span_verify.py": {
+    "mtime": 1781065565.596253,
+    "ast_hash": "1965b74bea9a5ffb768904bbc654ba22",
+    "semantic_hash": "1965b74bea9a5ffb768904bbc654ba22"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_eval_retrieval_matrix.py": {
+    "mtime": 1780968654.9822798,
+    "ast_hash": "99425ec8ef97ff176420c36da61c423b",
+    "semantic_hash": "99425ec8ef97ff176420c36da61c423b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_hybrid_core.py": {
+    "mtime": 1780968654.9830487,
+    "ast_hash": "f9c2cd84dd888dad7846be8105c7fd77",
+    "semantic_hash": "f9c2cd84dd888dad7846be8105c7fd77"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_judge_quota.py": {
+    "mtime": 1780968654.9845483,
+    "ast_hash": "f3bc5566f116bebe9c4e66c34594a4e5",
+    "semantic_hash": "f3bc5566f116bebe9c4e66c34594a4e5"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_remap_eval_set.py": {
+    "mtime": 1780968654.9855483,
+    "ast_hash": "4a67a13aa380cab9f7ffaa035e3c0727",
+    "semantic_hash": "4a67a13aa380cab9f7ffaa035e3c0727"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\tests\\test_v3_diagnostics.py": {
+    "mtime": 1780968654.9865491,
+    "ast_hash": "bef4895351807027bb99229379f9a26f",
+    "semantic_hash": "bef4895351807027bb99229379f9a26f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\trace_generation.py": {
+    "mtime": 1780968654.9875474,
+    "ast_hash": "a592cb86701436bcfe72902c51b9764c",
+    "semantic_hash": "a592cb86701436bcfe72902c51b9764c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\trace_pipeline_batch.py": {
+    "mtime": 1780968654.9880533,
+    "ast_hash": "3df2e9cd93b87bc3efb8cee71b93b5d2",
+    "semantic_hash": "3df2e9cd93b87bc3efb8cee71b93b5d2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\trace_retrieval.py": {
+    "mtime": 1780968654.9890566,
+    "ast_hash": "8ef7c2a6b6c0849fac09e9eb6126cdb4",
+    "semantic_hash": "8ef7c2a6b6c0849fac09e9eb6126cdb4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\.vercel\\project.json": {
+    "mtime": 1780148742.6821094,
+    "ast_hash": "a2d820084b64d42a6534c6545f824c3b",
+    "semantic_hash": "a2d820084b64d42a6534c6545f824c3b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\dev-dist\\registerSW.js": {
+    "mtime": 1781045679.99075,
+    "ast_hash": "3ca0b8505b4bec776b69afdba2768812",
+    "semantic_hash": "3ca0b8505b4bec776b69afdba2768812"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\dev-dist\\sw.js": {
+    "mtime": 1781045681.0917132,
+    "ast_hash": "4ff130182af869133f2140f02211bf08",
+    "semantic_hash": "4ff130182af869133f2140f02211bf08"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\dev-dist\\workbox-7e5eb42b.js": {
+    "mtime": 1781045681.0939343,
+    "ast_hash": "733f99f3ff5771d4fde4b9ced7839754",
+    "semantic_hash": "733f99f3ff5771d4fde4b9ced7839754"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\a11y.spec.js": {
+    "mtime": 1780968654.9952168,
+    "ast_hash": "4dc9eadf7adc3a54d6c985744a3dec8d",
+    "semantic_hash": "4dc9eadf7adc3a54d6c985744a3dec8d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\admin.spec.js": {
+    "mtime": 1780968654.997139,
+    "ast_hash": "7390ed454ea8ec72179cdb72639ace08",
+    "semantic_hash": "7390ed454ea8ec72179cdb72639ace08"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\auth.spec.js": {
+    "mtime": 1780968654.997139,
+    "ast_hash": "5341dbe0da6442e89b8deb08c4205db2",
+    "semantic_hash": "5341dbe0da6442e89b8deb08c4205db2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\chat.spec.js": {
+    "mtime": 1780968654.9983635,
+    "ast_hash": "5b05e77e528a8985281e8c7477ea6958",
+    "semantic_hash": "5b05e77e528a8985281e8c7477ea6958"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\drift.spec.js": {
+    "mtime": 1780968654.999396,
+    "ast_hash": "7766339de2ee26a352ffe6e07c42f5bf",
+    "semantic_hash": "7766339de2ee26a352ffe6e07c42f5bf"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\feedback.spec.js": {
+    "mtime": 1780968655.000398,
+    "ast_hash": "f50536a1e7ade697924116f621bb6000",
+    "semantic_hash": "f50536a1e7ade697924116f621bb6000"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\helpers.js": {
+    "mtime": 1780968655.0013108,
+    "ast_hash": "66076dfae7cc1005a3bc4c9055130c2a",
+    "semantic_hash": "66076dfae7cc1005a3bc4c9055130c2a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\mobile.spec.js": {
+    "mtime": 1780968655.0013108,
+    "ast_hash": "828474857872fb456963d6d6b5f4732e",
+    "semantic_hash": "828474857872fb456963d6d6b5f4732e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\profile.spec.js": {
+    "mtime": 1780968655.0030365,
+    "ast_hash": "b38cc0f4d65ed7ccee14a6cfab7ade3c",
+    "semantic_hash": "b38cc0f4d65ed7ccee14a6cfab7ade3c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\pwa-offline.spec.js": {
+    "mtime": 1781046134.5658023,
+    "ast_hash": "129cf973291a6682b6a1ceae87978335",
+    "semantic_hash": "129cf973291a6682b6a1ceae87978335"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\e2e\\spray-check.spec.js": {
+    "mtime": 1780968655.0040407,
+    "ast_hash": "373b16a47b47f845ab671026e1e8220e",
+    "semantic_hash": "373b16a47b47f845ab671026e1e8220e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\eslint.config.js": {
+    "mtime": 1781046134.5668104,
+    "ast_hash": "1655fb3a48433859397e4603ffacdde1",
+    "semantic_hash": "1655fb3a48433859397e4603ffacdde1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\package.json": {
+    "mtime": 1781046134.5683155,
+    "ast_hash": "80f9d94c1b9d19a5ef1418c8fda8cc57",
+    "semantic_hash": "80f9d94c1b9d19a5ef1418c8fda8cc57"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\playwright.config.js": {
+    "mtime": 1780968655.0085614,
+    "ast_hash": "8978f9c00aecd11d1230f90ec481ece9",
+    "semantic_hash": "8978f9c00aecd11d1230f90ec481ece9"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\postcss.config.js": {
+    "mtime": 1780968655.0098498,
+    "ast_hash": "5b84f4567208c7c747079c0477373231",
+    "semantic_hash": "5b84f4567208c7c747079c0477373231"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\scripts\\a11y-audit.js": {
+    "mtime": 1780968655.0113542,
+    "ast_hash": "992683106e2ad5051bf88ac9c08722af",
+    "semantic_hash": "992683106e2ad5051bf88ac9c08722af"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\App.jsx": {
+    "mtime": 1780968655.0140593,
+    "ast_hash": "774ef9e95813c88819bd8e362ab45a77",
+    "semantic_hash": "774ef9e95813c88819bd8e362ab45a77"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\AlertBanner.jsx": {
+    "mtime": 1780968655.0195866,
+    "ast_hash": "2415cae5525e12e04c21f1bc0f4560e2",
+    "semantic_hash": "2415cae5525e12e04c21f1bc0f4560e2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\AlertBanner.test.jsx": {
+    "mtime": 1780968655.0205986,
+    "ast_hash": "fefc4f0623fb2127381a913c04ded84e",
+    "semantic_hash": "fefc4f0623fb2127381a913c04ded84e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\admin\\ARCountyMap.jsx": {
+    "mtime": 1780968655.021149,
+    "ast_hash": "38d4a26a0e2bfcc49aa2d36f9faf8c51",
+    "semantic_hash": "38d4a26a0e2bfcc49aa2d36f9faf8c51"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\AdvisoryCard.jsx": {
+    "mtime": 1781046134.5697663,
+    "ast_hash": "278f073dd7f126e68374b6fbee996579",
+    "semantic_hash": "278f073dd7f126e68374b6fbee996579"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\AdvisoryCard.test.jsx": {
+    "mtime": 1780968655.0231547,
+    "ast_hash": "973b673d3112ad2b6dac3a84a5a1a852",
+    "semantic_hash": "973b673d3112ad2b6dac3a84a5a1a852"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\CitationsSection.jsx": {
+    "mtime": 1780968655.0246556,
+    "ast_hash": "ca13a6c0e3aebde31123a8ee035022ba",
+    "semantic_hash": "ca13a6c0e3aebde31123a8ee035022ba"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\ConfidenceBadge.jsx": {
+    "mtime": 1780968655.026816,
+    "ast_hash": "fa4d7b61445324ecc25765cd4e7afbe4",
+    "semantic_hash": "fa4d7b61445324ecc25765cd4e7afbe4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\ConfidenceExplainer.jsx": {
+    "mtime": 1780968655.026816,
+    "ast_hash": "a54b236423795669271fd1f57b9d1229",
+    "semantic_hash": "a54b236423795669271fd1f57b9d1229"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\ContextMetaBar.jsx": {
+    "mtime": 1780968655.026816,
+    "ast_hash": "439dfc927fd3bc6be14b2949998f401f",
+    "semantic_hash": "439dfc927fd3bc6be14b2949998f401f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\EscalationCard.jsx": {
+    "mtime": 1780968655.0283196,
+    "ast_hash": "a70002971fff152d9b21350e6574d49d",
+    "semantic_hash": "a70002971fff152d9b21350e6574d49d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\EscalationCard.test.js": {
+    "mtime": 1780968655.0293312,
+    "ast_hash": "61164eb32dc9235c6a99b3718aaaf27f",
+    "semantic_hash": "61164eb32dc9235c6a99b3718aaaf27f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\FeedbackWidget.jsx": {
+    "mtime": 1780968655.0303357,
+    "ast_hash": "ff7d4128bebaf90ad9afae4cb08c47a0",
+    "semantic_hash": "ff7d4128bebaf90ad9afae4cb08c47a0"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\LikelyCauses.jsx": {
+    "mtime": 1780968655.0303357,
+    "ast_hash": "167c2e91f93dd61226be7df9ba7382fa",
+    "semantic_hash": "167c2e91f93dd61226be7df9ba7382fa"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\LowConfidenceBanner.jsx": {
+    "mtime": 1780968655.0317757,
+    "ast_hash": "8114ae8c54baeab480755d1bcc9e601b",
+    "semantic_hash": "8114ae8c54baeab480755d1bcc9e601b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\NLIConfidenceBadge.jsx": {
+    "mtime": 1780968655.0327783,
+    "ast_hash": "f04855b83389af7d21b3f7fc131cf60a",
+    "semantic_hash": "f04855b83389af7d21b3f7fc131cf60a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\NLIConfidenceBadge.test.js": {
+    "mtime": 1780968655.0332828,
+    "ast_hash": "8ae26e0b24be95897f19fa6b0cd08371",
+    "semantic_hash": "8ae26e0b24be95897f19fa6b0cd08371"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\OfflineSafetyStub.jsx": {
+    "mtime": 1781046134.5697663,
+    "ast_hash": "a877bf823dbc12e4bd95df8696191cb7",
+    "semantic_hash": "a877bf823dbc12e4bd95df8696191cb7"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\ProblemSummary.jsx": {
+    "mtime": 1780968655.0342872,
+    "ast_hash": "7d8284f804559e9d081eb404ea82cb39",
+    "semantic_hash": "7d8284f804559e9d081eb404ea82cb39"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\ProductsRates.jsx": {
+    "mtime": 1780968655.0352576,
+    "ast_hash": "be4f2278fdfcc865cfe2d41a9a872cc1",
+    "semantic_hash": "be4f2278fdfcc865cfe2d41a9a872cc1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\RecommendedActions.jsx": {
+    "mtime": 1780968655.0360594,
+    "ast_hash": "5d1f8008da0619a042b0e70e4047b585",
+    "semantic_hash": "5d1f8008da0619a042b0e70e4047b585"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\SuppressedNotice.jsx": {
+    "mtime": 1780968655.0360594,
+    "ast_hash": "edbe7b317c0abf0d7c8103fb6e61b914",
+    "semantic_hash": "edbe7b317c0abf0d7c8103fb6e61b914"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\SuppressedNotice.test.jsx": {
+    "mtime": 1780968655.0376067,
+    "ast_hash": "47b76d33777c50253d2a72f4c7594d64",
+    "semantic_hash": "47b76d33777c50253d2a72f4c7594d64"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\advisory\\WarningsBanner.jsx": {
+    "mtime": 1780968655.0387557,
+    "ast_hash": "e5a1e4ab450f4e2dcfdf3915cf94b81d",
+    "semantic_hash": "e5a1e4ab450f4e2dcfdf3915cf94b81d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\auth\\AuthLanguageSwitcher.jsx": {
+    "mtime": 1780968655.0397582,
+    "ast_hash": "de93419198a57fc4c7be70f35c587088",
+    "semantic_hash": "de93419198a57fc4c7be70f35c587088"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\auth\\LoginForm.jsx": {
+    "mtime": 1780968655.0407586,
+    "ast_hash": "ea7d0c4329fc7f1e737db16d576e07a6",
+    "semantic_hash": "ea7d0c4329fc7f1e737db16d576e07a6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\auth\\RegisterForm.jsx": {
+    "mtime": 1780968655.0419767,
+    "ast_hash": "86203925243568149dc1decb808f63ac",
+    "semantic_hash": "86203925243568149dc1decb808f63ac"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\auth\\RegisterForm.test.jsx": {
+    "mtime": 1780968655.0419767,
+    "ast_hash": "f8bb1f99a503651a416bd7945aec5d14",
+    "semantic_hash": "f8bb1f99a503651a416bd7945aec5d14"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\chat\\ChatHistory.jsx": {
+    "mtime": 1780968655.042988,
+    "ast_hash": "105f125c0feda5ef1da401029588ed7d",
+    "semantic_hash": "105f125c0feda5ef1da401029588ed7d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\chat\\ChatInput.jsx": {
+    "mtime": 1780968655.044272,
+    "ast_hash": "cc7424ea782f57a83a0103fd963dd3fa",
+    "semantic_hash": "cc7424ea782f57a83a0103fd963dd3fa"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\chat\\MessageBubble.jsx": {
+    "mtime": 1780968655.0453641,
+    "ast_hash": "dc2457c27ca76b7adfe5ab25f3eaad45",
+    "semantic_hash": "dc2457c27ca76b7adfe5ab25f3eaad45"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\chat\\OutOfScopeCard.jsx": {
+    "mtime": 1780968655.046868,
+    "ast_hash": "065ca055edc66ce03421ca55979cf8e8",
+    "semantic_hash": "065ca055edc66ce03421ca55979cf8e8"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\chat\\TypingIndicator.jsx": {
+    "mtime": 1780968655.0478733,
+    "ast_hash": "a5b65ada35825eb3daba3effb17fc369",
+    "semantic_hash": "a5b65ada35825eb3daba3effb17fc369"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\dicamba\\SprayCheckWizard.jsx": {
+    "mtime": 1781016576.108034,
+    "ast_hash": "9aaa0663a03657d2b5eefd1f6059a5b7",
+    "semantic_hash": "9aaa0663a03657d2b5eefd1f6059a5b7"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\dicamba\\SprayFeedbackWidget.jsx": {
+    "mtime": 1780968655.050402,
+    "ast_hash": "edf1a3034e4e93e8166cbeb8e594636f",
+    "semantic_hash": "edf1a3034e4e93e8166cbeb8e594636f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\drift\\DriftReportWizard.jsx": {
+    "mtime": 1780968655.050402,
+    "ast_hash": "08b4d3988d236cbd4a566ca2fad739d4",
+    "semantic_hash": "08b4d3988d236cbd4a566ca2fad739d4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\layout\\AppShell.jsx": {
+    "mtime": 1780968655.0518398,
+    "ast_hash": "992604d661559637c0dfb05099811caa",
+    "semantic_hash": "992604d661559637c0dfb05099811caa"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\layout\\Header.jsx": {
+    "mtime": 1780968655.052742,
+    "ast_hash": "5009229fd5c6a88438c9c410e1ab4f48",
+    "semantic_hash": "5009229fd5c6a88438c9c410e1ab4f48"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\layout\\Sidebar.jsx": {
+    "mtime": 1780968655.0537448,
+    "ast_hash": "3e313d092dc71ab3ff9f6fca2afe30f9",
+    "semantic_hash": "3e313d092dc71ab3ff9f6fca2afe30f9"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\profile\\CropCheckboxGroup.jsx": {
+    "mtime": 1780968655.0537448,
+    "ast_hash": "69c4e5ebdb4c6422a58ba4f9e9d8bdbb",
+    "semantic_hash": "69c4e5ebdb4c6422a58ba4f9e9d8bdbb"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\profile\\ProfileForm.jsx": {
+    "mtime": 1780968655.055227,
+    "ast_hash": "4471043359849f944eff0970567f604b",
+    "semantic_hash": "4471043359849f944eff0970567f604b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\pwa\\InstallButton.jsx": {
+    "mtime": 1781046134.5697663,
+    "ast_hash": "5878f57d5b83bcc051da79a52f919ee4",
+    "semantic_hash": "5878f57d5b83bcc051da79a52f919ee4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\sessions\\SessionListItem.jsx": {
+    "mtime": 1780968655.056219,
+    "ast_hash": "56994595cd732744b63c14ea82852d93",
+    "semantic_hash": "56994595cd732744b63c14ea82852d93"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\AdminRoute.jsx": {
+    "mtime": 1780968655.0575924,
+    "ast_hash": "2cd6a62043e834f30934b0ec2d5b2800",
+    "semantic_hash": "2cd6a62043e834f30934b0ec2d5b2800"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\Alert.jsx": {
+    "mtime": 1780968655.0580962,
+    "ast_hash": "f1a91cb918ffcaf11de995fab6716168",
+    "semantic_hash": "f1a91cb918ffcaf11de995fab6716168"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\Button.jsx": {
+    "mtime": 1780968655.0591013,
+    "ast_hash": "24dcab037d8a2bba5765a892a1dbc152",
+    "semantic_hash": "24dcab037d8a2bba5765a892a1dbc152"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\Input.jsx": {
+    "mtime": 1780968655.0591013,
+    "ast_hash": "4068c6498f13b82f63669c23f6282c51",
+    "semantic_hash": "4068c6498f13b82f63669c23f6282c51"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\ProtectedRoute.jsx": {
+    "mtime": 1780968655.0602949,
+    "ast_hash": "e06c1bc5b52e865ac739d35fbf687e08",
+    "semantic_hash": "e06c1bc5b52e865ac739d35fbf687e08"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\Select.jsx": {
+    "mtime": 1780968655.061293,
+    "ast_hash": "dc7e66384a1b32673eebedf98956b8a6",
+    "semantic_hash": "dc7e66384a1b32673eebedf98956b8a6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\Skeleton.jsx": {
+    "mtime": 1780971322.3743553,
+    "ast_hash": "9fa3c593db7c3ebcfcffb00e509cad69",
+    "semantic_hash": "9fa3c593db7c3ebcfcffb00e509cad69"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\Skeleton.test.jsx": {
+    "mtime": 1780971329.6255107,
+    "ast_hash": "c88de670bc6e8f74e3421eb0103a6646",
+    "semantic_hash": "c88de670bc6e8f74e3421eb0103a6646"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\Spinner.jsx": {
+    "mtime": 1780968655.0636878,
+    "ast_hash": "cd6356788950f7e2da1a897fc56cde00",
+    "semantic_hash": "cd6356788950f7e2da1a897fc56cde00"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\components\\ui\\SyncStatusBar.jsx": {
+    "mtime": 1780968655.0647247,
+    "ast_hash": "113b4653b5d10cc0ff0dc89ac86c70b5",
+    "semantic_hash": "113b4653b5d10cc0ff0dc89ac86c70b5"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\constants\\counties.js": {
+    "mtime": 1780968655.0657306,
+    "ast_hash": "69a51114234c5b825473ef238a131cc4",
+    "semantic_hash": "69a51114234c5b825473ef238a131cc4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\constants\\crops.js": {
+    "mtime": 1780968655.0657306,
+    "ast_hash": "822634b09b0c56aa71fdb83f82fa0668",
+    "semantic_hash": "822634b09b0c56aa71fdb83f82fa0668"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\constants\\i18n.js": {
+    "mtime": 1781046134.5712745,
+    "ast_hash": "0b695441a8f459aea516fb42252921b3",
+    "semantic_hash": "0b695441a8f459aea516fb42252921b3"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\contexts\\AuthContext.jsx": {
+    "mtime": 1781019269.1239934,
+    "ast_hash": "5d3491476838cc35972c0e48a48f595d",
+    "semantic_hash": "5d3491476838cc35972c0e48a48f595d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\contexts\\LangContext.jsx": {
+    "mtime": 1780968655.0686803,
+    "ast_hash": "fe32006f7f8cd1dfbbda293e276d3d58",
+    "semantic_hash": "fe32006f7f8cd1dfbbda293e276d3d58"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\contexts\\ThemeContext.jsx": {
+    "mtime": 1780968655.0686803,
+    "ast_hash": "a1beb0c74ce4cda4d93af92c57d33106",
+    "semantic_hash": "a1beb0c74ce4cda4d93af92c57d33106"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useAdmin.js": {
+    "mtime": 1780968655.0696845,
+    "ast_hash": "77dce2c89e3edb486077d245af2e3479",
+    "semantic_hash": "77dce2c89e3edb486077d245af2e3479"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useDriftReports.js": {
+    "mtime": 1780968655.0696845,
+    "ast_hash": "1b228c39c737f07afe27e265b6b62c49",
+    "semantic_hash": "1b228c39c737f07afe27e265b6b62c49"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useDriftReports.test.js": {
+    "mtime": 1780968655.0711873,
+    "ast_hash": "58136cd074da820667c30fef7e2b05b1",
+    "semantic_hash": "58136cd074da820667c30fef7e2b05b1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useFeedback.js": {
+    "mtime": 1780968655.0711873,
+    "ast_hash": "7a6e46b802833d5aca1595d1883d2bff",
+    "semantic_hash": "7a6e46b802833d5aca1595d1883d2bff"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useInstallPrompt.js": {
+    "mtime": 1781046134.5712745,
+    "ast_hash": "e2bef450d40511f28a1f43509f797687",
+    "semantic_hash": "e2bef450d40511f28a1f43509f797687"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useInstallPrompt.test.js": {
+    "mtime": 1781046134.5712745,
+    "ast_hash": "ddb015c8b5954e521b9b631479243f6c",
+    "semantic_hash": "ddb015c8b5954e521b9b631479243f6c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useOnlineStatus.js": {
+    "mtime": 1781046134.572619,
+    "ast_hash": "dc195ed5b1e10a343cca789e2c22babd",
+    "semantic_hash": "dc195ed5b1e10a343cca789e2c22babd"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useProfile.js": {
+    "mtime": 1780968655.0724103,
+    "ast_hash": "d0b8e923c50cbb77c7c2600795c3d699",
+    "semantic_hash": "d0b8e923c50cbb77c7c2600795c3d699"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSSEQuery.js": {
+    "mtime": 1781019330.1878834,
+    "ast_hash": "d26328c869c78802ddbb602ac819b788",
+    "semantic_hash": "d26328c869c78802ddbb602ac819b788"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSSEQuery.test.js": {
+    "mtime": 1781019878.719054,
+    "ast_hash": "14b285074eb348577d07c3a90971d525",
+    "semantic_hash": "14b285074eb348577d07c3a90971d525"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSessions.js": {
+    "mtime": 1780968655.0754118,
+    "ast_hash": "34a9afdbc08b41d6c985de47f002e81e",
+    "semantic_hash": "34a9afdbc08b41d6c985de47f002e81e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSessions.test.js": {
+    "mtime": 1780968655.0754118,
+    "ast_hash": "cdb7699e9f085989c1811b2ed06b0351",
+    "semantic_hash": "cdb7699e9f085989c1811b2ed06b0351"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSprayCheck.js": {
+    "mtime": 1781016597.9393814,
+    "ast_hash": "d9811d3d5f4e29129c16b056b07660c4",
+    "semantic_hash": "d9811d3d5f4e29129c16b056b07660c4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSprayCheck.test.js": {
+    "mtime": 1781016856.577031,
+    "ast_hash": "d347f543d0d21d5f2f970144add110f8",
+    "semantic_hash": "d347f543d0d21d5f2f970144add110f8"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSprayRecords.js": {
+    "mtime": 1780970697.165599,
+    "ast_hash": "33bdd939806d0c7167749563a672de9d",
+    "semantic_hash": "33bdd939806d0c7167749563a672de9d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSprayRecords.test.js": {
+    "mtime": 1780970681.774851,
+    "ast_hash": "a25b69930dcc6ba90bdeb123657c57c7",
+    "semantic_hash": "a25b69930dcc6ba90bdeb123657c57c7"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\hooks\\useSyncStatus.js": {
+    "mtime": 1780968655.0806167,
+    "ast_hash": "e27810b0812013ff98f966817fdd3967",
+    "semantic_hash": "e27810b0812013ff98f966817fdd3967"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\api.js": {
+    "mtime": 1781019298.8658142,
+    "ast_hash": "c3e186f1a53b9b1667067ba346007ac2",
+    "semantic_hash": "c3e186f1a53b9b1667067ba346007ac2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\api.test.js": {
+    "mtime": 1781019856.6989188,
+    "ast_hash": "5d4df684d8e6e5ad383a3ecd558ae449",
+    "semantic_hash": "5d4df684d8e6e5ad383a3ecd558ae449"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\authTokens.js": {
+    "mtime": 1781019255.7127278,
+    "ast_hash": "903611dd8d908db0f4985f9961b8ea6e",
+    "semantic_hash": "903611dd8d908db0f4985f9961b8ea6e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\authTokens.test.js": {
+    "mtime": 1781019366.0452514,
+    "ast_hash": "81ec97f66de39562e5d4d83301ab6326",
+    "semantic_hash": "81ec97f66de39562e5d4d83301ab6326"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\disclaimers.js": {
+    "mtime": 1780968655.082707,
+    "ast_hash": "989a5280a0706b9e95c39fa4f198adde",
+    "semantic_hash": "989a5280a0706b9e95c39fa4f198adde"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\disclaimers.test.js": {
+    "mtime": 1780968655.082707,
+    "ast_hash": "feeb5da91b70dbac6fbd359287a71988",
+    "semantic_hash": "feeb5da91b70dbac6fbd359287a71988"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\offlineCache.js": {
+    "mtime": 1781046134.572619,
+    "ast_hash": "a95826ac1b52ac9e43dfd74d7a076b00",
+    "semantic_hash": "a95826ac1b52ac9e43dfd74d7a076b00"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\offlineCache.test.js": {
+    "mtime": 1781046134.5736206,
+    "ast_hash": "0e0b2d6d31cf897ed94a581011878858",
+    "semantic_hash": "0e0b2d6d31cf897ed94a581011878858"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\offlineSafety.js": {
+    "mtime": 1781046134.5736206,
+    "ast_hash": "19902aa40d3ad441e2fcd0c50a21beae",
+    "semantic_hash": "19902aa40d3ad441e2fcd0c50a21beae"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\offlineSafety.test.js": {
+    "mtime": 1781046134.5736206,
+    "ast_hash": "68bf45ffcad537d974d94ef183654bc6",
+    "semantic_hash": "68bf45ffcad537d974d94ef183654bc6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\offlineTiering.js": {
+    "mtime": 1781046134.574906,
+    "ast_hash": "6b2a1a0fa59a6b4d24eb5e5da1fd66f9",
+    "semantic_hash": "6b2a1a0fa59a6b4d24eb5e5da1fd66f9"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\offlineTiering.test.js": {
+    "mtime": 1781046134.574906,
+    "ast_hash": "98376b2cc0dfabe988d5085648287b8d",
+    "semantic_hash": "98376b2cc0dfabe988d5085648287b8d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\lib\\supabase.js": {
+    "mtime": 1780968655.0841124,
+    "ast_hash": "63955eb1d3558c4c34e9fe79cf916600",
+    "semantic_hash": "63955eb1d3558c4c34e9fe79cf916600"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\main.jsx": {
+    "mtime": 1780968655.0851564,
+    "ast_hash": "51fd21c378330142b61bf8d1ef3795ef",
+    "semantic_hash": "51fd21c378330142b61bf8d1ef3795ef"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\AdminDashboardPage.jsx": {
+    "mtime": 1781020033.309838,
+    "ast_hash": "5bc0e6dd264688d057dd363ea3f068e7",
+    "semantic_hash": "5bc0e6dd264688d057dd363ea3f068e7"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\AdminDashboardPage.test.js": {
+    "mtime": 1781019601.5494022,
+    "ast_hash": "f27fe650f05dd636bbb58961d14d8b3c",
+    "semantic_hash": "f27fe650f05dd636bbb58961d14d8b3c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\AuthCallbackPage.jsx": {
+    "mtime": 1780968655.0866287,
+    "ast_hash": "58511e55af9a077ed07d9f1e46648034",
+    "semantic_hash": "58511e55af9a077ed07d9f1e46648034"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\ChatPage.jsx": {
+    "mtime": 1780968655.0876608,
+    "ast_hash": "551cf38a468fed19dc23564906c80970",
+    "semantic_hash": "551cf38a468fed19dc23564906c80970"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\DriftReportPage.jsx": {
+    "mtime": 1780968655.0888498,
+    "ast_hash": "1b1bc352c61884a017f624223b2d64e6",
+    "semantic_hash": "1b1bc352c61884a017f624223b2d64e6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\EvalQueuePage.jsx": {
+    "mtime": 1780968655.0898488,
+    "ast_hash": "86d8b73916015f22170d4ab6623ef5ca",
+    "semantic_hash": "86d8b73916015f22170d4ab6623ef5ca"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\ForgotPasswordPage.jsx": {
+    "mtime": 1780968655.090849,
+    "ast_hash": "bffe9c61a4b739b8b57c12edd3f2865c",
+    "semantic_hash": "bffe9c61a4b739b8b57c12edd3f2865c"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\LoginPage.jsx": {
+    "mtime": 1780968655.0918481,
+    "ast_hash": "0555a666898104d7cc69a918f27c292a",
+    "semantic_hash": "0555a666898104d7cc69a918f27c292a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\ProfilePage.jsx": {
+    "mtime": 1780968655.0927725,
+    "ast_hash": "00b7607a8985482dbfc155efb48d8b41",
+    "semantic_hash": "00b7607a8985482dbfc155efb48d8b41"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\RegisterPage.jsx": {
+    "mtime": 1780968655.093827,
+    "ast_hash": "bacaceacf762bde0b1aa81c57a418947",
+    "semantic_hash": "bacaceacf762bde0b1aa81c57a418947"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\ResetPasswordPage.jsx": {
+    "mtime": 1780968655.0949316,
+    "ast_hash": "281c32d99179060cb04df743c4f8ed22",
+    "semantic_hash": "281c32d99179060cb04df743c4f8ed22"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\SessionsPage.jsx": {
+    "mtime": 1780968655.0960853,
+    "ast_hash": "325a0043a8da4ee1650769070277e1d6",
+    "semantic_hash": "325a0043a8da4ee1650769070277e1d6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\SprayCheckPage.jsx": {
+    "mtime": 1780968655.0970876,
+    "ast_hash": "09bde741021ddd391eb0c489490a32a5",
+    "semantic_hash": "09bde741021ddd391eb0c489490a32a5"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\pages\\SprayRecordsPage.jsx": {
+    "mtime": 1780970718.0356972,
+    "ast_hash": "64a709b948dc272263e6f2e88a553113",
+    "semantic_hash": "64a709b948dc272263e6f2e88a553113"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\utils\\deriveFollowUps.js": {
+    "mtime": 1780968655.0988674,
+    "ast_hash": "668fb3e867bef0a6ab2f70f6f3dc9595",
+    "semantic_hash": "668fb3e867bef0a6ab2f70f6f3dc9595"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\tailwind.config.js": {
+    "mtime": 1780968655.0988674,
+    "ast_hash": "eff47cda32870baf5c9758e301e924e9",
+    "semantic_hash": "eff47cda32870baf5c9758e301e924e9"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\test-results\\.last-run.json": {
+    "mtime": 1781045683.6396303,
+    "ast_hash": "f196824657d8858bc7fa44eecbba38b1",
+    "semantic_hash": "f196824657d8858bc7fa44eecbba38b1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\vercel.json": {
+    "mtime": 1780968655.1003227,
+    "ast_hash": "5b58f550fcbefabf675829e78e80a748",
+    "semantic_hash": "5b58f550fcbefabf675829e78e80a748"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\vite.config.js": {
+    "mtime": 1781046134.574906,
+    "ast_hash": "6fe726b5c9b9ef73e7dcb850d831b612",
+    "semantic_hash": "6fe726b5c9b9ef73e7dcb850d831b612"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\chunker.py": {
+    "mtime": 1780968655.1024938,
+    "ast_hash": "0fc00f1e78e6f91f5aef1ff06fb76bf9",
+    "semantic_hash": "0fc00f1e78e6f91f5aef1ff06fb76bf9"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\embedder.py": {
+    "mtime": 1781019122.8321328,
+    "ast_hash": "7773d7805059c8b22f88bf12abb9bf36",
+    "semantic_hash": "7773d7805059c8b22f88bf12abb9bf36"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\extractor.py": {
+    "mtime": 1780968655.1031525,
+    "ast_hash": "c5c07957a3c22073c13e53b0ed296ada",
+    "semantic_hash": "c5c07957a3c22073c13e53b0ed296ada"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\ingest_en_gte.py": {
+    "mtime": 1780968655.1057403,
+    "ast_hash": "0b15e0df2dd8c606741b9eeea048bccd",
+    "semantic_hash": "0b15e0df2dd8c606741b9eeea048bccd"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\pipeline.py": {
+    "mtime": 1781019843.0205407,
+    "ast_hash": "f564b6deda400efdc2db5049300bdf69",
+    "semantic_hash": "f564b6deda400efdc2db5049300bdf69"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\scrape_county_agents.py": {
+    "mtime": 1780968655.1071467,
+    "ast_hash": "260c5c2cd166c762d2a4365000dbcb22",
+    "semantic_hash": "260c5c2cd166c762d2a4365000dbcb22"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\scraper.py": {
+    "mtime": 1780968655.108154,
+    "ast_hash": "b4fc91bef7cab7d1df19c594a2f53edd",
+    "semantic_hash": "b4fc91bef7cab7d1df19c594a2f53edd"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\tests\\test_ingest_gte_metadata.py": {
+    "mtime": 1780968655.1094599,
+    "ast_hash": "4c62b35eb73e226c44aa10bd6b0c8190",
+    "semantic_hash": "4c62b35eb73e226c44aa10bd6b0c8190"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\scripts\\nightly_alerts.py": {
+    "mtime": 1780968655.1107867,
+    "ast_hash": "17ec2ffff06fff7f95c7d97f4ba12a11",
+    "semantic_hash": "17ec2ffff06fff7f95c7d97f4ba12a11"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\.github\\NIGHTLY_EVAL_SETUP.md": {
+    "mtime": 1781019684.9115908,
+    "ast_hash": "614bfe429213cf6cbcaaa6789b0aa071",
+    "semantic_hash": "614bfe429213cf6cbcaaa6789b0aa071"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\.github\\workflows\\nightly-alerts.yml": {
+    "mtime": 1781016651.101415,
+    "ast_hash": "a0e49cb029a37ada1f25d1d3a4e1dd84",
+    "semantic_hash": "a0e49cb029a37ada1f25d1d3a4e1dd84"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\.github\\workflows\\nightly-eval.yml": {
+    "mtime": 1781016610.0281768,
+    "ast_hash": "345fec44b65fc768d65dec66d60a5a97",
+    "semantic_hash": "345fec44b65fc768d65dec66d60a5a97"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\.github\\workflows\\playwright.yml": {
+    "mtime": 1781016636.7211103,
+    "ast_hash": "acbe9ab6fb653ee00a55fbc690fd2f26",
+    "semantic_hash": "acbe9ab6fb653ee00a55fbc690fd2f26"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\AgroAdvisor_F4_PRD_v3.md": {
+    "mtime": 1780968654.9090738,
+    "ast_hash": "69e117c84b018ea92716203df1fb5ed9",
+    "semantic_hash": "69e117c84b018ea92716203df1fb5ed9"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ERRORS.md": {
+    "mtime": 1780970860.1087277,
+    "ast_hash": "776c41d24b7b400071700725060e5093",
+    "semantic_hash": "776c41d24b7b400071700725060e5093"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\PROGRESS.md": {
+    "mtime": 1781105455.6107616,
+    "ast_hash": "db76cba71e63e88b7f40e404ebe2ac08",
+    "semantic_hash": "db76cba71e63e88b7f40e404ebe2ac08"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\README-space.md": {
+    "mtime": 1780968654.9133344,
+    "ast_hash": "22f82694e0219f11e1feb71e54d1b95d",
+    "semantic_hash": "22f82694e0219f11e1feb71e54d1b95d"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\README.md": {
+    "mtime": 1780968654.9149067,
+    "ast_hash": "d8bccb7cb70316055ca281eff5b52030",
+    "semantic_hash": "d8bccb7cb70316055ca281eff5b52030"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\requirements.txt": {
+    "mtime": 1780530276.1470978,
+    "ast_hash": "610ac19a61f67ff3a514eddf5985abe6",
+    "semantic_hash": "610ac19a61f67ff3a514eddf5985abe6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\backend\\tests\\requirements-test.txt": {
+    "mtime": 1778976319.1191463,
+    "ast_hash": "11e122eac06a0a0d4122aa0422029aab",
+    "semantic_hash": "11e122eac06a0a0d4122aa0422029aab"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\security\\a07-mitigation-plan.md": {
+    "mtime": 1780968654.9154491,
+    "ast_hash": "c8c135f258a13f3220c54c034c859d9e",
+    "semantic_hash": "c8c135f258a13f3220c54c034c859d9e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\security\\load-test-summary.md": {
+    "mtime": 1780968654.916457,
+    "ast_hash": "65971c1d0a9ec386b5b25c9382fdd71e",
+    "semantic_hash": "65971c1d0a9ec386b5b25c9382fdd71e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\security\\npm-audit-output.txt": {
+    "mtime": 1780968654.916457,
+    "ast_hash": "03871176dfe19fdcde8a7fc8d1616429",
+    "semantic_hash": "03871176dfe19fdcde8a7fc8d1616429"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\security\\owasp-audit.md": {
+    "mtime": 1780968654.917544,
+    "ast_hash": "50037fe89406b1134467e189c39bd763",
+    "semantic_hash": "50037fe89406b1134467e189c39bd763"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\security\\pip-audit-output.txt": {
+    "mtime": 1780968654.918547,
+    "ast_hash": "dfd346670b8dabc4096bf518c6325d73",
+    "semantic_hash": "dfd346670b8dabc4096bf518c6325d73"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\security\\wcag-audit-result.txt": {
+    "mtime": 1780968654.918547,
+    "ast_hash": "398b66ce127925686779ff90cbfa0748",
+    "semantic_hash": "398b66ce127925686779ff90cbfa0748"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-29-citation-guard-remediation.md": {
+    "mtime": 1780968654.9211333,
+    "ast_hash": "8a85d2980b8b31da824ef2b744a061a6",
+    "semantic_hash": "8a85d2980b8b31da824ef2b744a061a6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-29-deploy-hf-spaces.md": {
+    "mtime": 1780968654.922243,
+    "ast_hash": "c80cddb5a3982c1dc7fb01a728ab3b87",
+    "semantic_hash": "c80cddb5a3982c1dc7fb01a728ab3b87"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-31-citation-guard-overhaul.md": {
+    "mtime": 1780968654.9233513,
+    "ast_hash": "f1f57950a38f07e5cb25a397a33f5139",
+    "semantic_hash": "f1f57950a38f07e5cb25a397a33f5139"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-31-codebase-review-cleanup.md": {
+    "mtime": 1780968654.9247303,
+    "ast_hash": "69745d5e88de132ba9eeadc067520dd6",
+    "semantic_hash": "69745d5e88de132ba9eeadc067520dd6"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-31-phase1-ux-fixes.md": {
+    "mtime": 1780968654.9257078,
+    "ast_hash": "3a6f0b626ca6c73d52edcb55160552dc",
+    "semantic_hash": "3a6f0b626ca6c73d52edcb55160552dc"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-31-phase2-resilient-state.md": {
+    "mtime": 1780968654.9257078,
+    "ast_hash": "049fa2cbaf57d5e2e43c56a076973afc",
+    "semantic_hash": "049fa2cbaf57d5e2e43c56a076973afc"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-31-phase3-audit-closeout.md": {
+    "mtime": 1780968654.926869,
+    "ast_hash": "848f40a944d17d7181a199abb4783f00",
+    "semantic_hash": "848f40a944d17d7181a199abb4783f00"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-31-response-rendering-defects.md": {
+    "mtime": 1780968654.9283712,
+    "ast_hash": "d37e497a9d8ed65d4cdd8c9199016500",
+    "semantic_hash": "d37e497a9d8ed65d4cdd8c9199016500"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-05-31-ux-design-audit.md": {
+    "mtime": 1780968654.9294562,
+    "ast_hash": "b2181766da31029b733a6393807b22d0",
+    "semantic_hash": "b2181766da31029b733a6393807b22d0"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-01-tractor-loader-animation.md": {
+    "mtime": 1780968654.9304554,
+    "ast_hash": "5e17bcda11cd55314f91216c50d34212",
+    "semantic_hash": "5e17bcda11cd55314f91216c50d34212"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-05-70b-prod-eval.md": {
+    "mtime": 1780968654.9315846,
+    "ast_hash": "70112ff9de9e6686edb5030c3aa08b09",
+    "semantic_hash": "70112ff9de9e6686edb5030c3aa08b09"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-05-eval-namespace-audit.md": {
+    "mtime": 1780968654.9328468,
+    "ast_hash": "b62b4fe63d2fced3994bf12186f7a971",
+    "semantic_hash": "b62b4fe63d2fced3994bf12186f7a971"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase0-rules-as-data.md": {
+    "mtime": 1780968654.9328468,
+    "ast_hash": "27cde01e215cfd9b64122bb97a92edb1",
+    "semantic_hash": "27cde01e215cfd9b64122bb97a92edb1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase1-check-endpoint.md": {
+    "mtime": 1780968654.9342325,
+    "ast_hash": "e84de5e15ae74094b6f3cede7313380b",
+    "semantic_hash": "e84de5e15ae74094b6f3cede7313380b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase2-wizard.md": {
+    "mtime": 1780968654.9357078,
+    "ast_hash": "9b1582da041af3d157099d37df403202",
+    "semantic_hash": "9b1582da041af3d157099d37df403202"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase3-gateB-map.md": {
+    "mtime": 1780968654.9367085,
+    "ast_hash": "105de3b954d4066b1bb7b0024f5604ce",
+    "semantic_hash": "105de3b954d4066b1bb7b0024f5604ce"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase4-record-impl.md": {
+    "mtime": 1780968654.9377074,
+    "ast_hash": "905ec52b045134a0d984dbfa3311a211",
+    "semantic_hash": "905ec52b045134a0d984dbfa3311a211"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase4-record.md": {
+    "mtime": 1780968654.938922,
+    "ast_hash": "c20f167d1cfc5b14778513ec5fd3a04e",
+    "semantic_hash": "c20f167d1cfc5b14778513ec5fd3a04e"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase5-external-spanish.md": {
+    "mtime": 1780968654.9399319,
+    "ast_hash": "02327369dcb93de62d7e2fbb145e1e6b",
+    "semantic_hash": "02327369dcb93de62d7e2fbb145e1e6b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase6-code.md": {
+    "mtime": 1780968654.9406366,
+    "ast_hash": "7a8453777183b5937805d17727165b75",
+    "semantic_hash": "7a8453777183b5937805d17727165b75"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase6-legal-pilot.md": {
+    "mtime": 1780968654.941925,
+    "ast_hash": "088dcbb32893c998c9b78ae0b590ee84",
+    "semantic_hash": "088dcbb32893c998c9b78ae0b590ee84"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-08-f4-dicamba-phase6-nocode.md": {
+    "mtime": 1780968654.941925,
+    "ast_hash": "6d47fb888498140f010071c28558f55f",
+    "semantic_hash": "6d47fb888498140f010071c28558f55f"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\plans\\2026-06-10-l1-conditional-rule-generation-lever.md": {
+    "mtime": 1781096501.224018,
+    "ast_hash": "b4d0775e92902e832fc7b25363957a35",
+    "semantic_hash": "b4d0775e92902e832fc7b25363957a35"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\docs\\superpowers\\specs\\2026-06-08-f4-dicamba-phase4-record-design.md": {
+    "mtime": 1780968654.9436467,
+    "ast_hash": "1cf8a74d3b8a4c43ed3973850e55bb1a",
+    "semantic_hash": "1cf8a74d3b8a4c43ed3973850e55bb1a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\evals\\requirements.txt": {
+    "mtime": 1780968654.977168,
+    "ast_hash": "ea41291f31938885c8d806c85bd661d2",
+    "semantic_hash": "ea41291f31938885c8d806c85bd661d2"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\.vercel\\README.txt": {
+    "mtime": 1780144104.995361,
+    "ast_hash": "2b13c79d37d6ed82a3255b83b6815034",
+    "semantic_hash": "2b13c79d37d6ed82a3255b83b6815034"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\README.md": {
+    "mtime": 1780968654.994234,
+    "ast_hash": "abfa161e3e5434e3e85394bf03d387a4",
+    "semantic_hash": "abfa161e3e5434e3e85394bf03d387a4"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\index.html": {
+    "mtime": 1780968655.0060437,
+    "ast_hash": "3b965a74b139c00192ecbd6399139873",
+    "semantic_hash": "3b965a74b139c00192ecbd6399139873"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\ingestion\\requirements.txt": {
+    "mtime": 1780968655.1071467,
+    "ast_hash": "9c1dd71bee2cb273408bebe5d50587e0",
+    "semantic_hash": "9c1dd71bee2cb273408bebe5d50587e0"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\public\\favicon.svg": {
+    "mtime": 1780968655.0098498,
+    "ast_hash": "7e840862161341271697daa99a40d76b",
+    "semantic_hash": "7e840862161341271697daa99a40d76b"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\public\\icons.svg": {
+    "mtime": 1780968655.0113542,
+    "ast_hash": "21c7473c592c67dc87223d49892c8f0a",
+    "semantic_hash": "21c7473c592c67dc87223d49892c8f0a"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\assets\\farm-bg.webp": {
+    "mtime": 1780968655.0160718,
+    "ast_hash": "a76c410602d609139be15c0519577fac",
+    "semantic_hash": "a76c410602d609139be15c0519577fac"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\assets\\hero.png": {
+    "mtime": 1780968655.0170736,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": "aead493361b27e7510691c5d7072dfc1"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\assets\\react.svg": {
+    "mtime": 1780968655.0170736,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "C:\\Users\\jeged\\Downloads\\AgroAdvisor\\frontend\\src\\assets\\vite.svg": {
+    "mtime": 1780968655.0185776,
+    "ast_hash": "6d5180a782d64c8cf51ba01c2a2184d8",
+    "semantic_hash": "6d5180a782d64c8cf51ba01c2a2184d8"
+  }
+}
