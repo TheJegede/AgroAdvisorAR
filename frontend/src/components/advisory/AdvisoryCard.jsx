@@ -51,9 +51,27 @@ function DetailSection({ heading, children }) {
   )
 }
 
+// An advisory with no renderable content (e.g. a stray non-advisory frame that
+// slipped through) must not paint an empty "Problem Summary" / "Confidence:"
+// shell. Render nothing instead.
+function hasRenderableContent(r) {
+  if (!r || typeof r !== 'object') return false
+  if (r.suppressed) return true
+  return Boolean(
+    r.problem_summary ||
+    r.detailed_explanation ||
+    (r.recommended_actions?.length) ||
+    (r.likely_causes?.length) ||
+    (r.products_rates?.length) ||
+    (r.key_points?.length) ||
+    (r.citations?.length)
+  )
+}
+
 function AdvisoryCardInner({ response, messageId, category }) {
   const { t, lang } = useLang()
   const online = useOnlineStatus()
+  if (!hasRenderableContent(response)) return null
   const cleanCat = category ? category.split(':')[0] : category
   const chipConfig = CROP_CHIP_CONFIG[cleanCat]
 

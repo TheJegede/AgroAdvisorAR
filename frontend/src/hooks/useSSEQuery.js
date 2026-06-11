@@ -14,6 +14,23 @@ export function parseSSEPayload(payload) {
   }
 }
 
+// Only a frame that actually carries advisory content may become an advisory
+// card. Guards against rendering a stray progress/stage frame (e.g. during a
+// backend/frontend deploy skew) as an empty "Problem Summary" card.
+export function isAdvisoryFrame(parsed) {
+  if (!parsed || typeof parsed !== 'object') return false
+  if (parsed.progress || parsed.stage) return false
+  const advisory = parsed.advisory ?? parsed
+  if (!advisory || typeof advisory !== 'object') return false
+  return (
+    'problem_summary' in advisory ||
+    'response_type' in advisory ||
+    'suppressed' in advisory ||
+    'recommended_actions' in advisory ||
+    Boolean(parsed.advisory)
+  )
+}
+
 // Returned to onError when a stream ends without delivering an advisory/oos/error.
 // ChatPage maps this code to a friendly, localized message.
 export const STREAM_EMPTY_CODE = 'stream_empty'
@@ -42,10 +59,12 @@ export async function consumeSSEStream(reader, { onResult, onCategory, onProgres
       const { parsed, malformed } = parseSSEPayload(payload)
       if (malformed) continue
       if (parsed.error) throw new Error(parsed.error)
-      if (parsed.progress) {
-        onProgress?.(parsed.progress)
+      if (parsed.progress || parsed.stage) {
+        onProgress?.(parsed.progress ?? parsed)
         continue
       }
+      // Never render a non-advisory frame as a card (empty "Problem Summary").
+      if (!isAdvisoryFrame(parsed)) continue
       if (parsed.category) onCategory?.(parsed.category)
       onResult(parsed.advisory ?? parsed, parsed.message_id ?? null, parsed.category ?? null)
       delivered = true

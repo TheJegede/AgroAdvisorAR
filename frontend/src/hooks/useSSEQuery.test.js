@@ -179,6 +179,26 @@ describe('consumeSSEStream', () => {
     expect(delivered).toBe(true)
   })
 
+  it('never renders a stray stage/non-advisory frame as a card', async () => {
+    const results = []
+    const progress = []
+    const reader = readerFrom([
+      // A bare stage frame (no "progress" wrapper) — must route to onProgress, not onResult.
+      'data: {"stage":"writing"}\n\n',
+      // An empty object — must be ignored, never an empty advisory card.
+      'data: {}\n\n',
+      'data: {"advisory":{"problem_summary":"ok"},"message_id":"m1"}\n\n',
+      'data: [DONE]\n\n',
+    ])
+    const delivered = await consumeSSEStream(reader, {
+      onResult: (a) => results.push(a),
+      onProgress: (p) => progress.push(p),
+    })
+    expect(results).toEqual([{ problem_summary: 'ok' }])
+    expect(progress.map((p) => p.stage)).toEqual(['writing'])
+    expect(delivered).toBe(true)
+  })
+
   it('progress-only stream reports delivered=false (retry surfaces)', async () => {
     const reader = readerFrom([
       'data: {"progress":{"stage":"searching"}}\n\n',
