@@ -155,6 +155,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
         # (starting with ':') are ignored by the SSE client.
         yield ": keepalive\n\n"
 
+        q: asyncio.Queue = asyncio.Queue()
         rag_task = asyncio.create_task(
             run_rag_query(
                 message=en_message,
@@ -164,15 +165,20 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 session_history=session_history,
                 rice_fields=rice_fields,
                 user_id=user["sub"],
+                progress=q,
             )
         )
         try:
-            while not rag_task.done():
-                done, _ = await asyncio.wait(
-                    {rag_task}, timeout=HEARTBEAT_INTERVAL_SECONDS
-                )
-                if not done:
-                    yield ": keepalive\n\n"
+            while True:
+                if rag_task.done() and q.empty():
+                    break
+                try:
+                    item = await asyncio.wait_for(q.get(), timeout=HEARTBEAT_INTERVAL_SECONDS)
+                    frame = json.dumps({"progress": item}, ensure_ascii=False)
+                    yield f"data: {frame}\n\n"
+                except asyncio.TimeoutError:
+                    if not rag_task.done():
+                        yield ": keepalive\n\n"
 
             result, retrieved_chunks = rag_task.result()
             if language == "es":
