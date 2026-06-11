@@ -232,6 +232,14 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 
 **SAFETY FLAG (open):** `B_ABSENT_answered=2` — pipeline answered the 2 corn questions (rice/soy namespaces) instead of abstaining = scope-abstention gap (hallucination signal). Investigate separately.
 
+#### ▶ LATENCY L1 SSE MULTI-STAGE PROGRESS STREAMING — SHIPPED 2026-06-10 (branch `feat/sse-progress-streaming`)
+> Plan: `docs/superpowers/plans/2026-06-10-latency-l1-sse-progress.md`. Implemented progressive RAG pipeline stage streaming (Searching -> Found N sources + titles -> Writing -> Verifying -> Advisory) using FastAPI/asyncio.Queue SSE and React 19 hooks.
+- **RAG Stage Emission:** Added `_emit` helper and `progress` queue parameters to `run_rag_query` in `backend/services/rag.py` to post stages at core checkpoints.
+- **FastAPI Event Stream:** Modified `event_stream` in `backend/routers/query.py` to drain the progress queue, sending event-stream frames as SSE payloads, and maintaining hearts/keepalives.
+- **Frontend Stepper Component:** Created `QueryProgress.jsx` component integrating the animated tractor with real-time bilingual status captions and source title lists.
+- **Wiring & Cleanup:** Wired state through `ChatPage.jsx` and `ChatHistory.jsx`, clearing the stepper on results/OOS/errors. Deleted orphaned `TypingIndicator.jsx`.
+- **TDD Tests:** Created `backend/tests/test_rag_progress.py`, `backend/tests/test_query_progress.py`, and `frontend/src/components/chat/QueryProgress.test.jsx`. Created Playwright E2E spec `frontend/e2e/sse-progress.spec.js` using in-page fetch stream delay mocking. All tests passed.
+
 #### ▶ LATENCY L2 GUARD SINGLE-CALL MERGE — SHIPPED 2026-06-11 (branch `feat/sse-progress-streaming`)
 > Plan: `docs/superpowers/plans/2026-06-10-latency-l2-guard-merge.md`. Merged answer claim-decomposition and groundedness-judging into a single LLM call (`judge_answer_llm`), keeping the two-step path as a fallback.
 - **Wired and Fallback:** Configured via `config.GUARD_MERGED_JUDGE` (default True). `verify_answer` falls back to decompose -> judge (or NLI) automatically on any failure.
