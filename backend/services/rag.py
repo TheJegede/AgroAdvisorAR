@@ -29,6 +29,63 @@ async def _emit(progress, stage, **data):
         await progress.put({"stage": stage, **data})
 
 
+async def _astream_draft(
+    llm,
+    messages: list,
+    run_config: dict | None,
+    on_partial,
+    prepend_format_instructions: bool = False,
+) -> dict | None:
+    """Stream partial JSON dicts from an LLM via JsonOutputParser.
+
+    Pipes ``llm | JsonOutputParser()`` and iterates over partial dicts as
+    LangChain incrementally assembles JSON tokens into objects.  For each
+    non-empty partial dict, ``await on_partial(partial_dict)`` is called so
+    the caller can forward progressive updates to the SSE stream.
+
+    Args:
+        llm: Any LangChain chat model that supports ``.astream()``.
+        messages: The message list to send.
+        run_config: Optional LangChain run config (tracing, callbacks, …).
+        on_partial: Async callable invoked with each non-empty partial dict.
+        prepend_format_instructions: When True (DeepInfra / json_mode
+            providers), prepend ``PydanticOutputParser`` format instructions
+            to the first ``SystemMessage`` so the model knows the expected
+            JSON schema.
+
+    Returns:
+        The last (most complete) dict yielded, or ``None`` if the stream
+        produced no valid JSON.
+    """
+    from langchain_core.output_parsers import JsonOutputParser
+    from langchain_core.output_parsers import PydanticOutputParser
+    from langchain_core.messages import SystemMessage as _SystemMessage
+
+    effective_messages = messages
+    if prepend_format_instructions:
+        fmt = PydanticOutputParser(pydantic_object=AdvisoryDraft).get_format_instructions()
+        effective_messages = []
+        prepended = False
+        for msg in messages:
+            if not prepended and isinstance(msg, _SystemMessage):
+                effective_messages.append(_SystemMessage(content=fmt + "\n\n" + msg.content))
+                prepended = True
+            else:
+                effective_messages.append(msg)
+        if not prepended:
+            # No system message found — prepend a new one
+            effective_messages = [_SystemMessage(content=fmt)] + effective_messages
+
+    chain = llm | JsonOutputParser()
+    last: dict | None = None
+    async for partial in chain.astream(effective_messages, config=run_config):
+        if not partial:
+            continue
+        last = partial
+        await on_partial(partial)
+    return last
+
+
 # The prompt numbers retrieved chunks as "Document N: <title> | ...". The LLM
 # echoes that scaffolding into citation titles and prose, which (a) broke exact
 # title-matching so confidence was forced Low even for grounded answers, and
