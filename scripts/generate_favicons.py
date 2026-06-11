@@ -1,9 +1,10 @@
 import os
+import base64
 from PIL import Image
 
 def process_user_logo():
-    # User's logo source path in brain directory
-    user_logo_path = r"C:\Users\jeged\.gemini\antigravity-ide\brain\7b50f843-5eec-4d5c-99ff-ca20c3631ae5\media__1781151558298.png"
+    # User's latest logo source path in brain directory
+    user_logo_path = r"C:\Users\jeged\.gemini\antigravity-ide\brain\7b50f843-5eec-4d5c-99ff-ca20c3631ae5\media__1781153270767.png"
     if not os.path.exists(user_logo_path):
         print("Error: User logo file not found in brain folder.")
         return
@@ -53,6 +54,19 @@ def process_user_logo():
     img_512 = square_img.resize((512, 512), Image.Resampling.LANCZOS)
     img_512.save(os.path.join(dest_dir, "web-app-manifest-512x512.png"), format="PNG")
     print("Generated web-app-manifest-512x512.png")
+    
+    # 6. Generate favicon.svg by embedding the 512x512 PNG as base64
+    with open(os.path.join(dest_dir, "web-app-manifest-512x512.png"), "rb") as f:
+        png_data = f.read()
+    base64_data = base64.b64encode(png_data).decode("utf-8")
+    
+    svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <image href="data:image/png;base64,{base64_data}" width="512" height="512"/>
+</svg>
+'''
+    with open(os.path.join(dest_dir, "favicon.svg"), "w") as f:
+        f.write(svg_content)
+    print("Generated base64-embedded favicon.svg")
 
 if __name__ == "__main__":
     process_user_logo()
