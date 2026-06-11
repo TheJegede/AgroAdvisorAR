@@ -93,22 +93,22 @@ function Tractor() {
         <path d="M 46 24 H 68 V 38 H 46 Z" fill="currentColor" />
         <path d="M 24 38 V 20 H 42 L 46 24 V 38 Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
         <rect x="28" y="24" width="10" height="10" className="fill-sky-100 dark:fill-hc-bg stroke-current" strokeWidth="1.5" />
-        <line x1="42" y1="27" x2="45" y2="24" stroke="currentColor" stroke-width="1.5" />
+        <line x1="42" y1="27" x2="45" y2="24" stroke="currentColor" strokeWidth="1.5" />
       </g>
 
       {/* Wheels (Separated from jiggling body so they spin steadily) */}
       <g className="wheel-back text-gray-800 dark:text-hc-fg">
         <circle cx="32" cy="38" r="10" fill="currentColor" />
         <circle cx="32" cy="38" r="4" className="fill-white dark:fill-hc-surface" />
-        <line x1="32" y1="28" x2="32" y2="48" stroke="currentColor" stroke-width="1.5" />
-        <line x1="22" y1="38" x2="42" y2="38" stroke="currentColor" stroke-width="1.5" />
+        <line x1="32" y1="28" x2="32" y2="48" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="22" y1="38" x2="42" y2="38" stroke="currentColor" strokeWidth="1.5" />
       </g>
 
       <g className="wheel-front text-gray-800 dark:text-hc-fg">
         <circle cx="64" cy="42" r="6" fill="currentColor" />
         <circle cx="64" cy="42" r="2.5" className="fill-white dark:fill-hc-surface" />
-        <line x1="64" y1="36" x2="64" y2="48" stroke="currentColor" stroke-width="1" />
-        <line x1="58" y1="42" x2="70" y2="42" stroke="currentColor" stroke-width="1" />
+        <line x1="64" y1="36" x2="64" y2="48" stroke="currentColor" strokeWidth="1" />
+        <line x1="58" y1="42" x2="70" y2="42" stroke="currentColor" strokeWidth="1" />
       </g>
     </svg>
   )
