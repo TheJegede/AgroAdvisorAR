@@ -120,7 +120,7 @@ export default function QueryProgress({ stage }) {
 
   let caption = t.progressSearching
   if (name === 'sources_found') {
-    caption = (t.progressFoundSources || 'Found {n} sources').replace('{n}', String(stage?.count ?? 0))
+    caption = t.progressFoundSources.replace('{n}', String(stage?.count ?? 0))
   } else if (name === 'writing') {
     caption = t.progressWriting
   } else if (name === 'verifying') {

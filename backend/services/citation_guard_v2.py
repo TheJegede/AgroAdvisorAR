@@ -394,7 +394,10 @@ async def verify_answer(answer: str, chunks: list[dict], run_config: dict | None
             logger.warning("Merged guard failed, falling back to two-step: %s", str(e)[:150])
             results = None
 
-    if not results:
+    # results is None only when the merged judge errored (or was disabled). An
+    # empty list is a valid "no claims to verify" result — treating it as a miss
+    # would re-pay the two-step LLM round-trip the merge exists to avoid.
+    if results is None:
         claims_text = await decompose_claims(answer, run_config)
         if not claims_text:
             return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
@@ -404,6 +407,9 @@ async def verify_answer(answer: str, chunks: list[dict], run_config: dict | None
             results = await asyncio.to_thread(
                 lambda: [verify_claim(c, chunk_texts) for c in claims_text]
             )
+
+    if not results:
+        return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
 
     confidence_score = score_answer(results)
     return {
