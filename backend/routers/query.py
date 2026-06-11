@@ -195,6 +195,12 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
         # (starting with ':') are ignored by the SSE client.
         yield ": keepalive\n\n"
 
+        # Stream partial draft tokens for EN first-turn (cache miss) queries only.
+        # cache_key is None when session_history is non-empty (follow-up); in that
+        # case partial frames would be noisy and wasteful. ES queries skip streaming
+        # because partial frames would be in English before the translation step.
+        stream = (language == "en" and cache_key is not None)
+
         progress_q: asyncio.Queue = asyncio.Queue()
         rag_task = asyncio.create_task(
             run_rag_query(
@@ -206,6 +212,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 rice_fields=rice_fields,
                 user_id=user["sub"],
                 progress=progress_q,
+                stream=stream,
             )
         )
         try:
@@ -214,7 +221,10 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                     break
                 try:
                     item = await asyncio.wait_for(progress_q.get(), timeout=HEARTBEAT_INTERVAL_SECONDS)
-                    frame = json.dumps({"progress": item}, ensure_ascii=False)
+                    if item.get("kind") == "partial":
+                        frame = json.dumps({"partial": item["draft"]}, ensure_ascii=False)
+                    else:
+                        frame = json.dumps({"progress": item}, ensure_ascii=False)
                     yield f"data: {frame}\n\n"
                 except asyncio.TimeoutError:
                     if not rag_task.done():

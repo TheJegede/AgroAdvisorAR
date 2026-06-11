@@ -57,6 +57,15 @@ function DetailSection({ heading, children }) {
 function hasRenderableContent(r) {
   if (!r || typeof r !== 'object') return false
   if (r.suppressed) return true
+  if (r._isProvisional) return Boolean(
+    r.problem_summary ||
+    r.detailed_explanation ||
+    (r.recommended_actions?.length) ||
+    (r.likely_causes?.length) ||
+    (r.products_rates?.length) ||
+    (r.key_points?.length)
+    // citations NOT included — provisional card hides sources
+  )
   return Boolean(
     r.problem_summary ||
     r.detailed_explanation ||
@@ -72,6 +81,7 @@ function AdvisoryCardInner({ response, messageId, category }) {
   const { t, lang } = useLang()
   const online = useOnlineStatus()
   if (!hasRenderableContent(response)) return null
+  const isProvisional = Boolean(response._isProvisional)
   const cleanCat = category ? category.split(':')[0] : category
   const chipConfig = CROP_CHIP_CONFIG[cleanCat]
 
@@ -133,12 +143,18 @@ function AdvisoryCardInner({ response, messageId, category }) {
               the escalation contact — don't duplicate it in EscalationCard. */}
           {!response.suppressed && <EscalationCard escalation={response.escalation} />}
           <WarningsBanner warnings={response.warnings} />
-          <div className="flex items-center gap-2 flex-wrap mt-4">
-            <ConfidenceBadge confidence={response.confidence} />
-            <NLIConfidenceBadge confidence_score={response.confidence_score} />
-          </div>
-          <ConfidenceExplainer explanation={response.confidence_explanation} />
-          {response.confidence === 'Low' && <LowConfidenceBanner />}
+          {isProvisional ? (
+            <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 dark:bg-hc-surface dark:text-hc-fg dark:border-hc-border">
+              {t.verifying ?? 'Verifying…'}
+            </span>
+          ) : (
+            <div className="flex items-center gap-2 flex-wrap mt-4">
+              <ConfidenceBadge confidence={response.confidence} />
+              <NLIConfidenceBadge confidence_score={response.confidence_score} />
+            </div>
+          )}
+          {!isProvisional && <ConfidenceExplainer explanation={response.confidence_explanation} />}
+          {!isProvisional && response.confidence === 'Low' && <LowConfidenceBanner />}
         </>
       ) : (
         <>
@@ -150,16 +166,22 @@ function AdvisoryCardInner({ response, messageId, category }) {
               the escalation contact — don't duplicate it in EscalationCard. */}
           {!response.suppressed && <EscalationCard escalation={response.escalation} />}
           <WarningsBanner warnings={response.warnings} />
-          <div className="flex items-center gap-2 flex-wrap mt-4">
-            <ConfidenceBadge confidence={response.confidence} />
-            <NLIConfidenceBadge confidence_score={response.confidence_score} />
-          </div>
-          <ConfidenceExplainer explanation={response.confidence_explanation} />
-          {response.confidence === 'Low' && <LowConfidenceBanner />}
+          {isProvisional ? (
+            <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200 dark:bg-hc-surface dark:text-hc-fg dark:border-hc-border">
+              {t.verifying ?? 'Verifying…'}
+            </span>
+          ) : (
+            <div className="flex items-center gap-2 flex-wrap mt-4">
+              <ConfidenceBadge confidence={response.confidence} />
+              <NLIConfidenceBadge confidence_score={response.confidence_score} />
+            </div>
+          )}
+          {!isProvisional && <ConfidenceExplainer explanation={response.confidence_explanation} />}
+          {!isProvisional && response.confidence === 'Low' && <LowConfidenceBanner />}
         </>
       )}
-      <CitationsSection citations={response.citations} />
-      <FeedbackWidget messageId={messageId} />
+      {!isProvisional && <CitationsSection citations={response.citations} />}
+      {!isProvisional && <FeedbackWidget messageId={messageId} />}
     </div>
   )
 }

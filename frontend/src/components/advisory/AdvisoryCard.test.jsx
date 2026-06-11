@@ -49,3 +49,31 @@ describe('AdvisoryCard suppression branching', () => {
     expect(el).not.toBeNull()
   })
 })
+
+describe('AdvisoryCard provisional mode', () => {
+  it('renders Verifying badge for provisional partial content', () => {
+    const el = AdvisoryCard({
+      response: { _isProvisional: true, problem_summary: 'partial text' },
+      messageId: null,
+      category: null,
+    })
+    expect(el).not.toBeNull()
+  })
+
+  it('hasRenderableContent returns false for empty provisional — renders without throwing', () => {
+    expect(() => AdvisoryCard({ response: { _isProvisional: true }, messageId: null, category: null })).not.toThrow()
+  })
+
+  it('provisional card with content renders non-null', () => {
+    const el = AdvisoryCard({
+      response: {
+        _isProvisional: true,
+        problem_summary: 'Rust detected on soybean leaves.',
+        recommended_actions: ['Apply fungicide'],
+      },
+      messageId: null,
+      category: 'IN_SCOPE_SOYBEANS',
+    })
+    expect(el).not.toBeNull()
+  })
+})

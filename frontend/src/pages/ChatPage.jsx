@@ -26,7 +26,7 @@ function makeMessage(role, type, content, extras = {}) {
 
 export default function ChatPage() {
   const { lang, t } = useLang()
-  const { sendQuery, streaming, retry, retryable } = useSSEQuery()
+  const { sendQuery, streaming, retry, retryable, provisional } = useSSEQuery()
   const { createSession, loadSession } = useSessions()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -205,7 +205,7 @@ export default function ChatPage() {
           </div>
         </div>
       ) : (
-        <ChatHistory messages={messages} streaming={streaming} progressStage={progressStage} />
+        <ChatHistory messages={messages} streaming={streaming} progressStage={progressStage} provisional={provisional} />
       )}
 
       {/* Suggestion chips row — shown above input when messages present */}

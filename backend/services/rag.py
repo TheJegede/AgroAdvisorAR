@@ -29,6 +29,63 @@ async def _emit(progress, stage, **data):
         await progress.put({"stage": stage, **data})
 
 
+async def _astream_draft(
+    llm,
+    messages: list,
+    run_config: dict | None,
+    on_partial,
+    prepend_format_instructions: bool = False,
+) -> dict | None:
+    """Stream partial JSON dicts from an LLM via JsonOutputParser.
+
+    Pipes ``llm | JsonOutputParser()`` and iterates over partial dicts as
+    LangChain incrementally assembles JSON tokens into objects.  For each
+    non-empty partial dict, ``await on_partial(partial_dict)`` is called so
+    the caller can forward progressive updates to the SSE stream.
+
+    Args:
+        llm: Any LangChain chat model that supports ``.astream()``.
+        messages: The message list to send.
+        run_config: Optional LangChain run config (tracing, callbacks, …).
+        on_partial: Async callable invoked with each non-empty partial dict.
+        prepend_format_instructions: When True (DeepInfra / json_mode
+            providers), prepend ``PydanticOutputParser`` format instructions
+            to the first ``SystemMessage`` so the model knows the expected
+            JSON schema.
+
+    Returns:
+        The last (most complete) dict yielded, or ``None`` if the stream
+        produced no valid JSON.
+    """
+    from langchain_core.output_parsers import JsonOutputParser
+    from langchain_core.output_parsers import PydanticOutputParser
+    from langchain_core.messages import SystemMessage as _SystemMessage
+
+    effective_messages = messages
+    if prepend_format_instructions:
+        fmt = PydanticOutputParser(pydantic_object=AdvisoryDraft).get_format_instructions()
+        effective_messages = []
+        prepended = False
+        for msg in messages:
+            if not prepended and isinstance(msg, _SystemMessage):
+                effective_messages.append(_SystemMessage(content=fmt + "\n\n" + msg.content))
+                prepended = True
+            else:
+                effective_messages.append(msg)
+        if not prepended:
+            # No system message found — prepend a new one
+            effective_messages = [_SystemMessage(content=fmt)] + effective_messages
+
+    chain = llm | JsonOutputParser()
+    last: dict | None = None
+    async for partial in chain.astream(effective_messages, config=run_config):
+        if not partial:
+            continue
+        last = partial
+        await on_partial(partial)
+    return last
+
+
 # The prompt numbers retrieved chunks as "Document N: <title> | ...". The LLM
 # echoes that scaffolding into citation titles and prose, which (a) broke exact
 # title-matching so confidence was forced Low even for grounded answers, and
@@ -340,6 +397,7 @@ async def run_rag_query(
     rice_fields: list[dict] | None = None,
     user_id: str | None = None,
     progress: "asyncio.Queue | None" = None,
+    stream: bool = False,
 ) -> tuple[AdvisoryResponse, list[dict]]:
     """Returns (advisory, retrieved_chunks)."""
     await _emit(progress, "searching")
@@ -446,6 +504,7 @@ async def run_rag_query(
     # Provider order from config (default Groq primary — Gemini free is 20/day).
     # Chain 70b -> 8b-instant -> Gemini: when 70b hits its free tokens-per-day cap,
     # 8b (far higher TPD) keeps the pilot serving instead of failing.
+    deepinfra = None  # default; overridden below when not using local LLM
     if config.LLM_PRIMARY == "local":
         from services.local_llm import get_local_chat
         ordered = [get_local_chat()]
@@ -462,6 +521,12 @@ async def run_rag_query(
         else:  # groq
             ordered = [groq, deepinfra, groq_fast, gemini]
 
+    # Partial-update callback: pushes {"kind": "partial", "draft": ...} onto the
+    # progress queue so the SSE router can forward incremental advisory content.
+    async def _on_partial_cb(d: dict) -> None:
+        if progress is not None:
+            await progress.put({"kind": "partial", "draft": d})
+
     await _emit(progress, "writing")
     result = None
     last_err = None
@@ -471,22 +536,64 @@ async def run_rag_query(
         try:
             # Identity check — value-equality on pydantic models is fragile and
             # can misclassify a non-DeepInfra provider as DeepInfra.
-            if deepinfra is not None and llm is deepinfra:
+            is_deepinfra = deepinfra is not None and llm is deepinfra
+
+            if is_deepinfra:
                 from langchain_core.output_parsers import PydanticOutputParser
                 parser = PydanticOutputParser(pydantic_object=AdvisoryDraft)
                 format_instructions = parser.get_format_instructions()
-                
+
                 di_messages = []
                 for msg in messages:
                     if msg.type == "system":
                         di_messages.append(SystemMessage(content=f"{msg.content}\n\n{format_instructions}"))
                     else:
                         di_messages.append(msg)
-                
-                runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
-                result = await runnable.ainvoke(di_messages, config=run_config)
+
+            if stream:
+                # --- Streaming path ---
+                try:
+                    if is_deepinfra:
+                        final_dict = await _astream_draft(
+                            llm, di_messages, run_config, _on_partial_cb,
+                            prepend_format_instructions=True,
+                        )
+                    else:
+                        final_dict = await _astream_draft(
+                            llm, messages, run_config, _on_partial_cb,
+                        )
+
+                    if final_dict is None:
+                        # Stream produced no valid JSON — fall back to ainvoke
+                        # silently (zero partial items already pushed).
+                        logger.debug("_astream_draft returned None; falling back to ainvoke for this provider")
+                        if is_deepinfra:
+                            runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
+                            result = await runnable.ainvoke(di_messages, config=run_config)
+                        else:
+                            result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
+                    else:
+                        # Validate the streamed dict against AdvisoryDraft.
+                        # Raises ValidationError on bad generation → provider fallback.
+                        result = AdvisoryDraft(**final_dict)
+                except Exception as stream_exc:
+                    # Any error during streaming (astream, validation, etc.) falls
+                    # back to ainvoke for this provider.  Quota errors on the ainvoke
+                    # fallback still bubble up and trigger the outer provider loop.
+                    logger.debug("Streaming failed (%s); falling back to ainvoke", stream_exc)
+                    if is_deepinfra:
+                        runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
+                        result = await runnable.ainvoke(di_messages, config=run_config)
+                    else:
+                        result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
             else:
-                result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
+                # --- Non-streaming path (unchanged) ---
+                if is_deepinfra:
+                    runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
+                    result = await runnable.ainvoke(di_messages, config=run_config)
+                else:
+                    result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
+
             break
         except Exception as e:
             last_err = e
