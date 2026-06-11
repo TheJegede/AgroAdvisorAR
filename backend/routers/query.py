@@ -221,6 +221,9 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                         yield ": keepalive\n\n"
 
             result, retrieved_chunks = rag_task.result()
+            # Capture the English advisory BEFORE the ES translation — cache
+            # eligibility is judged on the English text (English _TIME_SENSITIVE_RE).
+            en_advisory_dump = result.model_dump()
             if language == "es":
                 result = await translate_advisory_to_es(result, user_id=user["sub"])
 
@@ -239,6 +242,13 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                     assistant_message_id = assistant_row["id"]
                 except Exception:
                     logger.exception("Failed to persist advisory query response")
+
+            # L3 WRITE: cache only first-turn (cache_key set), non-suppressed,
+            # reference-safe answers. Stored value is the user-facing advisory (ES
+            # if translated) plus _category; eligibility judged on the EN text.
+            if cache_key and not getattr(result, "suppressed", False) and answer_cache.is_cacheable_as_reference(en_advisory_dump):
+                final_dump = result.model_dump()
+                answer_cache.set_cached_answer(cache_key, {**final_dump, "_category": category})
 
             envelope = {
                 "advisory": result.model_dump(),

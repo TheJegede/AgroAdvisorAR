@@ -74,3 +74,58 @@ def test_cache_not_read_with_session_history(monkeypatch):
     resp = asyncio.run(q.query(req, user={"sub": "u1"}))
     _blob(_collect(resp))
     assert seen["get"] == 0  # never read the cache on a follow-up
+
+
+def _streamy_result(dump):
+    class _Res:
+        confidence_score = 0.9
+        suppressed = dump.get("suppressed", False)
+        escalation = None
+        def model_dump(self):
+            return dict(dump)
+    return _Res()
+
+
+def test_cacheable_answer_is_written(monkeypatch):
+    q = importlib.import_module("routers.query")
+    _patch_base(q, monkeypatch)
+    monkeypatch.setattr(q.answer_cache, "get_cached_answer", lambda key: None)
+
+    written = {}
+    monkeypatch.setattr(q.answer_cache, "set_cached_answer", lambda key, val, **k: written.update({key: val}))
+    monkeypatch.setattr(q, "save_message", lambda *a, **k: {"id": "m1"})
+
+    dump = {"problem_summary": "Soybeans are a legume.", "response_type": "informational",
+            "products_rates": [], "warnings": [], "recommended_actions": ["Rotate crops."],
+            "key_points": [], "detailed_explanation": "", "suppressed": False}
+    async def fake_rag(*a, **k):
+        return (_streamy_result(dump), [])
+    monkeypatch.setattr(q, "run_rag_query", fake_rag)
+
+    req = q.QueryRequest(message="soybean facts", language="en")
+    resp = asyncio.run(q.query(req, user={"sub": "u1"}))
+    _blob(_collect(resp))
+    assert len(written) == 1
+    (val,) = written.values()
+    assert val["_category"] == "IN_SCOPE_SOYBEANS:INFO"
+
+
+def test_rate_bearing_answer_not_written(monkeypatch):
+    q = importlib.import_module("routers.query")
+    _patch_base(q, monkeypatch)
+    monkeypatch.setattr(q.answer_cache, "get_cached_answer", lambda key: None)
+    written = {}
+    monkeypatch.setattr(q.answer_cache, "set_cached_answer", lambda key, val, **k: written.update({key: val}))
+    monkeypatch.setattr(q, "save_message", lambda *a, **k: {"id": "m1"})
+
+    dump = {"problem_summary": "Apply N.", "response_type": "informational",
+            "products_rates": [{"product": "Urea", "rate": "100 lb/ac"}], "warnings": [],
+            "recommended_actions": [], "key_points": [], "detailed_explanation": "", "suppressed": False}
+    async def fake_rag(*a, **k):
+        return (_streamy_result(dump), [])
+    monkeypatch.setattr(q, "run_rag_query", fake_rag)
+
+    req = q.QueryRequest(message="how much urea", language="en")
+    resp = asyncio.run(q.query(req, user={"sub": "u1"}))
+    _blob(_collect(resp))
+    assert written == {}  # products_rates present -> never cached
