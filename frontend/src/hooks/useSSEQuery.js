@@ -20,6 +20,7 @@ export function parseSSEPayload(payload) {
 export function isAdvisoryFrame(parsed) {
   if (!parsed || typeof parsed !== 'object') return false
   if (parsed.progress || parsed.stage) return false
+  if (parsed.partial) return false
   const advisory = parsed.advisory ?? parsed
   if (!advisory || typeof advisory !== 'object') return false
   return (
@@ -39,7 +40,7 @@ export const STREAM_EMPTY_CODE = 'stream_empty'
 // onResult, false if the stream ended (reader done or [DONE]) with nothing.
 // Throws Error(message) on a streamed {error} frame. Comment lines (": ...")
 // and malformed payloads are skipped.
-export async function consumeSSEStream(reader, { onResult, onCategory, onProgress }) {
+export async function consumeSSEStream(reader, { onResult, onCategory, onProgress, onPartial }) {
   const decoder = new TextDecoder()
   let buffer = ''
   let delivered = false
@@ -61,6 +62,10 @@ export async function consumeSSEStream(reader, { onResult, onCategory, onProgres
       if (parsed.error) throw new Error(parsed.error)
       if (parsed.progress || parsed.stage) {
         onProgress?.(parsed.progress ?? parsed)
+        continue
+      }
+      if (parsed.partial) {
+        onPartial?.(parsed.partial)
         continue
       }
       // Never render a non-advisory frame as a card (empty "Problem Summary").
@@ -124,6 +129,7 @@ export function useSSEQuery() {
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState(null)
   const [retryable, setRetryable] = useState(false)
+  const [provisional, setProvisional] = useState(null)
   const abortRef = useRef(null)
   const lastQueryRef = useRef(null)
 
@@ -138,13 +144,24 @@ export function useSSEQuery() {
     onError,
     onCategory,
     onProgress,
+    onPartial,
   }) => {
     setStreaming(true)
     setError(null)
     setRetryable(false)
-    lastQueryRef.current = { message, language, sessionHistory, sessionId, lastCategory, onResult, onOOS, onError, onCategory, onProgress }
+    lastQueryRef.current = { message, language, sessionHistory, sessionId, lastCategory, onResult, onOOS, onError, onCategory, onProgress, onPartial }
 
     const controller = beginRequest(abortRef)
+
+    const handlePartial = (draft) => {
+      setProvisional(draft)
+      onPartial?.(draft)
+    }
+
+    const handleResult = (advisory, messageId, category) => {
+      setProvisional(null)
+      onResult(advisory, messageId, category)
+    }
 
     try {
       const res = await fetchQueryWithAuth({
@@ -174,7 +191,7 @@ export function useSSEQuery() {
       }
 
       const reader = res.body.getReader()
-      const delivered = await consumeSSEStream(reader, { onResult, onCategory, onProgress })
+      const delivered = await consumeSSEStream(reader, { onResult: handleResult, onCategory, onProgress, onPartial: handlePartial })
       if (!delivered) {
         setError(STREAM_EMPTY_CODE)
         setRetryable(true)
@@ -200,5 +217,5 @@ export function useSSEQuery() {
     if (lastQueryRef.current) sendQuery(lastQueryRef.current)
   }, [sendQuery])
 
-  return { sendQuery, streaming, error, cancel, retry, retryable }
+  return { sendQuery, streaming, error, cancel, retry, retryable, provisional }
 }

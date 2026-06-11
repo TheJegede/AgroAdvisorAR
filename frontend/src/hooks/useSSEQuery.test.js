@@ -4,6 +4,7 @@ import {
   beginRequest,
   fetchQueryWithAuth,
   consumeSSEStream,
+  isAdvisoryFrame,
 } from './useSSEQuery'
 
 function makeStorage() {
@@ -205,6 +206,39 @@ describe('consumeSSEStream', () => {
       'data: [DONE]\n\n',
     ])
     const delivered = await consumeSSEStream(reader, { onResult: () => {}, onProgress: () => {} })
+    expect(delivered).toBe(false)
+  })
+
+  it('routes partial frames to onPartial, final advisory to onResult', async () => {
+    const partials = []
+    const results = []
+    const reader = readerFrom([
+      'data: {"partial":{"problem_summary":"partial text"}}\n\n',
+      'data: {"partial":{"problem_summary":"more text","recommended_actions":["do X"]}}\n\n',
+      'data: {"advisory":{"problem_summary":"final text"},"message_id":"m1","category":"IN_SCOPE_RICE"}\n\n',
+      'data: [DONE]\n\n',
+    ])
+    const delivered = await consumeSSEStream(reader, {
+      onResult: (a) => results.push(a),
+      onPartial: (d) => partials.push(d),
+    })
+    expect(partials).toHaveLength(2)
+    expect(partials[0]).toEqual({ problem_summary: 'partial text' })
+    expect(results).toHaveLength(1)
+    expect(results[0]).toEqual({ problem_summary: 'final text' })
+    expect(delivered).toBe(true)
+  })
+
+  it('isAdvisoryFrame returns false for partial frames', () => {
+    expect(isAdvisoryFrame({ partial: { problem_summary: 'x' } })).toBe(false)
+  })
+
+  it('partial-only stream (no final advisory) reports delivered=false', async () => {
+    const reader = readerFrom([
+      'data: {"partial":{"problem_summary":"partial"}}\n\n',
+      'data: [DONE]\n\n',
+    ])
+    const delivered = await consumeSSEStream(reader, { onResult: () => {}, onPartial: () => {} })
     expect(delivered).toBe(false)
   })
 })
