@@ -247,6 +247,20 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 - **Correctness preserved:** E2E evaluation (`eval_runner.py` with `n=20` sample) shows correctness is 27.5% (was 30.0% baseline, within noise), proving quality is preserved.
 - **TDD Tests:** Added 7 unit/integration tests to `backend/tests/test_citation_guard_v2.py` checking postprocessing, merged LLM judge, and verify_answer fallback. All pass.
 
+#### ▶ CHAT PROGRESS UX FIX + EMPTY-CARD HARDENING — SHIPPED 2026-06-10 (main `2d11b4c`)
+> Triggered by prod test of the SDS query: 3–4 empty "Problem Summary" cards rendered + a boxed tractor "loader". Two root causes, both fixed.
+- **Empty cards = stale PWA service worker** serving the OLD JS bundle (pre-progress-streaming). Old `consumeSSEStream` rendered each of the 4 backend progress frames (`searching`/`sources_found`/`writing`/`verifying`) as an empty advisory card. Live symptom clears once the SW activates the new build (`registerType:'autoUpdate'` → needs a 2nd reload / "Clear site data"). NOT a code bug in current `main` — current code already routes progress→onProgress.
+- **Product direction:** progress must be **inline animated text** (Claude-style), NOT a boxed card. Rebuilt `QueryProgress.jsx` = left-aligned bouncing-dots + pulsing stage caption, dropped the tractor card.
+- **Hardening (deploy-skew-proof):** `isAdvisoryFrame()` in `useSSEQuery.js` (a progress/stage/empty frame can never reach `onResult`) + `hasRenderableContent()` in `AdvisoryCard.jsx` (empty advisory renders null, never a blank shell). 81 frontend tests + lint green.
+
+#### ▶▶ LATENCY — REAL NEXT FRONT (generation-bound, NOT cache/retrieval)
+> L1(progress UX)/L2(guard merge ~300ms)/L3(answer cache)/L4(bounded context) all SHIPPED + on `main`. They did NOT move the wall-clock ceiling for a normal query. **LangSmith prod trace 2026-06-10** (query "What do I do about soybean SDS in a wet year", `IN_SCOPE_SOYBEANS:DIAG`):
+> - classify (Gemini 8b) ~0.35s
+> - **`RunnableSequence` generation (70B) = 45–50s** ← dominant cost
+> - **guard `ChatOpenAI` = 14–26s** ← second cost
+> - **L3 cache MISS by design** — diagnostic answers are never cached (only `informational` + reference-safe are); a verbatim repeat still ran the full 45–50s gen + guard. Working as intended; L3 only helps repeated informational queries.
+> **Ceiling = generation (70B latency) + guard, NOT retrieval/cache.** Open levers to scope next session (none built): (a) **token streaming** — stream the advisory tokens to the UI as they generate so perceived latency drops even if total stays (biggest UX win; current SSE only streams stage frames then one final advisory blob); (b) **faster/smaller gen model or provider** for the structured advisory (DeepInfra 70B is slow; try Groq 70B when not TPD-exhausted, or a distilled model) — must re-check correctness (honest 20%); (c) **trim/parallelize the guard** (still 14–26s after the L2 merge — investigate why prod is far above the 1.7s probe; provider? cold start? serial decompose+judge?); (d) **skip guard on cache hits** (already free). Decide (a) vs (c) first — streaming is highest perceived-latency ROI.
+
 #### ▶ L1 CONDITIONAL-RULE LEVER — CODE TRACK BUILT 2026-06-10 (branch `l1-conditional-rule-lever`)
 > Plan: `docs/superpowers/plans/2026-06-10-l1-conditional-rule-generation-lever.md`. Built subagent-driven TDD, 5 commits (`ce4c2b9..e21bdf5`), per-task spec + code-quality review, final whole-impl review = ready to merge.
 
