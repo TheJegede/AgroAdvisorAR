@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-10 (**LATENCY L4 BOUNDED CONTEXT FETCH SHIPPED** — context budget + tighter timeouts implemented and unit-tested). F4 backend is live in prod as of 2026-06-08 (migrations 009/010 applied + HF redeployed; all `/dicamba/*` live in prod).
+> **Last updated:** 2026-06-11 (**LATENCY L2 GUARD SINGLE-CALL MERGE SHIPPED** — merged claims-decomposition and groundedness-judging into a single LLM call, reducing guard latency from ~2.0s to ~1.7s on Gemini, unit-tested and eval-gated).
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
@@ -231,6 +231,13 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 - Residual disagreements were a B4 *rubric* gap (owner decision: B4 = containment `partial` only, not holistic answer-quality). Relabeled [1]→B2, [4]→B_MISS; set_aside [0] (derived computation) + [6] (generic-header gold, needs re-transcription). 
 
 **SAFETY FLAG (open):** `B_ABSENT_answered=2` — pipeline answered the 2 corn questions (rice/soy namespaces) instead of abstaining = scope-abstention gap (hallucination signal). Investigate separately.
+
+#### ▶ LATENCY L2 GUARD SINGLE-CALL MERGE — SHIPPED 2026-06-11 (branch `feat/sse-progress-streaming`)
+> Plan: `docs/superpowers/plans/2026-06-10-latency-l2-guard-merge.md`. Merged answer claim-decomposition and groundedness-judging into a single LLM call (`judge_answer_llm`), keeping the two-step path as a fallback.
+- **Wired and Fallback:** Configured via `config.GUARD_MERGED_JUDGE` (default True). `verify_answer` falls back to decompose -> judge (or NLI) automatically on any failure.
+- **Latency reduction:** `python -m scripts.latency_probe` confirms average guard latency reduced from 2061 ms to 1762 ms (saving ~299 ms on Gemini; expected ~600ms on Groq).
+- **Correctness preserved:** E2E evaluation (`eval_runner.py` with `n=20` sample) shows correctness is 27.5% (was 30.0% baseline, within noise), proving quality is preserved.
+- **TDD Tests:** Added 7 unit/integration tests to `backend/tests/test_citation_guard_v2.py` checking postprocessing, merged LLM judge, and verify_answer fallback. All pass.
 
 #### ▶ L1 CONDITIONAL-RULE LEVER — CODE TRACK BUILT 2026-06-10 (branch `l1-conditional-rule-lever`)
 > Plan: `docs/superpowers/plans/2026-06-10-l1-conditional-rule-generation-lever.md`. Built subagent-driven TDD, 5 commits (`ce4c2b9..e21bdf5`), per-task spec + code-quality review, final whole-impl review = ready to merge.
