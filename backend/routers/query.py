@@ -13,6 +13,7 @@ from services.session import add_message as save_message
 from services.session import get_messages
 from services.user import get_profile
 from services.cache import rate_limit_hit
+from services import answer_cache
 from services.sanitizer import sanitize, InjectionDetected, MessageTooLong
 from utils.prompt import out_of_scope_message
 import config
@@ -80,6 +81,17 @@ def _trusted_rag_history(req: QueryRequest, user_id: str) -> list[dict]:
     return _normalize_history(req.session_history, sanitize_content=True)
 
 
+def _advisory_sse(advisory: dict, message_id, category):
+    """Build the SSE generator for a ready advisory dict (cache hit). Same frame
+    shape as the miss path so the frontend consumer is unchanged."""
+    async def _gen():
+        yield ": keepalive\n\n"
+        envelope = {"advisory": advisory, "message_id": message_id, "category": category}
+        yield f"data: {json.dumps(envelope, ensure_ascii=False)}\n\n"
+        yield "data: [DONE]\n\n"
+    return _gen()
+
+
 async def maybe_translate_query(message: str, language: str, user_id: str | None = None) -> str:
     """ES bridge: translate the query to English so the all-English pipeline runs.
     EN passes through unchanged."""
@@ -128,6 +140,34 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
 
     # Translate-bridge: ES query -> EN so the whole RAG pipeline runs in English.
     en_message = await maybe_translate_query(req.message, language, user_id=user["sub"])
+
+    # L3 answer cache: serve a stored reference-safe advisory for a verbatim-repeat,
+    # first-turn query — skipping classify/retrieve/generate/guard. First-turn only
+    # (cache_key stays None on a follow-up -> no read, no write).
+    cache_key = None
+    if not session_history:
+        cache_key = answer_cache.answer_cache_key(en_message, language, county_fips, rice_fields)
+        cached = answer_cache.get_cached_answer(cache_key)
+        if cached:
+            cached = dict(cached)
+            hit_category = cached.pop("_category", None)
+            message_id = None
+            if req.session_id:
+                try:
+                    save_message(req.session_id, user["sub"], "user", req.message, "text")
+                    row = save_message(
+                        req.session_id, user["sub"], "assistant",
+                        json.dumps(cached, ensure_ascii=False), "advisory",
+                    )
+                    message_id = row["id"]
+                except Exception:
+                    logger.exception("Failed to persist cached advisory")
+            return StreamingResponse(
+                _advisory_sse(cached, message_id, hit_category),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            )
+
     category = await classify_query(en_message, last_category=req.last_category, user_id=user["sub"])
 
     if category == "OUT_OF_SCOPE":
@@ -155,7 +195,7 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
         # (starting with ':') are ignored by the SSE client.
         yield ": keepalive\n\n"
 
-        q: asyncio.Queue = asyncio.Queue()
+        progress_q: asyncio.Queue = asyncio.Queue()
         rag_task = asyncio.create_task(
             run_rag_query(
                 message=en_message,
@@ -165,15 +205,15 @@ async def query(req: QueryRequest, user: dict = Depends(get_current_user)):
                 session_history=session_history,
                 rice_fields=rice_fields,
                 user_id=user["sub"],
-                progress=q,
+                progress=progress_q,
             )
         )
         try:
             while True:
-                if rag_task.done() and q.empty():
+                if rag_task.done() and progress_q.empty():
                     break
                 try:
-                    item = await asyncio.wait_for(q.get(), timeout=HEARTBEAT_INTERVAL_SECONDS)
+                    item = await asyncio.wait_for(progress_q.get(), timeout=HEARTBEAT_INTERVAL_SECONDS)
                     frame = json.dumps({"progress": item}, ensure_ascii=False)
                     yield f"data: {frame}\n\n"
                 except asyncio.TimeoutError:
