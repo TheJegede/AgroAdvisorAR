@@ -4,12 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-08 (**F4 BACKEND PROD CUTOVER COMPLETE** — migrations 009/010 applied + HF
-> redeployed; all `/dicamba/*` live in prod [smoke-verified: 8 routes in OpenAPI, 401 auth-gated, Vercel
-> proxy intact]. Station identities verified vs UA AAES + AR-bbox guard test [C2]. **S1 authed functional
-> walk GREEN** (owner browser, EN+ES: drop pin → Gates A–D → save record → PDF → feedback, zero 500;
-> fixed a PDF-download 401 — plain `<a href>` carried no Bearer, now axios blob, `943ce7b`). Earlier same
-> day: Phase 6 code track shipped; CLAUDE.md Priorities synced [F4 reframed SHIPPED, answer-quality = real open front].
+> **Last updated:** 2026-06-11 (**LATENCY L2 GUARD SINGLE-CALL MERGE SHIPPED** — merged claims-decomposition and groundedness-judging into a single LLM call, reducing guard latency from ~2.0s to ~1.7s on Gemini, unit-tested and eval-gated).
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
@@ -237,6 +232,21 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 
 **SAFETY FLAG (open):** `B_ABSENT_answered=2` — pipeline answered the 2 corn questions (rice/soy namespaces) instead of abstaining = scope-abstention gap (hallucination signal). Investigate separately.
 
+#### ▶ LATENCY L1 SSE MULTI-STAGE PROGRESS STREAMING — SHIPPED 2026-06-10 (branch `feat/sse-progress-streaming`)
+> Plan: `docs/superpowers/plans/2026-06-10-latency-l1-sse-progress.md`. Implemented progressive RAG pipeline stage streaming (Searching -> Found N sources + titles -> Writing -> Verifying -> Advisory) using FastAPI/asyncio.Queue SSE and React 19 hooks.
+- **RAG Stage Emission:** Added `_emit` helper and `progress` queue parameters to `run_rag_query` in `backend/services/rag.py` to post stages at core checkpoints.
+- **FastAPI Event Stream:** Modified `event_stream` in `backend/routers/query.py` to drain the progress queue, sending event-stream frames as SSE payloads, and maintaining hearts/keepalives.
+- **Frontend Stepper Component:** Created `QueryProgress.jsx` component integrating the animated tractor with real-time bilingual status captions and source title lists.
+- **Wiring & Cleanup:** Wired state through `ChatPage.jsx` and `ChatHistory.jsx`, clearing the stepper on results/OOS/errors. Deleted orphaned `TypingIndicator.jsx`.
+- **TDD Tests:** Created `backend/tests/test_rag_progress.py`, `backend/tests/test_query_progress.py`, and `frontend/src/components/chat/QueryProgress.test.jsx`. Created Playwright E2E spec `frontend/e2e/sse-progress.spec.js` using in-page fetch stream delay mocking. All tests passed.
+
+#### ▶ LATENCY L2 GUARD SINGLE-CALL MERGE — SHIPPED 2026-06-11 (branch `feat/sse-progress-streaming`)
+> Plan: `docs/superpowers/plans/2026-06-10-latency-l2-guard-merge.md`. Merged answer claim-decomposition and groundedness-judging into a single LLM call (`judge_answer_llm`), keeping the two-step path as a fallback.
+- **Wired and Fallback:** Configured via `config.GUARD_MERGED_JUDGE` (default True). `verify_answer` falls back to decompose -> judge (or NLI) automatically on any failure.
+- **Latency reduction:** `python -m scripts.latency_probe` confirms average guard latency reduced from 2061 ms to 1762 ms (saving ~299 ms on Gemini; expected ~600ms on Groq).
+- **Correctness preserved:** E2E evaluation (`eval_runner.py` with `n=20` sample) shows correctness is 27.5% (was 30.0% baseline, within noise), proving quality is preserved.
+- **TDD Tests:** Added 7 unit/integration tests to `backend/tests/test_citation_guard_v2.py` checking postprocessing, merged LLM judge, and verify_answer fallback. All pass.
+
 #### ▶ L1 CONDITIONAL-RULE LEVER — CODE TRACK BUILT 2026-06-10 (branch `l1-conditional-rule-lever`)
 > Plan: `docs/superpowers/plans/2026-06-10-l1-conditional-rule-generation-lever.md`. Built subagent-driven TDD, 5 commits (`ce4c2b9..e21bdf5`), per-task spec + code-quality review, final whole-impl review = ready to merge.
 
@@ -434,6 +444,8 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 
 ## ✅ Recently shipped (earlier this arc)
 
+- **Latency L3 Reference-Safe Answer Cache**: New `backend/services/answer_cache.py` — exact-normalized key (lowercased, punctuation-stripped, whitespace-collapsed) over EN query + language + county_fips + rice-field profile sig; Upstash-backed via existing `cache.cache_get/cache_set` (best-effort, no-ops when Redis unset). `routers/query.py` READs after translate / before classify (first-turn only — `cache_key` stays `None` on a follow-up so no read/write) and serves the hit via `_advisory_sse` (same SSE frame shape as miss path, skips classify+retrieve+generate+guard, ~50ms). WRITEs after the final advisory only when first-turn, non-suppressed, and `is_cacheable_as_reference` (informational, NO products_rates, NO warnings, no time-sensitive term via `_TIME_SENSITIVE_RE` — Python port of PWA `offlineTiering.js`). Eligibility judged on EN text; stored value is user-facing advisory (ES if translated) + `_category` (stripped before the hit frame). A paraphrase MISSES; no rate/spray/timing answer ever cached. TDD: backend tests `test_answer_cache.py` (5) + `test_query_cache.py` (4) green; regression `-k "query or cache or rag"` 40 passed. Build PLAN 4 of 4 (L4→L2→L1→L3). 2026-06-10
+- **Latency L4 Bounded Context Fetch**: Implemented tight timeouts for NOAA and SSURGO context fetching clients and wrapped concurrent fetches with `asyncio.wait_for`. Prevents slow/hanging upstream requests from stalling the RAG critical path, safely falling back to the "unavailable" state on breach. Unit tests (3 passed) written in `backend/tests/test_context_budget.py`. 2026-06-10
 - **Shimmering Skeleton Screens**: Replaced standard loading spinners with highly responsive, custom-animated shimmering skeleton screens across all fetching/loading states. Includes custom CSS `@keyframes` in `index.css` supporting high-contrast accessibility mode. Handled loading layouts for past sessions, chat history, profile form, admin dashboard widgets, drift reports table, evaluation queue, and route guards. All 42 frontend tests pass, 0 lint errors. 2026-06-08
 - **Sidebar Sessions Auto-Refresh**: Fixed new chat sessions not appearing in the sidebar until manual page refresh. Removed forced key remounting on `ChatPageWrapper` in `App.jsx`, updated `ChatPage` to push the new session ID to the URL on session creation, and implemented synchronized active session state in `useEffect` using `useRef`. All unit tests and lint checks pass clean. 2026-06-02
 - **Cartoonish Tractor Loader Animation**: Replaced default three-dot bouncing typing indicator with a custom CSS-animated SVG tractor in `TypingIndicator.jsx`. Configured dynamic color mappings for Light and High Contrast modes. All frontend (26/26) and backend (108/108) unit tests pass. 2026-06-01

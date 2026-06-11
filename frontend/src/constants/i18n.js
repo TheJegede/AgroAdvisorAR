@@ -267,6 +267,10 @@ export const LABELS = {
     offlineReferenceBadge: 'Reference only — not a current advisory',
     install: 'Install app',
     installHint: 'Add AgroAdvisor to your home screen for quick access in the field.',
+    progressSearching: 'Searching extension sources…',
+    progressFoundSources: 'Found {n} sources',
+    progressWriting: 'Writing advisory…',
+    progressVerifying: 'Verifying against sources…',
   },
   es: {
     appName: 'AgroAdvisor AR',
@@ -536,5 +540,9 @@ export const LABELS = {
     offlineReferenceBadge: 'Solo referencia — no es un aviso actual',
     install: 'Instalar app',
     installHint: 'Agregue AgroAdvisor a su pantalla de inicio para acceso rápido en el campo.',
+    progressSearching: 'Buscando fuentes de extensión…',
+    progressFoundSources: '{n} fuentes encontradas',
+    progressWriting: 'Redactando recomendación…',
+    progressVerifying: 'Verificando con las fuentes…',
   },
 }

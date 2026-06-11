@@ -22,7 +22,7 @@ export const STREAM_EMPTY_CODE = 'stream_empty'
 // onResult, false if the stream ended (reader done or [DONE]) with nothing.
 // Throws Error(message) on a streamed {error} frame. Comment lines (": ...")
 // and malformed payloads are skipped.
-export async function consumeSSEStream(reader, { onResult, onCategory }) {
+export async function consumeSSEStream(reader, { onResult, onCategory, onProgress }) {
   const decoder = new TextDecoder()
   let buffer = ''
   let delivered = false
@@ -42,6 +42,10 @@ export async function consumeSSEStream(reader, { onResult, onCategory }) {
       const { parsed, malformed } = parseSSEPayload(payload)
       if (malformed) continue
       if (parsed.error) throw new Error(parsed.error)
+      if (parsed.progress) {
+        onProgress?.(parsed.progress)
+        continue
+      }
       if (parsed.category) onCategory?.(parsed.category)
       onResult(parsed.advisory ?? parsed, parsed.message_id ?? null, parsed.category ?? null)
       delivered = true
@@ -114,11 +118,12 @@ export function useSSEQuery() {
     onOOS,
     onError,
     onCategory,
+    onProgress,
   }) => {
     setStreaming(true)
     setError(null)
     setRetryable(false)
-    lastQueryRef.current = { message, language, sessionHistory, sessionId, lastCategory, onResult, onOOS, onError, onCategory }
+    lastQueryRef.current = { message, language, sessionHistory, sessionId, lastCategory, onResult, onOOS, onError, onCategory, onProgress }
 
     const controller = beginRequest(abortRef)
 
@@ -150,7 +155,7 @@ export function useSSEQuery() {
       }
 
       const reader = res.body.getReader()
-      const delivered = await consumeSSEStream(reader, { onResult, onCategory })
+      const delivered = await consumeSSEStream(reader, { onResult, onCategory, onProgress })
       if (!delivered) {
         setError(STREAM_EMPTY_CODE)
         setRetryable(true)

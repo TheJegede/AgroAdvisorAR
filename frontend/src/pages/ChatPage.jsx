@@ -38,6 +38,7 @@ export default function ChatPage() {
   const [lastAdvisory, setLastAdvisory] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [loadingSession, setLoadingSession] = useState(false)
+  const [progressStage, setProgressStage] = useState(null)
   const [prefill, setPrefill] = useState('')
 
   const sessionParam = searchParams.get('session')
@@ -93,6 +94,7 @@ export default function ChatPage() {
 
   async function handleSubmit(message) {
     setPrefill('')
+    setProgressStage(null)
     const userMsg = makeMessage('user', 'text', message)
     setMessages((prev) => [...prev, userMsg])
 
@@ -118,7 +120,9 @@ export default function ChatPage() {
       sessionId: activeSessionId,
       lastCategory,
       onCategory: (cat) => setLastCategory(cat),
+      onProgress: (stage) => setProgressStage(stage),
       onResult: (advisory, messageId, category) => {
+        setProgressStage(null)
         setMessages((prev) => [
           ...prev,
           makeMessage('assistant', 'advisory', advisory, { messageId, category }),
@@ -131,12 +135,14 @@ export default function ChatPage() {
         setLastAdvisory({ advisory, category })
       },
       onOOS: (msg, messageId) => {
+        setProgressStage(null)
         setMessages((prev) => [
           ...prev,
           makeMessage('assistant', 'oos', msg, { messageId }),
         ])
       },
       onError: (errMsg) => {
+        setProgressStage(null)
         let display
         if (errMsg === STREAM_EMPTY_CODE) {
           display = t.connectionInterrupted
@@ -199,7 +205,7 @@ export default function ChatPage() {
           </div>
         </div>
       ) : (
-        <ChatHistory messages={messages} streaming={streaming} />
+        <ChatHistory messages={messages} streaming={streaming} progressStage={progressStage} />
       )}
 
       {/* Suggestion chips row — shown above input when messages present */}

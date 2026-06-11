@@ -58,7 +58,7 @@ async def fetch_ssurgo(fips: str) -> dict:
         area_symbol = fips_to_areasymbol(fips)
         query = SSURGO_QUERY.format(area_symbol=area_symbol).strip()
         try:
-            async with httpx.AsyncClient(timeout=3.0) as client:
+            async with httpx.AsyncClient(timeout=config.CONTEXT_FETCH_TIMEOUT) as client:
                 resp = await client.post(
                     config.SSURGO_ENDPOINT,
                     data={"query": query, "format": "json+columnname+metadata"},
@@ -100,7 +100,7 @@ async def fetch_noaa(fips: str) -> dict:
 
         try:
             async with httpx.AsyncClient(
-                timeout=3.0,
+                timeout=config.CONTEXT_FETCH_TIMEOUT,
                 headers={"User-Agent": config.NOAA_USER_AGENT},
             ) as client:
                 # Step 1: resolve gridpoint
@@ -143,11 +143,20 @@ async def fetch_noaa(fips: str) -> dict:
 
 
 async def get_context(fips: str) -> dict:
-    """Fetch both SSURGO and NOAA context concurrently."""
-    soil, weather = await asyncio.gather(
-        fetch_ssurgo(fips),
-        fetch_noaa(fips),
-    )
+    """Fetch SSURGO + NOAA concurrently, bounded by CONTEXT_BUDGET_SECONDS.
+
+    On a cache MISS this await blocks generation (rag.py awaits it before the
+    prompt). If the gather exceeds the budget, degrade BOTH to unavailable
+    rather than stall the answer; the 6h cache refills on a later query.
+    """
+    try:
+        soil, weather = await asyncio.wait_for(
+            asyncio.gather(fetch_ssurgo(fips), fetch_noaa(fips)),
+            timeout=config.CONTEXT_BUDGET_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("context budget exceeded for fips %s; degrading to unavailable", fips)
+        soil, weather = _unavailable(), _unavailable()
     return {"soil": soil, "weather": weather}
 
 

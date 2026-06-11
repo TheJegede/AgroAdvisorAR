@@ -56,6 +56,14 @@ NOAA_USER_AGENT = f"AgroAdvisor AR ({NOAA_CONTACT_EMAIL})"
 
 DEFAULT_COUNTY_FIPS = "05055"
 
+# Context (SSURGO/NOAA) fetch bounds. On a cache MISS the context await blocks
+# generation (rag.py awaits get_context before the prompt). Cap per-call httpx
+# time AND the overall gather so a slow/hanging upstream degrades to
+# "unavailable" instead of stalling the answer. Budget sits above the cached
+# path (~0.1s) and below the ~6s worst case (NOAA = 2 sequential GETs).
+CONTEXT_FETCH_TIMEOUT = float(os.environ.get("CONTEXT_FETCH_TIMEOUT", "1.5"))
+CONTEXT_BUDGET_SECONDS = float(os.environ.get("CONTEXT_BUDGET_SECONDS", "2.5"))
+
 REDIS_TTL_SECONDS = 6 * 60 * 60  # 6 hours
 RATE_LIMIT_PER_HOUR = 20
 TOP_K_RETRIEVAL = 5
@@ -77,6 +85,12 @@ NLI_CITATION_GUARD_ENABLED = os.environ.get("NLI_CITATION_GUARD_ENABLED", "1") n
 # Groundedness judge: "llm" (default) reuses the provider chain; "nli" keeps the
 # legacy CrossEncoder for offline/no-API runs.
 GROUNDEDNESS_JUDGE = os.environ.get("GROUNDEDNESS_JUDGE", "llm")
+
+# When true, the citation guard does claim-extraction AND groundedness-judging
+# in ONE LLM call (judge_answer_llm) instead of two serial calls
+# (decompose_claims -> judge_claims_llm). Falls back to the two-step path on any
+# failure. Set false to roll back instantly without a deploy.
+GUARD_MERGED_JUDGE = os.environ.get("GUARD_MERGED_JUDGE", "1") not in {"0", "false", "False"}
 
 # Citation-guard operating thresholds (recalibrated from per-namespace eval data).
 # Below ESCALATION → attach an Extension-agent escalation; below SUPPRESSION → blank
