@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      includeAssets: ['favicon.ico', 'favicon-96x96.png', 'apple-touch-icon.png', 'favicon.svg', 'icons.svg'],
       manifest: {
         name: 'AgroAdvisor AR',
         short_name: 'AgroAdvisor',
@@ -17,6 +17,10 @@ export default defineConfig({
         display: 'standalone',
         start_url: '/',
         icons: [
+          { src: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+          { src: '/web-app-manifest-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/web-app-manifest-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           { src: '/icons.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
         ],
       },
