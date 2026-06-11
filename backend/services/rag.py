@@ -20,6 +20,15 @@ import config
 
 logger = logging.getLogger(__name__)
 
+
+async def _emit(progress, stage, **data):
+    """Put a progress stage dict onto the queue when one is provided; no-op
+    otherwise. Lets run_rag_query report stage transitions to the SSE stream
+    without coupling to the router."""
+    if progress is not None:
+        await progress.put({"stage": stage, **data})
+
+
 # The prompt numbers retrieved chunks as "Document N: <title> | ...". The LLM
 # echoes that scaffolding into citation titles and prose, which (a) broke exact
 # title-matching so confidence was forced Low even for grounded answers, and
@@ -330,8 +339,10 @@ async def run_rag_query(
     session_history: list[dict],
     rice_fields: list[dict] | None = None,
     user_id: str | None = None,
+    progress: "asyncio.Queue | None" = None,
 ) -> tuple[AdvisoryResponse, list[dict]]:
     """Returns (advisory, retrieved_chunks)."""
+    await _emit(progress, "searching")
     run_config = {
         "metadata": {
             "user_id": user_id,
@@ -357,6 +368,15 @@ async def run_rag_query(
         docs = await asyncio.to_thread(
             reranker.rerank, message, docs, config.TOP_K_RETRIEVAL
         )
+
+    await _emit(
+        progress, "sources_found",
+        count=len(docs),
+        titles=[
+            (d.metadata.get("document_title") or f"Source {i+1}")
+            for i, d in enumerate(docs)
+        ],
+    )
 
     ctx = await context_task
     soil = ctx["soil"]
@@ -442,6 +462,7 @@ async def run_rag_query(
         else:  # groq
             ordered = [groq, deepinfra, groq_fast, gemini]
 
+    await _emit(progress, "writing")
     result = None
     last_err = None
     for llm in ordered:
@@ -478,6 +499,7 @@ async def run_rag_query(
     if result is None:
         raise RuntimeError(f"RAG generation failed (all providers): {last_err}") from last_err
 
+    await _emit(progress, "verifying")
     advisory = await _postprocess_async(result, docs, soil, weather, county_fips, run_config=run_config, category=category)
     retrieved_chunks = [
         {
