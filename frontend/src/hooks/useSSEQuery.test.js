@@ -159,4 +159,32 @@ describe('consumeSSEStream', () => {
 
     await expect(consumeSSEStream(reader, { onResult: vi.fn() })).rejects.toThrow('RAG failed')
   })
+
+  it('routes progress frames to onProgress, advisory to onResult', async () => {
+    const progress = []
+    const results = []
+    const reader = readerFrom([
+      'data: {"progress":{"stage":"searching"}}\n\n',
+      'data: {"progress":{"stage":"sources_found","count":2,"titles":["A","B"]}}\n\n',
+      'data: {"advisory":{"problem_summary":"ok"},"message_id":"m1","category":"IN_SCOPE_RICE:DIAG"}\n\n',
+      'data: [DONE]\n\n',
+    ])
+    const delivered = await consumeSSEStream(reader, {
+      onResult: (a) => results.push(a),
+      onProgress: (p) => progress.push(p),
+    })
+    expect(progress.map((p) => p.stage)).toEqual(['searching', 'sources_found'])
+    expect(progress[1].titles).toEqual(['A', 'B'])
+    expect(results).toHaveLength(1)
+    expect(delivered).toBe(true)
+  })
+
+  it('progress-only stream reports delivered=false (retry surfaces)', async () => {
+    const reader = readerFrom([
+      'data: {"progress":{"stage":"searching"}}\n\n',
+      'data: [DONE]\n\n',
+    ])
+    const delivered = await consumeSSEStream(reader, { onResult: () => {}, onProgress: () => {} })
+    expect(delivered).toBe(false)
+  })
 })
