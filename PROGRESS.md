@@ -259,7 +259,16 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 > - **`RunnableSequence` generation (70B) = 45–50s** ← dominant cost
 > - **guard `ChatOpenAI` = 14–26s** ← second cost
 > - **L3 cache MISS by design** — diagnostic answers are never cached (only `informational` + reference-safe are); a verbatim repeat still ran the full 45–50s gen + guard. Working as intended; L3 only helps repeated informational queries.
-> **Ceiling = generation (70B latency) + guard, NOT retrieval/cache.** Open levers to scope next session (none built): (a) **token streaming** — stream the advisory tokens to the UI as they generate so perceived latency drops even if total stays (biggest UX win; current SSE only streams stage frames then one final advisory blob); (b) **faster/smaller gen model or provider** for the structured advisory (DeepInfra 70B is slow; try Groq 70B when not TPD-exhausted, or a distilled model) — must re-check correctness (honest 20%); (c) **trim/parallelize the guard** (still 14–26s after the L2 merge — investigate why prod is far above the 1.7s probe; provider? cold start? serial decompose+judge?); (d) **skip guard on cache hits** (already free). Decide (a) vs (c) first — streaming is highest perceived-latency ROI.
+> **Ceiling = generation (70B latency) + guard, NOT retrieval/cache.** Open levers: (a) **token streaming** — NEXT latency lever (needs partial-JSON streaming over `with_structured_output` + suppress-after-stream safety UX design); (b) **faster/smaller gen model or provider** — DEFERRED (re-check correctness ≈150k tokens/run ~$1 DeepInfra; user cost-averse); (d) **skip guard on cache hits** (already free).
+
+#### ▶ GUARD-TRIM (lever c) — SHIPPED 2026-06-10
+> Plan `~/.claude/plans/we-re-tackling-the-agroadvisor-shiny-quokka.md`. Root cause of the 14–26s prod guard: the guard inherited the GENERATION provider chain (`utils/llm.py _providers()` ordered by `LLM_PRIMARY`) — prod trace's guard span was `ChatOpenAI` = **DeepInfra Llama-3.3-70B** (slow throughput), not the warm Gemini the 1.7s probe measured. Judging needs less muscle than generation.
+**Fix (TDD, 4 new tests):**
+- `_providers(primary=None)` override in `backend/utils/llm.py` — generation chain untouched.
+- Guard pins its own chain: `GUARD_JUDGE_PROVIDER` env (default `gemini`) → `_judge_providers()` used by merged judge, two-step judge, and decompose (`citation_guard_v2.py`).
+- Per-attempt timeout `GUARD_JUDGE_TIMEOUT_S` (default 8s) via `asyncio.wait_for` (`_judge_invoke`) — hung provider falls through instead of stalling.
+- Timing instrumentation: `verify_answer` returns + logs `guard_timings` {judge_s, judge_provider, judge_attempts} so prod traces name the judging provider.
+**Verified:** backend pytest 263 pass (was 236). Local probe (`python -m scripts.latency_probe`, gen=Groq, guard=pinned Gemini): **guard avg 1.66s** (rice 2.4s / soy 1.6s / poultry 0.9s), SERIAL avg 3.3s. Post-deploy check: novel prod query → LangSmith guard segment should drop 14–26s → ~2s and `guard timing:` log line names provider.
 
 #### ▶ L1 CONDITIONAL-RULE LEVER — CODE TRACK BUILT 2026-06-10 (branch `l1-conditional-rule-lever`)
 > Plan: `docs/superpowers/plans/2026-06-10-l1-conditional-rule-generation-lever.md`. Built subagent-driven TDD, 5 commits (`ce4c2b9..e21bdf5`), per-task spec + code-quality review, final whole-impl review = ready to merge.

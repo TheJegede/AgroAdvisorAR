@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -71,15 +72,30 @@ Text:
 Return ONLY a JSON array, e.g. ["Claim one.", "Claim two."]"""
 
 
+async def _judge_invoke(llm, prompt: str, run_config: dict | None):
+    """One guard LLM attempt, capped at GUARD_JUDGE_TIMEOUT_S so a hung provider
+    falls through to the next instead of stalling the whole query."""
+    return await asyncio.wait_for(
+        llm.ainvoke([HumanMessage(content=prompt)], config=run_config),
+        timeout=config.GUARD_JUDGE_TIMEOUT_S,
+    )
+
+
+def _judge_providers():
+    """Guard judge chain pinned to the fast GUARD_JUDGE_PROVIDER, independent of
+    the generation chain (LLM_PRIMARY)."""
+    return _providers(config.GUARD_JUDGE_PROVIDER)
+
+
 async def decompose_claims(answer: str, run_config: dict | None = None) -> list[str]:
-    """Break answer prose into atomic factual claims (Groq primary, Gemini
-    fallback, then sentence-split)."""
+    """Break answer prose into atomic factual claims (pinned judge chain,
+    then sentence-split)."""
     prompt = _DECOMPOSE_PROMPT.format(text=answer[:2000])
-    for llm in _providers():
+    for llm in _judge_providers():
         if llm is None:
             continue
         try:
-            response = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
+            response = await _judge_invoke(llm, prompt, run_config)
             raw = response.content.strip()
             # Strip markdown code fences if present
             raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
@@ -208,11 +224,11 @@ async def judge_claims_llm(claims: list[str], chunks: list[str], run_config: dic
     evidence = "\n---\n".join(chunk[:CHUNK_PREVIEW_LENGTH] for chunk in chunks[:3])
     claims_block = "\n".join(f"{i+1}. {c}" for i, c in enumerate(claims))
     prompt = _JUDGE_PROMPT.format(evidence=evidence, claims=claims_block)
-    for llm in _providers():
+    for llm in _judge_providers():
         if llm is None:
             continue
         try:
-            resp = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
+            resp = await _judge_invoke(llm, prompt, run_config)
             out = _postprocess_judge_array(resp.content, claims, chunks)
             if out is not None:
                 return out
@@ -222,21 +238,29 @@ async def judge_claims_llm(claims: list[str], chunks: list[str], run_config: dic
     return await asyncio.to_thread(lambda: [verify_claim(c, chunks) for c in claims])
 
 
-async def judge_answer_llm(answer: str, chunks: list[str], run_config: dict | None = None) -> list[ClaimResult]:
+async def judge_answer_llm(
+    answer: str,
+    chunks: list[str],
+    run_config: dict | None = None,
+    meta: dict | None = None,
+) -> list[ClaimResult]:
     """One-call guard: extract atomic claims from `answer` AND label each for
     groundedness vs `chunks`, returning ClaimResults. Same model/post-processing
     as the two-step path, one fewer round-trip. Raises if every provider fails
-    (caller in verify_answer falls back to decompose+judge)."""
+    (caller in verify_answer falls back to decompose+judge). `meta`, when given,
+    is filled with {judge_provider, judge_attempts} for latency tracing."""
     if not chunks:
         return []
     evidence = "\n---\n".join(chunk[:CHUNK_PREVIEW_LENGTH] for chunk in chunks[:3])
     prompt = _MERGED_JUDGE_PROMPT.format(evidence=evidence, answer=answer[:2000])
     last_err: Exception | None = None
-    for llm in _providers():
+    attempts = 0
+    for llm in _judge_providers():
         if llm is None:
             continue
+        attempts += 1
         try:
-            resp = await llm.ainvoke([HumanMessage(content=prompt)], config=run_config)
+            resp = await _judge_invoke(llm, prompt, run_config)
             # Re-derive the claim list from the response so post-processing aligns
             # one object per claim (the LLM both produced and labeled them).
             raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", resp.content.strip(), flags=re.MULTILINE).strip()
@@ -249,12 +273,13 @@ async def judge_answer_llm(answer: str, chunks: list[str], run_config: dict | No
             if not isinstance(parsed, list):
                 raise ValueError("merged judge response is not a list")
             claims = [str(obj.get("claim", "")) for obj in parsed if isinstance(obj, dict)][:8]
-            if not claims:
-                return []
-            out = _postprocess_judge_array(json.dumps(parsed[:8]), claims, chunks)
-            if out is not None:
-                return out
-            raise ValueError("merged judge post-processing produced misaligned results")
+            out = [] if not claims else _postprocess_judge_array(json.dumps(parsed[:8]), claims, chunks)
+            if out is None:
+                raise ValueError("merged judge post-processing produced misaligned results")
+            if meta is not None:
+                meta["judge_provider"] = type(llm).__name__
+                meta["judge_attempts"] = attempts
+            return out
         except Exception as e:
             last_err = e
             logger.warning("Merged guard judge provider failed, trying next: %s", str(e)[:150])
@@ -386,10 +411,25 @@ async def verify_answer(answer: str, chunks: list[dict], run_config: dict | None
     failure. Returns {confidence_score, claim_verification, escalation: None}."""
     chunk_texts = [c.get("snippet", "") for c in chunks if c.get("snippet")]
 
+    judge_meta: dict = {}
+    judge_start = time.perf_counter()
+
+    def _guard_timings() -> dict:
+        t = {
+            "judge_s": round(time.perf_counter() - judge_start, 3),
+            "judge_provider": judge_meta.get("judge_provider"),
+            "judge_attempts": judge_meta.get("judge_attempts", 0),
+        }
+        logger.info(
+            "guard timing: judge_s=%.3f provider=%s attempts=%s",
+            t["judge_s"], t["judge_provider"], t["judge_attempts"],
+        )
+        return t
+
     results = None
     if config.GUARD_MERGED_JUDGE:
         try:
-            results = await judge_answer_llm(answer, chunk_texts, run_config)
+            results = await judge_answer_llm(answer, chunk_texts, run_config, meta=judge_meta)
         except Exception as e:
             logger.warning("Merged guard failed, falling back to two-step: %s", str(e)[:150])
             results = None
@@ -400,7 +440,8 @@ async def verify_answer(answer: str, chunks: list[dict], run_config: dict | None
     if results is None:
         claims_text = await decompose_claims(answer, run_config)
         if not claims_text:
-            return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
+            return {"confidence_score": 1.0, "claim_verification": [], "escalation": None,
+                    "guard_timings": _guard_timings()}
         if config.GROUNDEDNESS_JUDGE == "llm":
             results = await judge_claims_llm(claims_text, chunk_texts, run_config)
         else:
@@ -409,11 +450,13 @@ async def verify_answer(answer: str, chunks: list[dict], run_config: dict | None
             )
 
     if not results:
-        return {"confidence_score": 1.0, "claim_verification": [], "escalation": None}
+        return {"confidence_score": 1.0, "claim_verification": [], "escalation": None,
+                "guard_timings": _guard_timings()}
 
     confidence_score = score_answer(results)
     return {
         "confidence_score": confidence_score,
         "claim_verification": results,
         "escalation": None,
+        "guard_timings": _guard_timings(),
     }

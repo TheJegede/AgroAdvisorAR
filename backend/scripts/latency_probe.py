@@ -16,7 +16,7 @@ Stages (each an LLM round-trip unless noted):
     retrieve      gte embed + Pinecone ANN fanout
     context       SSURGO + NOAA fetch (prod: concurrent w/ retrieve, 6h cached)
     generate      LLM #2  (70b structured advisory)
-    guard         LLM #3 + #4 (decompose_claims THEN judge_claims_llm, serial)
+    guard         LLM #3 (merged judge, pinned GUARD_JUDGE_PROVIDER chain)
 """
 import argparse
 import asyncio

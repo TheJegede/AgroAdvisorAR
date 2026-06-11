@@ -526,7 +526,7 @@ def test_judge_claims_llm_parses_labels_and_scores(monkeypatch):
         async def ainvoke(self, messages, *args, **kwargs):
             return FakeResp()
 
-    monkeypatch.setattr(mod, "_providers", lambda: [FakeLLM()])
+    monkeypatch.setattr(mod, "_providers", lambda primary=None: [FakeLLM()])
     import asyncio
     results = asyncio.run(mod.judge_claims_llm(
         ["GPM = D x D x L estimates flow.", "Apply 999 lb N/ac."],
@@ -551,7 +551,7 @@ def test_judge_claims_llm_handles_0_to_100_scale(monkeypatch):
     def _no_nli():
         raise AssertionError("must not fall back to NLI")
 
-    monkeypatch.setattr(mod, "_providers", lambda: [FakeLLM()])
+    monkeypatch.setattr(mod, "_providers", lambda primary=None: [FakeLLM()])
     monkeypatch.setattr(mod, "_get_nli_model", _no_nli)
     import asyncio
     results = asyncio.run(mod.judge_claims_llm(["c"], ["c is supported evidence"]))
@@ -575,7 +575,7 @@ def test_judge_claims_llm_handles_dict_response(monkeypatch):
     def _no_nli():
         raise AssertionError("must not fall back to NLI")
 
-    monkeypatch.setattr(mod, "_providers", lambda: [FakeLLM()])
+    monkeypatch.setattr(mod, "_providers", lambda primary=None: [FakeLLM()])
     monkeypatch.setattr(mod, "_get_nli_model", _no_nli)
     import asyncio
     results = asyncio.run(mod.judge_claims_llm(["c"], ["evidence about c"]))
@@ -704,7 +704,7 @@ def test_judge_answer_llm_extracts_and_labels_in_one_call(monkeypatch):
         '[{"claim": "Soybeans in NE Arkansas are seeded at 140k seeds per acre.",'
         ' "label": "ENTAILED", "score": 0.9}]'
     )
-    monkeypatch.setattr(g, "_providers", lambda: [_FakeLLM(content)])
+    monkeypatch.setattr(g, "_providers", lambda primary=None: [_FakeLLM(content)])
     answer = "Soybeans in NE Arkansas are seeded at 140k seeds per acre."
     chunks = ["Recommended soybean seeding rate in northeast Arkansas is ~140,000 seeds/acre."]
     results = asyncio.run(g.judge_answer_llm(answer, chunks))
@@ -714,7 +714,7 @@ def test_judge_answer_llm_extracts_and_labels_in_one_call(monkeypatch):
 
 
 def test_judge_answer_llm_empty_chunks_returns_neutral(monkeypatch):
-    monkeypatch.setattr(g, "_providers", lambda: [_FakeLLM("[]")])
+    monkeypatch.setattr(g, "_providers", lambda primary=None: [_FakeLLM("[]")])
     results = asyncio.run(g.judge_answer_llm("Some claim.", []))
     assert results == [] or all(r.label == "NEUTRAL" for r in results)
 
@@ -724,7 +724,7 @@ def test_judge_answer_llm_raises_when_all_providers_fail(monkeypatch):
         async def ainvoke(self, messages, config=None):
             raise RuntimeError("boom")
 
-    monkeypatch.setattr(g, "_providers", lambda: [_BadLLM()])
+    monkeypatch.setattr(g, "_providers", lambda primary=None: [_BadLLM()])
     import pytest
     with pytest.raises(Exception):
         asyncio.run(g.judge_answer_llm("Some claim.", ["evidence"]))
@@ -734,7 +734,7 @@ def test_verify_answer_uses_merged_when_flag_on(monkeypatch):
     monkeypatch.setattr(config, "GUARD_MERGED_JUDGE", True)
     called = {"merged": 0, "decompose": 0}
 
-    async def fake_merged(answer, chunks, run_config=None):
+    async def fake_merged(answer, chunks, run_config=None, meta=None):
         called["merged"] += 1
         return [g.ClaimResult(claim="c", label="ENTAILED", score=0.9)]
 
@@ -755,7 +755,7 @@ def test_verify_answer_falls_back_when_merged_raises(monkeypatch):
     monkeypatch.setattr(config, "GROUNDEDNESS_JUDGE", "llm")
     used = {"decompose": 0, "judge": 0}
 
-    async def boom(answer, chunks, run_config=None):
+    async def boom(answer, chunks, run_config=None, meta=None):
         raise RuntimeError("merged failed")
 
     async def fake_decompose(answer, run_config=None):
@@ -772,3 +772,70 @@ def test_verify_answer_falls_back_when_merged_raises(monkeypatch):
     out = asyncio.run(g.verify_answer("an answer", [{"snippet": "evidence"}]))
     assert used["decompose"] == 1 and used["judge"] == 1  # fell back
     assert "confidence_score" in out
+
+
+# ---- Guard-trim (latency lever c): pinned fast judge + timeout + timing ----
+
+
+def test_providers_accepts_primary_override(monkeypatch):
+    """_providers(primary) overrides config.LLM_PRIMARY ordering so the guard can
+    pin a fast judge while generation stays on the configured primary."""
+    import utils.llm as llm
+    monkeypatch.setattr(llm, "_get_groq", lambda: "GROQ")
+    monkeypatch.setattr(llm, "_get_gemini", lambda: "GEMINI")
+    monkeypatch.setattr(llm, "_get_deepinfra", lambda: "DEEPINFRA")
+    monkeypatch.setattr(llm.config, "LLM_PRIMARY", "deepinfra")
+    assert llm._providers() == ["DEEPINFRA", "GROQ", "GEMINI"]
+    assert llm._providers("gemini") == ["GEMINI", "GROQ", "DEEPINFRA"]
+    assert llm._providers("groq") == ["GROQ", "DEEPINFRA", "GEMINI"]
+
+
+def test_judge_answer_llm_uses_guard_judge_provider(monkeypatch):
+    """The merged judge must request the GUARD_JUDGE_PROVIDER chain, not the
+    generation chain — even when LLM_PRIMARY points at a slow 70B provider."""
+    seen = {}
+
+    def fake_providers(primary=None):
+        seen["primary"] = primary
+        return [_FakeLLM('[{"claim": "c", "label": "ENTAILED", "score": 0.9}]')]
+
+    monkeypatch.setattr(g, "_providers", fake_providers)
+    monkeypatch.setattr(g.config, "GUARD_JUDGE_PROVIDER", "gemini")
+    results = asyncio.run(g.judge_answer_llm("c", ["evidence about c"]))
+    assert seen["primary"] == "gemini"
+    assert results[0].label == "ENTAILED"
+
+
+def test_judge_answer_llm_timeout_falls_to_next_provider(monkeypatch):
+    """A hung provider must be abandoned after GUARD_JUDGE_TIMEOUT_S, not awaited
+    indefinitely; the next provider answers."""
+    class _HungLLM:
+        async def ainvoke(self, messages, config=None):
+            await asyncio.sleep(30)
+
+    fast = _FakeLLM('[{"claim": "c", "label": "ENTAILED", "score": 0.9}]')
+    monkeypatch.setattr(g, "_providers", lambda primary=None: [_HungLLM(), fast])
+    monkeypatch.setattr(g.config, "GUARD_JUDGE_TIMEOUT_S", 0.05)
+    results = asyncio.run(g.judge_answer_llm("c", ["evidence about c"]))
+    assert results[0].label == "ENTAILED"
+
+
+def test_verify_answer_reports_guard_timings(monkeypatch):
+    """verify_answer returns guard_timings (judge_s, judge_provider, judge_attempts)
+    so prod traces name the provider that actually judged and how long it took."""
+    monkeypatch.setattr(config, "GUARD_MERGED_JUDGE", True)
+    slow_then_ok = [
+        type("_Bad", (), {"ainvoke": staticmethod(lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))})(),
+        _FakeLLM('[{"claim": "c", "label": "ENTAILED", "score": 0.9}]'),
+    ]
+
+    async def _bad_ainvoke(messages, config=None):
+        raise RuntimeError("boom")
+    slow_then_ok[0].ainvoke = _bad_ainvoke
+
+    monkeypatch.setattr(g, "_providers", lambda primary=None: slow_then_ok)
+    out = asyncio.run(g.verify_answer("an answer", [{"snippet": "evidence"}]))
+    t = out["guard_timings"]
+    assert t["judge_s"] >= 0.0
+    assert t["judge_provider"] == "_FakeLLM"
+    assert t["judge_attempts"] == 2

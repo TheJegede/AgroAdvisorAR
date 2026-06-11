@@ -53,18 +53,22 @@ def _get_gemini():
     return _gemini
 
 
-def _providers():
-    if config.LLM_PRIMARY == "local":
+def _providers(primary: str | None = None):
+    """Provider chain ordered by `primary` (default config.LLM_PRIMARY). The
+    citation guard pins a fast judge via _providers(config.GUARD_JUDGE_PROVIDER)
+    without changing the generation chain."""
+    primary = primary or config.LLM_PRIMARY
+    if primary == "local":
         from services.local_llm import get_local_chat
         return [get_local_chat()]
-    
+
     groq = _get_groq()
     gemini = _get_gemini()
     deepinfra = _get_deepinfra()
-    
-    if config.LLM_PRIMARY == "deepinfra":
+
+    if primary == "deepinfra":
         return [deepinfra, groq, gemini]
-    elif config.LLM_PRIMARY == "gemini":
+    elif primary == "gemini":
         return [gemini, groq, deepinfra]
     else:  # groq
         return [groq, deepinfra, gemini]

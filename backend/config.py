@@ -97,3 +97,11 @@ GUARD_MERGED_JUDGE = os.environ.get("GUARD_MERGED_JUDGE", "1") not in {"0", "fal
 # the body (force Low). Env-overridable so calibration doesn't need a code change.
 GUARD_ESCALATION_THRESHOLD = float(os.environ.get("GUARD_ESCALATION_THRESHOLD", "0.4"))
 GUARD_SUPPRESSION_THRESHOLD = float(os.environ.get("GUARD_SUPPRESSION_THRESHOLD", "0.2"))
+
+# Guard judge provider chain, decoupled from LLM_PRIMARY. Judging needs less
+# muscle than generation; prod traces showed the guard inheriting a slow 70B
+# chain (14-26s). Default pins the fast Gemini judge (probed ~1.7s).
+GUARD_JUDGE_PROVIDER = os.environ.get("GUARD_JUDGE_PROVIDER", "gemini")
+# Per-attempt wall-clock budget for a guard LLM call before falling to the next
+# provider — a hung/slow provider must not add 10s+ to every query.
+GUARD_JUDGE_TIMEOUT_S = float(os.environ.get("GUARD_JUDGE_TIMEOUT_S", "8"))
