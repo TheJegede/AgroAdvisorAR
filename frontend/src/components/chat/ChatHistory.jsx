@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react'
 import MessageBubble from './MessageBubble'
 import AdvisoryCard from '../advisory/AdvisoryCard'
 import OutOfScopeCard from './OutOfScopeCard'
-import TypingIndicator from './TypingIndicator'
+import QueryProgress from './QueryProgress'
 
-export default function ChatHistory({ messages, streaming }) {
+export default function ChatHistory({ messages, streaming, progressStage }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function ChatHistory({ messages, streaming }) {
         }
         return null
       })}
-      {streaming && <TypingIndicator />}
+      {streaming && <QueryProgress stage={progressStage} />}
       <div ref={bottomRef} />
     </div>
   )
