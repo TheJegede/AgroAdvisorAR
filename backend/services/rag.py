@@ -397,6 +397,7 @@ async def run_rag_query(
     rice_fields: list[dict] | None = None,
     user_id: str | None = None,
     progress: "asyncio.Queue | None" = None,
+    stream: bool = False,
 ) -> tuple[AdvisoryResponse, list[dict]]:
     """Returns (advisory, retrieved_chunks)."""
     await _emit(progress, "searching")
@@ -503,6 +504,7 @@ async def run_rag_query(
     # Provider order from config (default Groq primary — Gemini free is 20/day).
     # Chain 70b -> 8b-instant -> Gemini: when 70b hits its free tokens-per-day cap,
     # 8b (far higher TPD) keeps the pilot serving instead of failing.
+    deepinfra = None  # default; overridden below when not using local LLM
     if config.LLM_PRIMARY == "local":
         from services.local_llm import get_local_chat
         ordered = [get_local_chat()]
@@ -519,6 +521,12 @@ async def run_rag_query(
         else:  # groq
             ordered = [groq, deepinfra, groq_fast, gemini]
 
+    # Partial-update callback: pushes {"kind": "partial", "draft": ...} onto the
+    # progress queue so the SSE router can forward incremental advisory content.
+    async def _on_partial_cb(d: dict) -> None:
+        if progress is not None:
+            await progress.put({"kind": "partial", "draft": d})
+
     await _emit(progress, "writing")
     result = None
     last_err = None
@@ -528,22 +536,64 @@ async def run_rag_query(
         try:
             # Identity check — value-equality on pydantic models is fragile and
             # can misclassify a non-DeepInfra provider as DeepInfra.
-            if deepinfra is not None and llm is deepinfra:
+            is_deepinfra = deepinfra is not None and llm is deepinfra
+
+            if is_deepinfra:
                 from langchain_core.output_parsers import PydanticOutputParser
                 parser = PydanticOutputParser(pydantic_object=AdvisoryDraft)
                 format_instructions = parser.get_format_instructions()
-                
+
                 di_messages = []
                 for msg in messages:
                     if msg.type == "system":
                         di_messages.append(SystemMessage(content=f"{msg.content}\n\n{format_instructions}"))
                     else:
                         di_messages.append(msg)
-                
-                runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
-                result = await runnable.ainvoke(di_messages, config=run_config)
+
+            if stream:
+                # --- Streaming path ---
+                try:
+                    if is_deepinfra:
+                        final_dict = await _astream_draft(
+                            llm, di_messages, run_config, _on_partial_cb,
+                            prepend_format_instructions=True,
+                        )
+                    else:
+                        final_dict = await _astream_draft(
+                            llm, messages, run_config, _on_partial_cb,
+                        )
+
+                    if final_dict is None:
+                        # Stream produced no valid JSON — fall back to ainvoke
+                        # silently (zero partial items already pushed).
+                        logger.debug("_astream_draft returned None; falling back to ainvoke for this provider")
+                        if is_deepinfra:
+                            runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
+                            result = await runnable.ainvoke(di_messages, config=run_config)
+                        else:
+                            result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
+                    else:
+                        # Validate the streamed dict against AdvisoryDraft.
+                        # Raises ValidationError on bad generation → provider fallback.
+                        result = AdvisoryDraft(**final_dict)
+                except Exception as stream_exc:
+                    # Any error during streaming (astream, validation, etc.) falls
+                    # back to ainvoke for this provider.  Quota errors on the ainvoke
+                    # fallback still bubble up and trigger the outer provider loop.
+                    logger.debug("Streaming failed (%s); falling back to ainvoke", stream_exc)
+                    if is_deepinfra:
+                        runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
+                        result = await runnable.ainvoke(di_messages, config=run_config)
+                    else:
+                        result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
             else:
-                result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
+                # --- Non-streaming path (unchanged) ---
+                if is_deepinfra:
+                    runnable = llm.with_structured_output(AdvisoryDraft, method="json_mode")
+                    result = await runnable.ainvoke(di_messages, config=run_config)
+                else:
+                    result = await llm.with_structured_output(AdvisoryDraft).ainvoke(messages, config=run_config)
+
             break
         except Exception as e:
             last_err = e
