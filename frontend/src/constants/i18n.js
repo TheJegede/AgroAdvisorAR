@@ -271,6 +271,7 @@ export const LABELS = {
     progressFoundSources: 'Found {n} sources',
     progressWriting: 'Writing advisory…',
     progressVerifying: 'Verifying against sources…',
+    verifying: 'Verifying…',
   },
   es: {
     appName: 'AgroAdvisor AR',
@@ -544,5 +545,6 @@ export const LABELS = {
     progressFoundSources: '{n} fuentes encontradas',
     progressWriting: 'Redactando recomendación…',
     progressVerifying: 'Verificando con las fuentes…',
+    verifying: 'Verificando…',
   },
 }

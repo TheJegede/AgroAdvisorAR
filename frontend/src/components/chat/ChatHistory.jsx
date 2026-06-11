@@ -4,7 +4,7 @@ import AdvisoryCard from '../advisory/AdvisoryCard'
 import OutOfScopeCard from './OutOfScopeCard'
 import QueryProgress from './QueryProgress'
 
-export default function ChatHistory({ messages, streaming, progressStage }) {
+export default function ChatHistory({ messages, streaming, progressStage, provisional }) {
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -43,7 +43,14 @@ export default function ChatHistory({ messages, streaming, progressStage }) {
         }
         return null
       })}
-      {streaming && <QueryProgress stage={progressStage} />}
+      {provisional && (
+        <AdvisoryCard
+          response={{ ...provisional, _isProvisional: true }}
+          messageId={null}
+          category={null}
+        />
+      )}
+      {streaming && !provisional && <QueryProgress stage={progressStage} />}
       <div ref={bottomRef} />
     </div>
   )
