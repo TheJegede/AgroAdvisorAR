@@ -20,19 +20,28 @@ export default function QueryProgress({ stage }) {
 
   return (
     <div
-      className="flex items-center gap-2 my-2 px-1 self-start"
+      className="flex flex-col my-2 px-1 self-start gap-1"
       role="status"
       aria-live="polite"
       aria-label={caption}
     >
-      <span className="inline-flex gap-1" aria-hidden="true">
-        <span className="w-1.5 h-1.5 rounded-full bg-field dark:bg-hc-accent animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-1.5 h-1.5 rounded-full bg-field dark:bg-hc-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="w-1.5 h-1.5 rounded-full bg-field dark:bg-hc-accent animate-bounce" style={{ animationDelay: '300ms' }} />
-      </span>
-      <span className="text-sm font-medium text-charcoal-light dark:text-hc-fg animate-pulse">
-        {caption}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className="inline-flex gap-1" aria-hidden="true">
+          <span className="w-1.5 h-1.5 rounded-full bg-field dark:bg-hc-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-field dark:bg-hc-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-field dark:bg-hc-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+        </span>
+        <span className="text-sm font-medium text-charcoal-light dark:text-hc-fg animate-pulse">
+          {caption}
+        </span>
+      </div>
+      {name === 'sources_found' && stage?.titles?.length > 0 && (
+        <ul className="ml-4 text-xs text-gray-500 dark:text-hc-fg/70 space-y-0.5 list-none">
+          {stage.titles.map((title, i) => (
+            <li key={i}>{title}</li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
