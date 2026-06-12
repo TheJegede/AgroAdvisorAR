@@ -225,6 +225,10 @@ async def main():
     ap.add_argument("--dump", type=Path, default=None,
                     help="write one JSON line per scored item (incl. emitted "
                          "citations) for the F5 contamination probe")
+    ap.add_argument("--judge-provider", choices=["same", "gemini"], default="same",
+                    help="gemini=independent Gemini judge for correctness+faithfulness "
+                         "(removes 70B self-grading bias); same=provider default. "
+                         "Ignored under --provider local (judges run locally).")
     args = ap.parse_args()
 
     global JUDGE_CORR, JUDGE_FAITH, BRIDGE
@@ -250,11 +254,12 @@ async def main():
         import judge as _judge_mod
         _judge_mod._judge_llm = _deepinfra
         _judge_mod._deepinfra_judge_llm = _deepinfra
-        print(
-            "WARNING: --provider deepinfra uses the same 70B model for generation "
-            "AND judging (judge-on-self bias) — correctness/faithfulness scores "
-            "are optimistic; cross-check with a different judge model."
-        )
+        if args.judge_provider != "gemini":
+            print(
+                "WARNING: --provider deepinfra uses the same 70B model for generation "
+                "AND judging (judge-on-self bias) — correctness/faithfulness scores "
+                "are optimistic; cross-check with a different judge model."
+            )
     elif args.provider == "local":
         import local_llm
         rag._get_groq_llm = lambda: local_llm.LocalChat()  # generation -> local Qwen
@@ -266,9 +271,26 @@ async def main():
             # (one model on GPU — avoids a second 7B load / OOM).
             from services import translation as _tr
             _tr._providers = lambda: [local_llm.LocalChat()]
+    # Independent judge: rebind BOTH judges (correctness in judge.py, faithfulness
+    # here) to Gemini AFTER the provider block so --provider deepinfra can't
+    # re-bind them back to the 70B generator. The quota-fallback globals are also
+    # pointed at Gemini so a transient 429 retries Gemini instead of silently
+    # reintroducing the self-judge.
+    if args.judge_provider == "gemini" and args.provider != "local":
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        _gemini_judge = ChatGoogleGenerativeAI(
+            model=os.environ.get("CONTAINMENT_JUDGE_MODEL", "gemini-2.5-flash"),
+            google_api_key=os.environ["GOOGLE_API_KEY"],
+            temperature=0,
+        )
+        _judge = _gemini_judge
+        import judge as _judge_mod
+        _judge_mod._judge_llm = _gemini_judge
+        _judge_mod._deepinfra_judge_llm = _gemini_judge
     if args.no_guard:
         config.NLI_CITATION_GUARD_ENABLED = False
-    print(f"provider={args.provider}  guard={'off' if args.no_guard else 'on'}  bridge={args.bridge}")
+    print(f"provider={args.provider}  judge={args.judge_provider}  "
+          f"guard={'off' if args.no_guard else 'on'}  bridge={args.bridge}")
 
     items = [json.loads(l) for l in open(args.eval_set, encoding="utf-8")]
     sample = sample_items(items, args.sample, seed=args.seed)
