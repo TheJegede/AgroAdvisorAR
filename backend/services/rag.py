@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import re
+import time
 from datetime import date as _date
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -19,6 +20,12 @@ from utils.llm import _is_quota_error
 import config
 
 logger = logging.getLogger(__name__)
+
+# Minimum spacing between partial-draft SSE frames. JsonOutputParser re-emits the
+# FULL cumulative draft dict on every update, so an unthrottled stream re-sends
+# hundreds of KB and forces a React re-render per token. One frame per quarter
+# second keeps the progressive-typing UX without the O(n²) payload (F7).
+PARTIAL_STREAM_THROTTLE_SECONDS = 0.25
 
 
 async def _emit(progress, stage, **data):
@@ -523,9 +530,19 @@ async def run_rag_query(
 
     # Partial-update callback: pushes {"kind": "partial", "draft": ...} onto the
     # progress queue so the SSE router can forward incremental advisory content.
+    # Throttled to one frame per PARTIAL_STREAM_THROTTLE_SECONDS (F7). The final
+    # complete advisory ships separately, so dropping intermediate frames is safe.
+    last_partial_at = 0.0
+
     async def _on_partial_cb(d: dict) -> None:
-        if progress is not None:
-            await progress.put({"kind": "partial", "draft": d})
+        nonlocal last_partial_at
+        if progress is None:
+            return
+        now = time.monotonic()
+        if now - last_partial_at < PARTIAL_STREAM_THROTTLE_SECONDS:
+            return
+        last_partial_at = now
+        await progress.put({"kind": "partial", "draft": d})
 
     await _emit(progress, "writing")
     result = None

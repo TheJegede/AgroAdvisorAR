@@ -10,7 +10,7 @@ authored bilingual here (EN + ES) — not machine-translated at runtime. The
 audience includes Spanish-speaking applicators least able to second-guess a
 false green light, so ES is a safety requirement, not a nicety.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from models.spray import CheckResult, GateResult, SprayCheckRequest, SprayCheckResponse
 from services import spray_rules, spray_stations
@@ -450,7 +450,7 @@ def run_spray_check(
     return SprayCheckResponse(
         overall_status=_rollup([g.status for g in gates]),
         rule_version=rules["rule_version"],
-        evaluated_at=datetime.now(),
+        evaluated_at=datetime.now(timezone.utc),
         weather_available=weather.get("available", False),
         gates=gates,
     )

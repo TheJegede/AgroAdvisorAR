@@ -103,6 +103,22 @@ def test_precip_next_48h_sums_hourly_window():
     assert out["precip_next_48h_in"] == 4.8
 
 
+def test_precip_none_when_no_hours_in_window():
+    # All forecast hours fall BEFORE `at` -> zero coverage in [at, at+48h).
+    # precip must be None (unknown), never 0.0 (a false rain-free pass). (F2)
+    import httpx
+    times = ["2026-06-06T00:00", "2026-06-06T01:00", "2026-06-06T02:00"]
+    precip = [0.0, 0.0, 0.0]
+    soil = [0.2, 0.2, 0.2]
+    with patch.object(httpx, "AsyncClient",
+                      side_effect=_mock_httpx(_payload(hourly_times=times, precip=precip, soil=soil))):
+        out = asyncio.run(
+            weather_now.fetch_forecast_conditions(34.74, -91.83, datetime(2026, 6, 8, 9, 0))
+        )
+    assert out["available"] is True
+    assert out["precip_next_48h_in"] is None
+
+
 def test_estimate_inversion_elevated_calm_wind_near_dawn():
     sunrise = datetime(2026, 6, 8, 6, 0)
     sunset = datetime(2026, 6, 8, 20, 0)

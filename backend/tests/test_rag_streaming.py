@@ -225,6 +225,50 @@ def test_stream_true_pushes_partial_items(monkeypatch):
     assert advisory.problem_summary == "ok"  # from fake_post
 
 
+def test_partial_frames_throttled(monkeypatch):
+    """F7: many partials arriving inside one throttle window collapse to a single
+    frame (the cumulative draft is not re-sent per token)."""
+    draft_json = (
+        '{"problem_summary": "rice blast", '
+        '"confidence": "High", '
+        '"confidence_explanation": "verified", '
+        '"language": "en", '
+        '"context_meta": {"soil_data_available": false, '
+        '"weather_data_available": false, "county_fips": "05055"}, '
+        '"likely_causes": [], "recommended_actions": [], '
+        '"products_rates": [], "warnings": [], "citations": []}'
+    )
+    size = max(1, len(draft_json) // 12)
+    chunks = [draft_json[i:i + size] for i in range(0, len(draft_json), size)]
+
+    llm = FakeStreamingLLM(chunks, ainvoke_result=_make_advisory_draft())
+    _patch_externals(monkeypatch, llm)
+    # Huge window -> every partial after the first is throttled away.
+    monkeypatch.setattr(rag, "PARTIAL_STREAM_THROTTLE_SECONDS", 100.0)
+
+    async def _run():
+        q = asyncio.Queue()
+        await rag.run_rag_query(
+            message="soybean seeding rate",
+            county_fips="05055",
+            language="en",
+            category="IN_SCOPE_SOYBEANS:INFO",
+            session_history=[],
+            progress=q,
+            stream=True,
+        )
+        items = []
+        while not q.empty():
+            items.append(q.get_nowait())
+        return items
+
+    items = asyncio.run(_run())
+    partial_items = [i for i in items if i.get("kind") == "partial"]
+    assert len(partial_items) == 1, (
+        f"Expected exactly 1 throttled partial, got {len(partial_items)}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Test 2: stream=False produces zero partial items
 # ---------------------------------------------------------------------------

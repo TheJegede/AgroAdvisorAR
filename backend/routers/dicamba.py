@@ -5,6 +5,8 @@ No persistence yet (Phase 4) so there is no IDOR write surface; the request
 carries no owner field and auth is enforced via get_current_user.
 """
 import io
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -27,12 +29,28 @@ from services.weather_now import fetch_forecast_conditions
 
 router = APIRouter(prefix="/dicamba", tags=["dicamba"])
 
+# Arkansas is America/Chicago. The frontend sends `at` as a UTC ISO string
+# (new Date().toISOString()), pydantic parses it tz-aware. Every downstream
+# comparison is against Open-Meteo timestamps returned in America/Chicago local
+# time and the rules season-window date, so we must convert to Central at the
+# boundary — otherwise the UTC clock/date leaks into inversion, rain-window, and
+# Gate A season verdicts (F1).
+_CENTRAL = ZoneInfo("America/Chicago")
+
+
+def _to_central(dt: datetime) -> datetime:
+    """tz-aware datetime -> Arkansas local. A naive datetime is assumed local."""
+    if dt.tzinfo is None:
+        return dt
+    return dt.astimezone(_CENTRAL)
+
 
 @router.post("/check", response_model=SprayCheckResponse)
 async def check_spray(
     body: SprayCheckRequest,
     user: dict = Depends(get_current_user),
 ):
+    body.at = _to_central(body.at)
     try:
         rules = resolve_rules(body.at.date())
     except RulesNotFoundError:
@@ -87,6 +105,7 @@ async def create_spray_record(
     user: dict = Depends(get_current_user),
 ):
     _require_legal_attestations(body)
+    body.at = _to_central(body.at)
     try:
         rules = resolve_rules(body.at.date())
     except RulesNotFoundError:

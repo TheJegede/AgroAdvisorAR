@@ -272,8 +272,21 @@ async def judge_answer_llm(
                         break
             if not isinstance(parsed, list):
                 raise ValueError("merged judge response is not a list")
-            claims = [str(obj.get("claim", "")) for obj in parsed if isinstance(obj, dict)][:8]
-            out = [] if not claims else _postprocess_judge_array(json.dumps(parsed[:8]), claims, chunks)
+            # Filter to dict entries ONCE and reuse that same list for both claim
+            # extraction and post-processing, so claim i always pairs with object i
+            # (F6 — a dropped non-dict entry used to shift the zip and mislabel).
+            dict_objs = [obj for obj in parsed if isinstance(obj, dict)][:8]
+            claims = [str(obj.get("claim", "")) for obj in dict_objs]
+            if not claims:
+                # A substantive answer with zero extracted claims is a lazy/refusing
+                # judge, not a genuinely claim-free answer. Raising forces the
+                # decompose+judge fallback instead of bypassing the guard at
+                # confidence 1.0 (F4). Trivial answers are allowed to return [].
+                if len(answer.strip()) > 80:
+                    raise ValueError("merged judge extracted no claims for a non-trivial answer")
+                out = []
+            else:
+                out = _postprocess_judge_array(json.dumps(dict_objs), claims, chunks)
             if out is None:
                 raise ValueError("merged judge post-processing produced misaligned results")
             if meta is not None:

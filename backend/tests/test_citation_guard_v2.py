@@ -730,6 +730,41 @@ def test_judge_answer_llm_raises_when_all_providers_fail(monkeypatch):
         asyncio.run(g.judge_answer_llm("Some claim.", ["evidence"]))
 
 
+def test_judge_answer_llm_raises_on_empty_claims_for_substantive_answer(monkeypatch):
+    # F4: a lazy/refusing judge returning [] for a long answer must NOT be read as
+    # "no claims to verify" (confidence 1.0 guard bypass). Raise so verify_answer
+    # falls back to the two-step decompose+judge.
+    import pytest
+    monkeypatch.setattr(g, "_providers", lambda primary=None: [_FakeLLM("[]")])
+    long_answer = "Apply 32 oz per acre of the recommended herbicide before flooding. " * 3
+    assert len(long_answer.strip()) > 80
+    with pytest.raises(Exception):
+        asyncio.run(g.judge_answer_llm(long_answer, ["some evidence about herbicide rates"]))
+
+
+def test_judge_answer_llm_empty_claims_for_short_answer_returns_empty(monkeypatch):
+    # A genuinely trivial answer with no claims is allowed to return [].
+    monkeypatch.setattr(g, "_providers", lambda primary=None: [_FakeLLM("[]")])
+    results = asyncio.run(g.judge_answer_llm("Hi.", ["evidence"]))
+    assert results == []
+
+
+def test_judge_answer_llm_aligns_claims_past_non_dict_entries(monkeypatch):
+    # F6: a non-dict entry in the judge array must not shift the claim<->object
+    # zip; the real label must land on its own claim.
+    content = (
+        '["junk string",'
+        ' {"claim": "Rate is 32 oz per acre.", "label": "CONTRADICTED", "score": 0.1}]'
+    )
+    monkeypatch.setattr(g, "_providers", lambda primary=None: [_FakeLLM(content)])
+    answer = "Rate is 32 oz per acre."
+    chunks = ["The recommended product is applied at a different rate entirely."]
+    results = asyncio.run(g.judge_answer_llm(answer, chunks))
+    assert len(results) == 1
+    assert results[0].claim == "Rate is 32 oz per acre."
+    assert results[0].label == "CONTRADICTED"
+
+
 def test_verify_answer_uses_merged_when_flag_on(monkeypatch):
     monkeypatch.setattr(config, "GUARD_MERGED_JUDGE", True)
     called = {"merged": 0, "decompose": 0}

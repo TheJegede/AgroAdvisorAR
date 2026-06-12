@@ -118,19 +118,25 @@ async def fetch_forecast_conditions(lat: float, lon: float, at: datetime) -> dic
         horizon = at_naive + timedelta(hours=48) if at_naive else None
 
         # Sum precipitation over the 48h window starting at `at` (exclude past hours).
+        # Track coverage: zero matched hours -> precip is UNKNOWN (None), never 0.0,
+        # so the rain-free check degrades to needs_confirmation instead of a false
+        # pass on no data (F2).
         precip_sum = 0.0
+        precip_hours = 0
         soil_now = None
         for i, ts in enumerate(times):
             t = _parse_iso(ts)
             if t is None:
                 continue
             if at_naive is not None and at_naive <= t < horizon:
+                precip_hours += 1
                 if i < len(precip) and precip[i] is not None:
                     precip_sum += precip[i]
                 if soil_now is None and i < len(soil) and soil[i] is not None:
                     soil_now = soil[i]
         if soil_now is None:
             soil_now = next((s for s in soil if s is not None), None)
+        precip_total = round(precip_sum, 2) if precip_hours > 0 else None
 
         sunrise = (daily.get("sunrise") or [None])[0]
         sunset = (daily.get("sunset") or [None])[0]
@@ -147,7 +153,7 @@ async def fetch_forecast_conditions(lat: float, lon: float, at: datetime) -> dic
             "wind_direction_deg": round(wind_deg, 1) if wind_deg is not None else None,
             "wind_direction_label": _degrees_to_compass(wind_deg) if wind_deg is not None else None,
             "temp_f": round(temp_f, 1) if temp_f is not None else None,
-            "precip_next_48h_in": round(precip_sum, 2),
+            "precip_next_48h_in": precip_total,
             "soil_moisture_0_1cm": round(soil_now, 3) if soil_now is not None else None,
             "sunrise": sunrise,
             "sunset": sunset,

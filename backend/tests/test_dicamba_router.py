@@ -60,6 +60,47 @@ def _legal_attestation():
     return ApplicatorAttestation(license_attested=True, training_attested=True)
 
 
+def test_to_central_converts_utc_to_arkansas_local():
+    # July 1 01:00 UTC is still June 30 (8:00 pm CDT) in Arkansas. The Gate A
+    # season-window date must be the Central date, not the UTC date. (F1)
+    from datetime import timezone
+
+    router_mod = importlib.import_module("routers.dicamba")
+    utc_dt = datetime(2026, 7, 1, 1, 0, tzinfo=timezone.utc)
+    local = router_mod._to_central(utc_dt)
+    assert local.date().isoformat() == "2026-06-30"
+
+
+def test_to_central_passthrough_for_naive():
+    # A naive datetime is assumed already-local — no shift.
+    router_mod = importlib.import_module("routers.dicamba")
+    naive = datetime(2026, 6, 8, 9, 0)
+    assert router_mod._to_central(naive) == naive
+
+
+def test_check_converts_at_to_central_before_rules(monkeypatch):
+    # An incoming UTC `at` must reach resolve_rules / weather as Arkansas local. (F1)
+    from datetime import timezone
+
+    router_mod = importlib.import_module("routers.dicamba")
+    seen = {}
+
+    def _capture_rules(on_date):
+        seen["rules_date"] = on_date
+        return RULES
+
+    fake_fetch = AsyncMock(return_value=WEATHER_OK)
+    monkeypatch.setattr(router_mod, "resolve_rules", _capture_rules)
+    monkeypatch.setattr(router_mod, "fetch_forecast_conditions", fake_fetch)
+
+    utc_at = datetime(2026, 7, 1, 1, 0, tzinfo=timezone.utc)  # = 2026-06-30 CDT
+    asyncio.run(router_mod.check_spray(_body(at=utc_at), user=FAKE_USER))
+
+    assert seen["rules_date"].isoformat() == "2026-06-30"
+    weather_at = fake_fetch.call_args.args[2]
+    assert weather_at.date().isoformat() == "2026-06-30"
+
+
 def test_check_returns_gates_a_and_c(monkeypatch):
     router_mod = importlib.import_module("routers.dicamba")
     monkeypatch.setattr(router_mod, "resolve_rules", lambda on_date: RULES)

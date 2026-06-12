@@ -57,6 +57,16 @@ def _check(gate, check_id):
     return next(c for c in gate.checks if c.id == check_id)
 
 
+def test_run_spray_check_evaluated_at_is_utc_aware():
+    # Frozen legal record must carry an unambiguous UTC offset, not a naive
+    # local-to-the-container timestamp. (F8)
+    from datetime import timezone
+
+    resp = spray_check.run_spray_check(_req(), RULES, _weather(), [FAR_STATION])
+    assert resp.evaluated_at.tzinfo is not None
+    assert resp.evaluated_at.utcoffset() == timezone.utc.utcoffset(None)
+
+
 # ---- Gate A ----
 
 def test_gate_a_pass_in_season_approved_product():

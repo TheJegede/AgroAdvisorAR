@@ -58,3 +58,7 @@ docs/superpowers/plans/2026-06-09-pilot-readiness-next-steps.md
 # Diagnostic gold-label scratch (one-shot generators + intermediates)
 evals/diagnostic/_*
 evals/diagnostic/dump_detail.py
+
+# Ingestion scratch / large local artifacts (2026-06-12 code-review housekeeping)
+ingestion/stderr.txt
+ingestion/backup_pdfs/

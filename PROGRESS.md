@@ -11,6 +11,24 @@
 
 ---
 
+## ▶ CODE-REVIEW REMEDIATION 2026-06-12 — 8 of 10 findings FIXED (TDD, backend 285 green)
+> Backlog: `docs/superpowers/plans/2026-06-12-code-review-findings.md`. Built inline TDD in the plan's suggested order (1+2, 3, 8, 4+6, 10, 7). NOT yet committed/pushed.
+
+| # | Pri | Finding | Fix |
+|---|---|---|---|
+| F1 | P0 | UTC `at` vs Open-Meteo `America/Chicago` local (inversion/rain-window/Gate-A-date wrong at boundaries) | `routers/dicamba.py` `_to_central()` (zoneinfo) converts `body.at` at `/check`+`/record` before rules/weather/gates; naive=already-local |
+| F2 | P0 | Zero-coverage precip window → 0.0 → false Gate C rain-free pass | `weather_now` counts matched hours; 0 → `precip_next_48h_in=None` → needs_confirmation |
+| F3 | P0 | DB advisory rows dump ~2KB raw JSON each into prompt history | `query._normalize_history` reads `content_type`; advisory→`problem_summary` only (`_advisory_summary`), else drop row |
+| F8 | P2 | naive `datetime.now()` in immutable spray record | `datetime.now(timezone.utc)` |
+| F4 | P1 | merged judge `[]` → confidence 1.0 guard bypass | `judge_answer_llm` raises on empty claims when `len(answer)>80` → verify_answer two-step fallback |
+| F6 | P1 | judge claim/object zip misaligned past non-dict entries | filter `parsed`→`dict_objs` once, reuse for extraction + post-process |
+| F10 | P2 | `sanitize()` hard-400s whole query on one bad client-history row | per-row try/except in `_normalize_history` drops offending row |
+| F7 | P2 | O(n²) cumulative partial-frame SSE payload | `rag.PARTIAL_STREAM_THROTTLE_SECONDS=0.25` throttles `_on_partial_cb` (1 frame/250ms) |
+
+**HELD F5** (few-shot exemplar fake-citation bleed) — do NOT fix blind; measure during the pending batched DeepInfra eval (grep outputs for "Arkansas Herbicide Guide 2026" / "Arkansas Insect Management Handbook 2026" / fips `05031` as contamination probe; if bleed → rename exemplar citations "EXAMPLE-DOC-A" + gate exemplars off follow-up turns). **DEFERRED F9** (rain-check label vs hardcoded 48h) — latent, consistent today (rules say 48); not in plan's suggested order; revisit if a rules record sets ≠48. Housekeeping: `.gitignore` += `ingestion/stderr.txt`, `ingestion/backup_pdfs/`. New tests: +12 cases (weather_now 1, dicamba_router 3, spray_check 1, review_fixes 3, citation_guard_v2 3, rag_streaming 1); suite 285 pass. Backend changes auto-deploy to HF on push (`backend/**` in deploy Action watch list).
+
+---
+
 ## ▶ DEFERRED OPS — PROD CUTOVER DONE 2026-06-08 (remaining = pilot-data + external + no-code)
 
 Tracking plan: `~/.claude/plans/so-i-want-you-wobbly-kay.md` (owner-vs-Claude checklist).

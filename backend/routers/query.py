@@ -50,6 +50,21 @@ class OutOfScopeResponse(BaseModel):
     message_id: str | None = None  # populated when session_id provided
 
 
+def _advisory_summary(content: str) -> str | None:
+    """An advisory row stores json.dumps(full AdvisoryResponse) (~2KB w/ citations
+    + context_meta). Keep only problem_summary so history stays compact prose,
+    not a JSON blob that bloats the prompt and conditions the model to answer in
+    JSON (F3). Unparseable / summary-less -> drop the row (return None)."""
+    try:
+        data = json.loads(content)
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    summary = str(data.get("problem_summary") or "").strip()
+    return summary or None
+
+
 def _normalize_history(rows: list[dict], *, sanitize_content: bool) -> list[dict]:
     history: list[dict] = []
     for row in rows:
@@ -60,8 +75,18 @@ def _normalize_history(rows: list[dict], *, sanitize_content: bool) -> list[dict
             continue
 
         content = str(row.get("content", ""))
+        if str(row.get("content_type", "")).strip().lower() == "advisory":
+            content = _advisory_summary(content)
+            if content is None:
+                continue
+
         if sanitize_content:
-            content = sanitize(content)
+            # Drop the offending client-history row rather than 400-ing the whole
+            # new (clean) query on one bad legacy row (F10).
+            try:
+                content = sanitize(content)
+            except (InjectionDetected, MessageTooLong):
+                continue
         else:
             content = content.strip()
         if not content:
