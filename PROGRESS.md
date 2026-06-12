@@ -4,10 +4,22 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-12 (**DOCS-DRIFT FIX** — CLAUDE.md de-staled: stripped to stable-only + un-gitignored + Stop-hook nudge; shipped spot_check.py `b953892`. See top section. Earlier: **L2 EXEMPLARS MEASURED = WIN** — batched DeepInfra eval: v3+L2 corr 20%→30% (paired, L2 helped 7/hurt 1), faith 40%→52.5%, suppression 15%→0%; F5 contamination probe CLEAN (0 bleed/40 answers). Earlier same day: Docling v3 ingestion + L2 shipped; 8/10 code-review findings fixed.
+> **Last updated:** 2026-06-12 (**CORPUS-GAP SPLIT RESULT** — zero-cost retrieval/generation diagnostic: gap is GENERATION-SPECIFICITY not corpus coverage; next lever = L3 "quote exact rate/product"; soybean bucket also ~60% label-contaminated → `eval_set_v2_clean.jsonl`. See top section. Earlier: **DOCS-DRIFT FIX** — CLAUDE.md de-staled: stripped to stable-only + un-gitignored + Stop-hook nudge; shipped spot_check.py `b953892`. See top section. Earlier: **L2 EXEMPLARS MEASURED = WIN** — batched DeepInfra eval: v3+L2 corr 20%→30% (paired, L2 helped 7/hurt 1), faith 40%→52.5%, suppression 15%→0%; F5 contamination probe CLEAN (0 bleed/40 answers). Earlier same day: Docling v3 ingestion + L2 shipped; 8/10 code-review findings fixed.
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
+
+---
+
+## ▶ CORPUS-GAP SPLIT — RESULT 2026-06-12 (zero-cost retrieval/generation diagnostic)
+> Ran the planned failure-split (`docs/superpowers/plans/2026-06-12-corpus-gap-retrieval-split.md`). **Conclusion: the gap is GENERATION-SPECIFICITY, not corpus coverage.** The prior "NEXT = corpus-coverage gap" hypothesis is **CONTRADICTED** — do not re-propose corpus/re-ingest as the soybean lever. Full writeup: `docs/superpowers/2026-06-12-corpus-gap-findings.md`.
+
+- **Taxonomy split (seed=7 n=20, v3, joined to `_out_v3_L2on.jsonl` corr/faith):** OK=10, RETRIEVAL_MISS=3, GEN_SPECIFICITY=6, GEN_HALLUCINATION=1. Baseline L2-off: OK=5, RETRIEVAL_MISS=4, GEN_SPECIFICITY=10, GEN_HALLUCINATION=1 (L2 already moved 4 GEN_SPECIFICITY→OK).
+- **Dominant failure = GEN_SPECIFICITY** → **next lever = L3 "quote the exact rate/product from the cited chunk"** generation directive, NO corpus work. Retrieval surfaces the right *document* in ~2/3+ of failures; the model then states the wrong number/product.
+- **Soybeans specifically: 0 RETRIEVAL_MISS, 5 GEN_SPECIFICITY** — the "14% corr" is NOT retrieval/corpus; the right docs retrieve every time. It is generation-specificity **+ eval-label noise**: of the 5 soybean failing items, 3 are mislabel/out-of-scope (a Clearfield-RICE question tagged soybeans, a pine-seedling forestry question, generic sprayer-coverage math). Audited → `evals/eval_set_v2_clean.jsonl` (1 RELABEL soybeans→rice, 2 DROP; 200→198). Original `eval_set_v2.jsonl` untouched.
+- **Suppression confirmed 0%** across crops in both dumps → guard/over-suppression work stays CLOSED (do not reopen).
+- **Method caveat / dead end avoided:** exact gold-`chunk_id` hit@5 is **invalid on v3** — the Docling v3 re-chunk (968bc42) changed every chunk_id, so ZERO eval-set gold ids exist in `agroar-prod-gte-v3` (verified by `index.fetch`); an id hit@5 on v3 is always-miss garbage. Used **document-level hit@5** (`document_title`, a stable exact key across the migration) instead. Also: **local `.env` `PINECONE_INDEX_NAME` is STALE at `agroar-prod-gte-v2`** while prod + the dumps are v3 — the diagnostic defaults `--index agroar-prod-gte-v3`. Dense cosine-to-gold was rejected (same-crop agronomy floors ~0.83, non-discriminating).
+- **Artifacts:** `evals/retrieval_precision.py` (+14 offline tests, zero LLM cost), `evals/_retrieval_split*.jsonl` (gitignored). Optional paid re-run on the clean set (Task 6) NOT done — cost-gated, awaiting OK.
 
 ---
 
