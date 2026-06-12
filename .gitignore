@@ -65,3 +65,5 @@ ingestion/backup_pdfs/
 # Eval run artifacts (dumps + logs)
 evals/_out_*.jsonl
 evals/_log_*.txt
+evals/_retrieval_split*.jsonl
+evals/_retrieval_split*.log

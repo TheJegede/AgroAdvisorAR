@@ -1,6 +1,8 @@
 """Offline tests for the pure helpers in retrieval_precision.
 No network, no model load — heavy imports live inside main()."""
-from evals.retrieval_precision import rank_of, classify_failure, join_dump
+from evals.retrieval_precision import (
+    rank_of, classify_failure, join_dump, title_hit,
+)
 
 
 def test_rank_of_found_first():
@@ -40,3 +42,16 @@ def test_join_dump_matches_by_query():
 
 def test_join_dump_missing_query_returns_none():
     assert join_dump("nope", [{"query": "q1"}]) is None
+
+
+def test_title_hit_exact_match():
+    assert title_hit("rice ch 4", ["soy doc", "rice ch 4"]) is True
+
+def test_title_hit_normalizes_case_and_whitespace():
+    assert title_hit("  Rice   CH 4 ", ["rice ch 4"]) is True
+
+def test_title_hit_absent():
+    assert title_hit("poultry led", ["rice ch 4", "soy doc"]) is False
+
+def test_title_hit_empty_titles():
+    assert title_hit("anything", []) is False
