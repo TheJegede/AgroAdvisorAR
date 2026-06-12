@@ -4,15 +4,26 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-12 (**L2 EXEMPLARS MEASURED = WIN** — batched DeepInfra eval: v3+L2 corr 20%→30% (paired, L2 helped 7/hurt 1), faith 40%→52.5%, suppression 15%→0%; F5 contamination probe CLEAN (0 bleed/40 answers). Earlier same day: Docling v3 ingestion + L2 shipped; 8/10 code-review findings fixed.
+> **Last updated:** 2026-06-12 (**DOCS-DRIFT FIX** — CLAUDE.md de-staled: stripped to stable-only + un-gitignored + Stop-hook nudge; shipped spot_check.py `b953892`. See top section. Earlier: **L2 EXEMPLARS MEASURED = WIN** — batched DeepInfra eval: v3+L2 corr 20%→30% (paired, L2 helped 7/hurt 1), faith 40%→52.5%, suppression 15%→0%; F5 contamination probe CLEAN (0 bleed/40 answers). Earlier same day: Docling v3 ingestion + L2 shipped; 8/10 code-review findings fixed.
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
 
 ---
 
+## ▶ DOCS-DRIFT FIX + SESSION SHIP 2026-06-12 (CLAUDE.md de-staling)
+> Root-caused why CLAUDE.md is chronically stale and fixed it structurally.
+- **Why it drifted:** CLAUDE.md was gitignored (invisible to commit flow/diffs) AND duplicated volatile status (shipped dates, eval numbers, "not pushed") that PROGRESS.md already owns. No automation existed — the "auto-update rune" was just a manual feedback memory.
+- **Fix C (root cause):** rewrote CLAUDE.md to hold ONLY stable knowledge (architecture, build/test/deploy, conventions, durable guardrails). All volatile status → here. Added a scope-banner at the top of CLAUDE.md so it doesn't get re-polluted.
+- **Un-gitignored CLAUDE.md** (owner did this) → now tracked, shows in diffs/status.
+- **Fix B (nudge):** local Stop hook `.claude/hooks/check_progress_sync.py` + `.claude/settings.local.json` `hooks.Stop` — fires when the latest commit changed code but not PROGRESS.md; self-silences once a PROGRESS bump lands. `.claude/` is gitignored so the hook is per-machine.
+- **Shipped uncommitted work:** `ingestion/spot_check.py` (zero-cost retrieval spot-check, ALL PASS 0.895–0.943) + docling-v3 cutover plan checklist → commit `b953892`, pushed (ingestion-only, no HF redeploy). Verified all prior "uncommitted" claims (SSE, F4, code-review) were already on origin/main — docs were stale, not the code.
+- **NEXT (unchanged):** corpus-coverage gap analysis — triage suppressed/wrong soybean items (14% corr, 43% supp) into corpus-miss vs guard-over-suppress vs gen-fail. Read-only, needs last eval `--dump`.
+
+---
+
 ## ▶ CODE-REVIEW REMEDIATION 2026-06-12 — 8 of 10 findings FIXED (TDD, backend 285 green)
-> Backlog: `docs/superpowers/plans/2026-06-12-code-review-findings.md`. Built inline TDD in the plan's suggested order (1+2, 3, 8, 4+6, 10, 7). NOT yet committed/pushed.
+> Backlog: `docs/superpowers/plans/2026-06-12-code-review-findings.md`. Built inline TDD in the plan's suggested order (1+2, 3, 8, 4+6, 10, 7). Committed + pushed (`42f8f1e`, on origin/main).
 
 | # | Pri | Finding | Fix |
 |---|---|---|---|
