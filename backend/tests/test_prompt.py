@@ -64,7 +64,7 @@ def test_titleless_docs_get_stable_handle_not_unknown():
 
 # --- Task L1.1: conditional-rule directive --------------------------------
 
-from utils.prompt import CONDITIONAL_RULE_BLOCK
+from utils.prompt import CONDITIONAL_RULE_BLOCK, FEW_SHOT_EXEMPLARS
 
 
 def test_conditional_directive_present_in_diagnostic_prompt():
@@ -84,3 +84,19 @@ def test_conditional_directive_present_in_informational_prompt():
         county_name="Arkansas", intent="informational",
     )
     assert CONDITIONAL_RULE_BLOCK in prompt
+
+
+def test_few_shot_exemplars_present_in_diagnostic_prompt():
+    prompt = _build()
+    assert FEW_SHOT_EXEMPLARS in prompt
+
+
+def test_few_shot_exemplars_present_in_informational_prompt():
+    prompt = build_system_prompt(
+        soil_context={"available": False}, weather_context={"available": False},
+        retrieved_docs=[_doc("Rice Guide", "Thresholds", "treat at 6 per sq ft")],
+        session_history=[], language="English", is_safety_critical=False,
+        county_name="Arkansas", intent="informational",
+    )
+    assert FEW_SHOT_EXEMPLARS in prompt
+

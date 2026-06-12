@@ -46,6 +46,7 @@ When the context states a conditional rule you MUST:
 - Never give a bare rate, threshold, or restriction without the condition that
   governs it when the context attaches one."""
 
+
 OUT_OF_SCOPE_MESSAGES = {
     "en": (
         "AgroAdvisor AR is specialized for rice, soybean, and poultry questions in Arkansas. "
@@ -57,6 +58,106 @@ OUT_OF_SCOPE_MESSAGES = {
         "propósito general."
     ),
 }
+
+FEW_SHOT_EXEMPLARS = """FEW-SHOT EXAMPLES:
+Refer to these examples for how to structure your JSON response, especially preserving multi-branch conditional rules and mapping products_rates.
+
+Example 1: Soil Texture Rate Rule
+Retrieved Context:
+[Arkansas Herbicide Guide 2026 - Command 3ME Section] Command 3ME rate is split by soil texture. On coarse soil apply 1.2 pt/A. On medium soil apply 1.6 pt/A. On fine soil apply 2.0 pt/A. Do not apply on sand or sandy loam soils.
+Output JSON:
+{
+  "response_type": "diagnostic",
+  "problem_summary": "Command 3ME application rates vary by soil texture, and application is prohibited on sand or sandy loam.",
+  "detailed_explanation": "Command 3ME rates must be carefully calibrated to the field's soil texture to avoid crop injury or poor weed control. Do not apply to sand or sandy loam.",
+  "key_points": [
+    "Rate is 1.2 pt/A on coarse soils.",
+    "Rate is 1.6 pt/A on medium soils.",
+    "Rate is 2.0 pt/A on fine soils.",
+    "Application is prohibited on sand and sandy loam soils."
+  ],
+  "likely_causes": [],
+  "recommended_actions": [
+    "Identify field soil texture prior to application.",
+    "Select the corresponding rate (1.2, 1.6, or 2.0 pt/A) based on texture.",
+    "Verify the soil is not sand or sandy loam."
+  ],
+  "products_rates": [
+    {
+      "product": "Command 3ME (Coarse Soil)",
+      "rate": "1.2 pt/A",
+      "application_method": "Ground application",
+      "pre_harvest_interval": null
+    },
+    {
+      "product": "Command 3ME (Medium Soil)",
+      "rate": "1.6 pt/A",
+      "application_method": "Ground application",
+      "pre_harvest_interval": null
+    },
+    {
+      "product": "Command 3ME (Fine Soil)",
+      "rate": "2.0 pt/A",
+      "application_method": "Ground application",
+      "pre_harvest_interval": null
+    }
+  ],
+  "warnings": [
+    "Do not apply on sand or sandy loam soils."
+  ],
+  "citations": [
+    {
+      "document_title": "Arkansas Herbicide Guide 2026",
+      "section": "Command 3ME Section",
+      "url": null
+    }
+  ],
+  "confidence": "High",
+  "confidence_explanation": "Specific rates per soil texture and exclusions are explicitly outlined in the source document.",
+  "language": "en",
+  "context_meta": {
+    "soil_data_available": true,
+    "weather_data_available": false,
+    "county_fips": "05031"
+  }
+}
+
+Example 2: Crop Stage / Timing Threshold Rule
+Retrieved Context:
+[Arkansas Insect Management Handbook 2026 - Rice Stink Bug Section] Treat rice stink bugs when numbers exceed 5 per 10 sweeps during the first 2 weeks after 75% heading. For weeks 3 and 4 after 75% heading, the treatment threshold increases to 10 RSB per 10 sweeps.
+Output JSON:
+{
+  "response_type": "diagnostic",
+  "problem_summary": "Rice stink bug threshold changes by crop stage / weeks after 75% heading.",
+  "detailed_explanation": "Treatment thresholds for rice stink bugs must be adjusted depending on the timing relative to heading to ensure economic returns and avoid unnecessary sprays.",
+  "key_points": [
+    "Threshold is 5 bugs per 10 sweeps during weeks 1 and 2 after 75% heading.",
+    "Threshold is 10 bugs per 10 sweeps during weeks 3 and 4 after 75% heading."
+  ],
+  "likely_causes": [],
+  "recommended_actions": [
+    "Determine when the field reached 75% heading.",
+    "Take 10 sweeps across the field to count rice stink bugs.",
+    "Apply insecticide only if counts exceed the specific threshold for that week."
+  ],
+  "products_rates": [],
+  "warnings": [],
+  "citations": [
+    {
+      "document_title": "Arkansas Insect Management Handbook 2026",
+      "section": "Rice Stink Bug Section",
+      "url": null
+    }
+  ],
+  "confidence": "High",
+  "confidence_explanation": "Timing-dependent thresholds are explicitly detailed in the retrieved context.",
+  "language": "en",
+  "context_meta": {
+    "soil_data_available": false,
+    "weather_data_available": false,
+    "county_fips": "05031"
+  }
+}"""
 
 
 def out_of_scope_message(language: str) -> str:
@@ -131,4 +232,8 @@ def build_system_prompt(
     parts.append("")
     parts.append(CONDITIONAL_RULE_BLOCK)
 
+    parts.append("")
+    parts.append(FEW_SHOT_EXEMPLARS)
+
     return "\n".join(parts)
+
