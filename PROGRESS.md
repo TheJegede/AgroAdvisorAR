@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-12 (**DOCLING v3 INGESTION + L2 FEW-SHOT EXEMPLARS SHIPPED** — Docling PDF extraction live, `agroar-prod-gte-v3` built + switched in prod; L2 few-shot conditional exemplars committed + deployed to HF; measurement deferred to next batched eval run).
+> **Last updated:** 2026-06-12 (**L2 EXEMPLARS MEASURED = WIN** — batched DeepInfra eval: v3+L2 corr 20%→30% (paired, L2 helped 7/hurt 1), faith 40%→52.5%, suppression 15%→0%; F5 contamination probe CLEAN (0 bleed/40 answers). Earlier same day: Docling v3 ingestion + L2 shipped; 8/10 code-review findings fixed.
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
@@ -297,7 +297,20 @@ Diagnostic scripts kept in `evals/`: `trace_retrieval.py`, `trace_generation.py`
 
 **MERGED to main 2026-06-10** (`019a966`, --no-ff; pushed `ce4c2b9..019a966`). Backend directive NOT live in prod until HF redeploy (owner-blocked, same bucket as F4). `conditional_scored_n==7` confirmed (plan's "2 are set_aside" was stale — actual gold has 0 set-aside conditionals).
 
-**▶ TASK 6 MEASUREMENT DONE 2026-06-10 — DIRECTIVE IS A NO-OP. Generator DeepInfra Llama-3.3-70B (`LLM_PRIMARY=deepinfra`), judge Gemini 2.5-flash, n=7 conditional gold rows:**
+**▶▶ L2 FEW-SHOT EXEMPLARS = MEASURED WIN 2026-06-12 (batched DeepInfra eval, plan `docs/superpowers/plans/2026-06-12-batched-eval-plan.md`).** Paired A/B, identical 20 items (seed=7), `agroar-prod-gte-v3`, DeepInfra 70B gen+judge (self-judge bias — absolute optimistic, paired A−B delta valid; n=20 noisy):
+
+| run | corr | faith | supp |
+|---|---|---|---|
+| v2 baseline (2026-06-05) | 20% | 40% | 15% |
+| **B** = v3 + L2 **off** | 15% | 62.5% | 0% |
+| **A** = v3 + L2 **on** (prod) | **30%** | 52.5% | 0% |
+
+- **L2 = first answer-quality lever that MOVED the needle** (L1 was a no-op). Paired: L2 helped **7** items, hurt **1** → corr 15%→30%. Cost: faith −10pp (exemplars trade strict grounding for completeness). KEEP (already deployed `e583587`).
+- **v3 corpus** (B vs baseline): faith **+22.5pp**, suppression **15%→0%**; correctness flat (within noise). Cleaner + better-grounded. KEEP (already prod).
+- **F5 contamination probe = CLEAN.** 0 exemplar fake-citation bleed across **40** answers (both runs); every emitted citation is a real corpus doc. **F5 closed, no action** (token-trim = gate exemplars off follow-ups optional/deferred — pennies, latency is gen-bound). Toggle for B = `git checkout e583587^ -- backend/utils/prompt.py` (L1 kept, L2 removed), restored after.
+- **New honest headline = 30% correctness** (v3+L2). **NEXT lever = corpus-coverage gap analysis** (soybeans still 14% corr; rice 39%), per #3 — generation+corpus, not retrieval/guard. **Cost reality (DeepInfra dashboard): one n=20 run ≈ $0.01–0.02, NOT ~$1** (whole last month of evals = $0.27); earlier estimate was ~20–50× high.
+
+**▶ L1 TASK 6 MEASUREMENT DONE 2026-06-10 — DIRECTIVE IS A NO-OP. Generator DeepInfra Llama-3.3-70B (`LLM_PRIMARY=deepinfra`), judge Gemini 2.5-flash, n=7 conditional gold rows:**
 | run | `conditional_completeness_rate` |
 |---|---|
 | BASELINE (directive removed, `git checkout ce4c2b9 -- backend/utils/prompt.py`) | **0.429** (3/7) |

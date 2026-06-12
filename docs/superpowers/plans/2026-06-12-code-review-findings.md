@@ -4,8 +4,9 @@ Full-codebase review of everything shipped since the 2026-06-05 logic review
 (`ea14686..HEAD`, ~5,300 production lines across 88 files). Graphify-guided,
 inline verification (no subagents). All findings verified against actual code —
 file:line quoted. Status: **8 of 10 FIXED 2026-06-12 (TDD, backend 285 green)** —
-F1,F2,F3,F4,F6,F7,F8,F10 done; **F5 HELD** (measure in batched eval), **F9
-DEFERRED** (latent). See PROGRESS.md "CODE-REVIEW REMEDIATION 2026-06-12".
+F1,F2,F3,F4,F6,F7,F8,F10 done + pushed; **F5 CLOSED** (batched-eval probe clean,
+0 fake-citation bleed / 40 answers), **F9 DEFERRED** (latent). See PROGRESS.md
+"CODE-REVIEW REMEDIATION 2026-06-12" + "L2 FEW-SHOT EXEMPLARS = MEASURED WIN".
 
 Clean areas (verified, do NOT re-review): spray_record/feedback anti-IDOR,
 auth refresh single-flight + `_retry` guard, SSE heartbeat loop (race-free,

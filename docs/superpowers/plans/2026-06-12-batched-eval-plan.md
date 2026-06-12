@@ -86,6 +86,21 @@ correctness, the two weak spots from baseline).
    translate-bridge over the same English pipeline, low marginal info this round.
 3. OK to add the `--dump` flag to `answer_eval_full.py`?
 
+## RESULTS (ran 2026-06-12, A+B, ES skipped)
+Paired n=20 seed=7, `agroar-prod-gte-v3`, DeepInfra 70B gen+judge.
+
+| run | corr | faith | supp |
+|---|---|---|---|
+| v2 baseline (06-05) | 20% | 40% | 15% |
+| B = v3 + L2 off | 15% | 62.5% | 0% |
+| **A = v3 + L2 on (prod)** | **30%** | 52.5% | 0% |
+
+- **L2 effect (A−B) = WIN.** +15pp correctness; paired, L2 helped **7** items / hurt **1**. faith −10pp (completeness vs strict grounding). First lever to move the needle (L1 was a no-op). KEEP.
+- **v3 lift (B−baseline):** faith +22.5pp, suppression 15%→0%; correctness flat (noise). Corpus cleaner/better-grounded.
+- **F5 probe: CLEAN — 0 exemplar fake-citation bleed across 40 answers** (both runs); every citation a real corpus doc. F5 closed, no action.
+- Cost actual: pennies (per dashboard, ~$0.01–0.02/run). Caveats held: self-judge bias (paired Δ valid), n=20 noisy.
+- Dumps (gitignored): `evals/_out_v3_L2on.jsonl`, `evals/_out_v3_L2off.jsonl`.
+
 ## After the eval (depends on numbers)
 - Update PROGRESS.md "RESUME HERE" + the v3 config table + memory with the new
   numbers; close or action F5 per the probe.
