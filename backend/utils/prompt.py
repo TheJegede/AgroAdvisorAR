@@ -107,6 +107,66 @@ Output JSON (note the rate is copied EXACTLY as written — "3.2 pt/A", not "abo
 }"""
 
 
+B1_REASONING_BLOCK = """ANALYSIS FIRST — QUOTE, THEN ANSWER:
+Fill the "analysis" field FIRST, before every other field. In it:
+- Quote verbatim (character-for-character) the exact sentences from the retrieved
+  context that state the rates, products, thresholds, timings, or conditions you
+  will use, naming their [bracketed] source titles.
+- Then state in one or two sentences how those quotes answer the farmer's question.
+Derive every other field ONLY from the quotes in your analysis. If no quote
+supports a number or product, do not state that number or product. The analysis
+field is an internal scratchpad removed before display — do not address the
+farmer in it."""
+
+# Worked example showing the quote-then-answer scratchpad in action (exemplars
+# move the needle, bare directives don't — measured L1/L2/L3 pattern). The rate
+# "0.5 oz/A" appears in the retrieved-context line, inside the analysis quotes,
+# and in the final answer fields, modeling quote-first derivation.
+B1_REASONING_EXEMPLAR = """ANALYSIS-FIRST EXAMPLE:
+Retrieved Context:
+[Arkansas Rice Management Guide 2026 - Seed Treatment Section] Zinc seed treatments should supply 0.5 oz/A of actual zinc on rice planted into soils testing below 4.1 ppm zinc. Foliar correction after flooding requires 1.0 lb/A zinc sulfate.
+Output JSON (note "analysis" is filled FIRST, quoting the context verbatim, and every number in the answer fields comes from those quotes):
+{
+  "analysis": "QUOTES: [Arkansas Rice Management Guide 2026 - Seed Treatment Section] states \\"Zinc seed treatments should supply 0.5 oz/A of actual zinc on rice planted into soils testing below 4.1 ppm zinc.\\" and \\"Foliar correction after flooding requires 1.0 lb/A zinc sulfate.\\" These give the seed-treatment rate (0.5 oz/A, conditional on a soil test below 4.1 ppm zinc) and the post-flood foliar correction rate (1.0 lb/A zinc sulfate).",
+  "response_type": "diagnostic",
+  "problem_summary": "Zinc seed-treatment rate for rice depends on the soil zinc test level.",
+  "detailed_explanation": "The cited guide sets a seed-treatment zinc rate for low-testing soils and a separate foliar correction rate once the field is flooded.",
+  "key_points": [
+    "Apply 0.5 oz/A of actual zinc as a seed treatment when soil tests below 4.1 ppm zinc.",
+    "After flooding, foliar correction requires 1.0 lb/A zinc sulfate."
+  ],
+  "likely_causes": [],
+  "recommended_actions": [
+    "Pull a soil test; if zinc is below 4.1 ppm, use a zinc seed treatment at 0.5 oz/A actual zinc.",
+    "If deficiency appears after flooding, apply 1.0 lb/A zinc sulfate foliar."
+  ],
+  "products_rates": [
+    {
+      "product": "Zinc seed treatment (soils below 4.1 ppm Zn)",
+      "rate": "0.5 oz/A actual zinc",
+      "application_method": "Seed treatment",
+      "pre_harvest_interval": null
+    }
+  ],
+  "warnings": [],
+  "citations": [
+    {
+      "document_title": "Arkansas Rice Management Guide 2026",
+      "section": "Seed Treatment Section",
+      "url": null
+    }
+  ],
+  "confidence": "High",
+  "confidence_explanation": "Both rates and the soil-test condition are quoted verbatim in the analysis from the cited document.",
+  "language": "en",
+  "context_meta": {
+    "soil_data_available": false,
+    "weather_data_available": false,
+    "county_fips": "05031"
+  }
+}"""
+
+
 OUT_OF_SCOPE_MESSAGES = {
     "en": (
         "AgroAdvisor AR is specialized for rice, soybean, and poultry questions in Arkansas. "
@@ -303,6 +363,16 @@ def build_system_prompt(
         parts.append(L3_VERBATIM_RATE_BLOCK)
         parts.append("")
         parts.append(L3_VERBATIM_EXEMPLAR)
+
+    # B1 reasoning-first scratchpad lever — MEASURED WIN (2026-06-12 paired n=40,
+    # clean set, independent Gemini judge: corr 23.8%->27.5% helped 7/hurt 3,
+    # faith 57.5%->65.0% helped 10/hurt 6, supp 0%, 0 structured-output skips).
+    # Default ON; set B1_REASONING_FIRST=0 to kill-switch. Stacks on L2+L3.
+    if os.environ.get("B1_REASONING_FIRST", "1") != "0":
+        parts.append("")
+        parts.append(B1_REASONING_BLOCK)
+        parts.append("")
+        parts.append(B1_REASONING_EXEMPLAR)
 
     return "\n".join(parts)
 

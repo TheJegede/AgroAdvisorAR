@@ -260,6 +260,10 @@ async def _postprocess_async(
     AdvisoryResponse (guard fields default None until filled below)."""
     if not isinstance(result, AdvisoryResponse):
         result = AdvisoryResponse(**result.model_dump())
+    # B1: the analysis scratchpad is internal reasoning workspace — strip it
+    # before the guard scores prose and before anything is stored or streamed.
+    if result.analysis is not None:
+        result = result.model_copy(update={"analysis": None})
     # Step 1: title-match citation guard.
     # Only meaningful when retrieval carries `document_title` metadata. Legacy
     # gte indexes stored only {text, namespace}, so this guard would validate no

@@ -42,6 +42,12 @@ class AdvisoryDraft(BaseModel):
     tokens) and crash generation on enum-label typos (e.g. "ENTAILLED") or wrong
     types ("expected null, but got array"), dropping whole advisories.
     """
+    # B1 reasoning-first scratchpad — declared FIRST so it generates before the
+    # answer fields (field declaration order = JSON schema property order =
+    # generation order). Optional plain string (no nested structure — see the
+    # schema-fragility note above). Stripped in rag._postprocess_async before
+    # the guard scores prose and before storage/display.
+    analysis: str | None = None
     response_type: Literal["diagnostic", "informational"] = "diagnostic"
     problem_summary: str
     detailed_explanation: str | None = None
