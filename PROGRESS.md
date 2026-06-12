@@ -48,7 +48,7 @@
 - **Un-gitignored CLAUDE.md** (owner did this) → now tracked, shows in diffs/status.
 - **Fix B (nudge):** local Stop hook `.claude/hooks/check_progress_sync.py` + `.claude/settings.local.json` `hooks.Stop` — fires when the latest commit changed code but not PROGRESS.md; self-silences once a PROGRESS bump lands. `.claude/` is gitignored so the hook is per-machine.
 - **Shipped uncommitted work:** `ingestion/spot_check.py` (zero-cost retrieval spot-check, ALL PASS 0.895–0.943) + docling-v3 cutover plan checklist → commit `b953892`, pushed (ingestion-only, no HF redeploy). Verified all prior "uncommitted" claims (SSE, F4, code-review) were already on origin/main — docs were stale, not the code.
-- **NEXT (unchanged):** corpus-coverage gap analysis — triage suppressed/wrong soybean items (14% corr, 43% supp) into corpus-miss vs guard-over-suppress vs gen-fail. Read-only, needs last eval `--dump`.
+- ~~**NEXT (unchanged):** corpus-coverage gap analysis — triage suppressed/wrong soybean items (14% corr, 43% supp) into corpus-miss vs guard-over-suppress vs gen-fail. Read-only, needs last eval `--dump`.~~ **DONE — superseded (later same day):** the corpus-gap split ran and **CONTRADICTED** this hypothesis (gap is GEN-SPECIFICITY, not corpus). Drove the L3 lever (also shipped). See "CORPUS-GAP SPLIT — RESULT" + "L3 VERBATIM-RATE LEVER" sections above. Do NOT re-propose corpus-gap analysis as next — it's closed.
 
 ---
 
