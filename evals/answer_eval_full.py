@@ -92,6 +92,64 @@ def _parse_score(raw):
     return 0.0, f"parse fail: {raw[:120]}"
 
 
+def extract_json_block(raw: str) -> dict | None:
+    """Pull the first JSON object out of free-form model output (handles ```json
+    fences and surrounding prose). None when nothing parseable is found."""
+    raw = (raw or "").strip()
+    if raw.startswith("```"):
+        parts = raw.split("```")
+        if len(parts) >= 2:
+            raw = parts[1].lstrip("json").strip()
+    m = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not m:
+        return None
+    try:
+        parsed = json.loads(m.group(0))
+        return parsed if isinstance(parsed, dict) else None
+    except Exception:
+        return None
+
+
+class _TwoStepRunnable:
+    """Drop-in for the runnable with_structured_output returns: generates
+    UNCONSTRAINED (no response_format), then parses; one repair call on failure."""
+
+    def __init__(self, llm, repair_llm):
+        self._llm = llm
+        self._repair = repair_llm
+
+    async def ainvoke(self, messages, config=None):
+        from models.advisory import AdvisoryDraft
+        resp = await self._llm.ainvoke(messages, config=config)
+        parsed = extract_json_block(getattr(resp, "content", "") or "")
+        if parsed is not None:
+            try:
+                return AdvisoryDraft(**parsed)
+            except Exception:
+                pass
+        if self._repair is None:
+            raise ValueError("two-step: unparseable output and no repair LLM")
+        from langchain_core.messages import HumanMessage
+        return await self._repair.ainvoke([HumanMessage(content=(
+            "Convert this agricultural advisory into the AdvisoryResponse JSON "
+            "schema. Copy every rate, product name, threshold, and citation "
+            "title EXACTLY as written - do not invent or drop content.\n\n"
+            f"ADVISORY:\n{getattr(resp, 'content', '')[:8000]}"
+        ))], config=config)
+
+
+class _TwoStepLLM:
+    """Wraps the generation LLM so rag.py's llm.with_structured_output(...) hands
+    back our unconstrained-then-parse runnable instead of constrained decoding."""
+
+    def __init__(self, llm, repair_llm=None):
+        self._llm = llm
+        self._repair = repair_llm
+
+    def with_structured_output(self, schema, **kwargs):
+        return _TwoStepRunnable(self._llm, self._repair)
+
+
 def faithfulness(advisory: dict, chunks: list[dict]) -> tuple[float, str]:
     ctx = "\n\n".join(
         f"[{c.get('document_title','')}] {c.get('snippet','')}" for c in chunks
@@ -149,6 +207,8 @@ async def evaluate(item):
         # Citations the model actually emitted — needed for the F5 exemplar
         # fake-citation contamination probe (grep the dump for exemplar titles).
         "citations": adv.get("citations"),
+        "products_rates": adv.get("products_rates"),
+        "chunk_snippets": [(c.get("snippet") or "")[:500] for c in chunks],
     }
 
 
@@ -229,6 +289,10 @@ async def main():
                     help="gemini=independent Gemini judge for correctness+faithfulness "
                          "(removes 70B self-grading bias); same=provider default. "
                          "Ignored under --provider local (judges run locally).")
+    ap.add_argument("--two-step", action="store_true",
+                    help="B2 format-tax probe: unconstrained generation, then "
+                         "parse (one Groq 8b repair call on failure). Requires "
+                         "--provider deepinfra.")
     args = ap.parse_args()
 
     global JUDGE_CORR, JUDGE_FAITH, BRIDGE
@@ -287,10 +351,29 @@ async def main():
         import judge as _judge_mod
         _judge_mod._judge_llm = _gemini_judge
         _judge_mod._deepinfra_judge_llm = _gemini_judge
+    if args.two_step:
+        if args.provider != "deepinfra":
+            raise SystemExit("--two-step currently supports --provider deepinfra only.")
+        from langchain_openai import ChatOpenAI
+        from langchain_groq import ChatGroq
+        from models.advisory import AdvisoryDraft
+        _free_llm = ChatOpenAI(
+            model=os.environ.get("DEEPINFRA_MODEL", "meta-llama/Llama-3.3-70B-Instruct"),
+            openai_api_key=os.environ["DEEPINFRA_API_KEY"],
+            openai_api_base="https://api.deepinfra.com/v1",
+            temperature=0.1,
+        )
+        _repair = ChatGroq(
+            model="llama-3.1-8b-instant", api_key=os.environ["GROQ_API_KEY"],
+            temperature=0,
+        ).with_structured_output(AdvisoryDraft, method="json_mode")
+        # Pre-seed rag's cached deepinfra client so run_rag_query generates
+        # through the wrapper (rag._get_deepinfra_llm returns the cached global).
+        rag._deepinfra_llm = _TwoStepLLM(_free_llm, repair_llm=_repair)
     if args.no_guard:
         config.NLI_CITATION_GUARD_ENABLED = False
     print(f"provider={args.provider}  judge={args.judge_provider}  "
-          f"guard={'off' if args.no_guard else 'on'}  bridge={args.bridge}")
+          f"two_step={args.two_step}  guard={'off' if args.no_guard else 'on'}  bridge={args.bridge}")
 
     items = [json.loads(l) for l in open(args.eval_set, encoding="utf-8")]
     sample = sample_items(items, args.sample, seed=args.seed)
