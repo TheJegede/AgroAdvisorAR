@@ -80,3 +80,49 @@ Two structural causes, both about how rice is *graded*, not how it's *answered*:
 
 **No retrieval work** — TRUE_RETRIEVAL = 0/19; retrieval surfaced an on-topic doc in every failure.
 The closed-retrieval guardrail is reconfirmed for rice.
+
+---
+
+## B2 format-tax probe — result (Task 3)
+
+Ran n=40 seed=7, DeepInfra 70B **unconstrained** (`--two-step`: free-form gen →
+`extract_json_block` parse → Groq-8b repair on failure) + independent Gemini judge, vs the
+existing B1-on control (`evals/_out_clean_indepjudge_b1on.jsonl`). Only variable = the decoding
+constraint (B1 on in both arms). **scored=40, skipped=0** (run survived a mid-run system sleep at
+24/40: the dead socket hit its client timeout, that item retried clean, loop continued — 0 lost).
+Dump: `evals/_out_clean_indepjudge_twostep.jsonl`; log: `evals/_phaseB2_run.log`.
+
+| metric | B1-on control (B) | two-step (A) | Δ |
+|---|---|---|---|
+| correctness | 27.5% | **23.8%** | **−3.7pp** |
+| faithfulness | 65.0% | **67.5%** | +2.5pp |
+| suppression | 0% | 0% | — |
+
+Paired (n=40): corr **helped 5 / hurt 7 / same 28**; faith helped 7 / hurt 6 / same 27.
+Per-crop corr: poultry 25→38 (n=4), **rice 18→16 (n=19)**, soybeans 38→29 (n=17).
+
+**Verdict — corr within ±5pp ⇒ FORMAT TAX DISPROVEN for this stack. B2 CLOSED.** Not only is the
+delta inside the noise band, it leans **negative** (hurt > helped on corr; soybeans drop 9pp) —
+i.e. for this Llama-3.3-70B + AdvisoryDraft schema, `json_mode` constrained decoding *mildly helps*
+rather than taxes generation: the schema scaffolds the model. This is the **opposite** of the Tam
+et al. 2024 "Let Me Speak Freely?" prior and is a publishable negative result either way. Do **not**
+productionize two-step generation in `backend/services/rag.py`.
+
+**Rice did NOT move (18→16)** under unconstrained decoding — direct confirmation of the Task 1
+finding: rice 18% is an eval-measurement artifact (gold pointed at non-answer-bearing yearly
+research volumes), not a generation-format ceiling. No generation lever will lift rice until the
+rice gold labels are curated.
+
+**Phase C (generation model swap) is now the live next question** — that is Taiwo's call (ongoing
+prod cost); present numbers and stop, do not swap unilaterally.
+
+## B3 (`source_quote`) redundancy decision (Task 4)
+
+Verbatim/number-grounding rate of stated rates against retrieved chunks, from the two-step dump
+(`evals/_b3_grounding.py`): **rates stated 24, grounded 11 = 46%**.
+
+**46% < ~80% ⇒ B3 stays a LIVE candidate** (NOT closed). B1's quote-into-analysis does not yet
+ground rates reliably — **54% of stated rates are not verbatim/number-grounded in the retrieved
+chunks**, which is the expected headroom for an explicit `source_quote` grounding field + check.
+Caveat: the metric is a crude number-substring match measured on the two-step arm; treat 54% as an
+upper bound on the recoverable gap, not a precise target.
