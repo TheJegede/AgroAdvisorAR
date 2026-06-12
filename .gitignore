@@ -31,8 +31,6 @@ node_modules/
 .vscode/
 .idea/
 backend/test_token.txt
-context.md
-CLAUDE.md
 handoff-*.md
 AgroAdvisor_AR_PRD_v2.md
 docs/*
