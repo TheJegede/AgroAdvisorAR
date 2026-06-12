@@ -138,6 +138,7 @@ async def evaluate(item):
     return {
         "namespace": item["namespace"],
         "lang": lang,
+        "query": query,
         "suppressed": suppressed,
         "correctness": corr,
         "faithfulness": faith,
@@ -145,6 +146,9 @@ async def evaluate(item):
         "confidence_score": adv.get("confidence_score"),
         "corr_rationale": c_r,
         "faith_rationale": f_r,
+        # Citations the model actually emitted — needed for the F5 exemplar
+        # fake-citation contamination probe (grep the dump for exemplar titles).
+        "citations": adv.get("citations"),
     }
 
 
@@ -218,6 +222,9 @@ async def main():
                     help="eval set jsonl (e.g. evals/ar_agqa_es.jsonl for the ES bridge)")
     ap.add_argument("--bridge", action="store_true",
                     help="translate each query to English first (production ES path)")
+    ap.add_argument("--dump", type=Path, default=None,
+                    help="write one JSON line per scored item (incl. emitted "
+                         "citations) for the F5 contamination probe")
     args = ap.parse_args()
 
     global JUDGE_CORR, JUDGE_FAITH, BRIDGE
@@ -278,6 +285,12 @@ async def main():
         except Exception as e:
             skipped += 1
             print(f"[{i}/{len(sample)}] SKIPPED {type(e).__name__}: {str(e)[:80]}")
+
+    if args.dump:
+        with open(args.dump, "w", encoding="utf-8") as f:
+            for r in results:
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        print(f"dumped {len(results)} scored items -> {args.dump}")
 
     n = len(results)
     n_supp = sum(1 for r in results if r["suppressed"])

@@ -62,3 +62,7 @@ evals/diagnostic/dump_detail.py
 # Ingestion scratch / large local artifacts (2026-06-12 code-review housekeeping)
 ingestion/stderr.txt
 ingestion/backup_pdfs/
+
+# Eval run artifacts (dumps + logs)
+evals/_out_*.jsonl
+evals/_log_*.txt
