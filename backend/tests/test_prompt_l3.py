@@ -48,17 +48,20 @@ def test_l3_block_present_in_informational_when_flag_on(monkeypatch):
     assert L3_VERBATIM_EXEMPLAR in prompt
 
 
-def test_l3_block_absent_when_flag_unset(monkeypatch):
+def test_l3_block_present_by_default_when_flag_unset(monkeypatch):
+    # Default ON after the measured win — present unless explicitly killed with "0".
     monkeypatch.delenv("L3_VERBATIM_RATE", raising=False)
     prompt = _build()
-    assert L3_VERBATIM_RATE_BLOCK not in prompt
-    assert L3_VERBATIM_EXEMPLAR not in prompt
+    assert L3_VERBATIM_RATE_BLOCK in prompt
+    assert L3_VERBATIM_EXEMPLAR in prompt
 
 
 def test_l3_block_absent_when_flag_zero(monkeypatch):
+    # "0" is the kill-switch.
     monkeypatch.setenv("L3_VERBATIM_RATE", "0")
     prompt = _build()
     assert L3_VERBATIM_RATE_BLOCK not in prompt
+    assert L3_VERBATIM_EXEMPLAR not in prompt
 
 
 # --- the directive names the failure mode it prevents ---------------------

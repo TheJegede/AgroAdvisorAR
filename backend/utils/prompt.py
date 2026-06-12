@@ -295,9 +295,10 @@ def build_system_prompt(
     parts.append("")
     parts.append(FEW_SHOT_EXEMPLARS)
 
-    # L3 verbatim-rate lever — flag-gated (default OFF) so the paired A/B eval is a
-    # clean env toggle and prod is unchanged until a win is measured. Stacks on L2.
-    if os.environ.get("L3_VERBATIM_RATE") == "1":
+    # L3 verbatim-rate lever — MEASURED WIN (2026-06-12 paired DeepInfra eval: corr
+    # 30%->35%, faith 47.5%->52.5%, soybeans 14%->29%, GEN_SPECIFICITY 6->4, helped 3/
+    # hurt 1, supp 0%). Default ON; set L3_VERBATIM_RATE=0 to kill-switch. Stacks on L2.
+    if os.environ.get("L3_VERBATIM_RATE", "1") != "0":
         parts.append("")
         parts.append(L3_VERBATIM_RATE_BLOCK)
         parts.append("")
