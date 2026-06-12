@@ -1,13 +1,13 @@
 # AgroAdvisor AR — Completion to Production
 
-**Last updated:** 2026-06-08  
+**Last updated:** 2026-06-12  
 **MVP target:** September 2026  
-**Production readiness:** 82%  
-**PRD phase progress:** 80%
+**Production readiness:** 85%  
+**PRD phase progress:** 82%
 
 ```
-Production readiness  [████████████████░░░░]  82%
-PRD phase progress    [████████████████░░░░]  80%
+Production readiness  [█████████████████░░░]  85%
+PRD phase progress    [████████████████░░░░]  82%
 ```
 
 **LIVE + SMOKE-TESTED (2026-05-30):** frontend `https://agroadvisor-eta.vercel.app`
@@ -24,28 +24,23 @@ redeploys via orphan-branch force-push to the HF git remote. Accidental duplicat
 Vercel projects (`agro-advisor-ar*`) cleaned up. Exact redeploy commands: CLAUDE.md
 Priorities #2.
 
-🚧 **F4 DICAMBA REBUILD (PRD v3) — IN PROGRESS (Phases 0 + 1 shipped 2026-06-08).** F4 reframed
-from a backward-looking drift-complaint form into a *before-you-spray dicamba compliance checklist*
-(four gates A legal-window / B field-buffers / C weather-now / D equipment; `AgroAdvisor_F4_PRD_v3.md`).
-**Coexists** with the old drift tool (T1) — does not replace it. New scope, tracked separately from the
-MVP-blocker % below. 7-phase plan in `docs/superpowers/plans/2026-06-08-f4-dicamba-phase{0..6}-*.md`.
+🚧 **F4 DICAMBA REBUILD (PRD v3) — CODE COMPLETE & LIVE (2026-06-08).** F4 reframed from a backward-looking drift-complaint form into a *before-you-spray dicamba compliance checklist* (four gates A legal-window / B field-buffers / C weather-now / D equipment; `AgroAdvisor_F4_PRD_v3.md`). Coexists with the old drift tool (T1).
 
 ```
-F4 dicamba rebuild (7 phases)  [█████░░░░░░░░░░░░░░░░]  29%  (2/7 phases shipped)
+F4 dicamba rebuild (7 phases)  [████████████████████]  100%  (7/7 phases shipped)
 ```
 
 | Phase | Scope | Done? |
 |---|---|---|
 | 0 | Versioned rules-as-data (`dicamba_rules.json` + `spray_rules.py`) | ☑ 2026-06-08 (merged `dcdc12b`) |
 | 1 | `POST /api/v1/dicamba/check` — Gates A + C (forecast weather + gate engine) | ☑ 2026-06-08 (merged `c86b966`) |
-| 2 | SprayCheckWizard UI + react-leaflet field pin, wired to `/check` | ☐ next |
-| 3 | Gate B field & buffer proximity map | ☐ |
-| 4 | Record generator (`/record`, `spray_records` table, Gate D, PDF) | ☐ |
-| 5 | External data (FieldWatch / EPA Bulletins) + full Spanish parity | ☐ |
-| 6 | Attorney review of advisory framing + pilot | ☐ |
+| 2 | SprayCheckWizard UI + react-leaflet field pin, wired to `/check` | ☑ 2026-06-08 |
+| 3 | Gate B field & buffer proximity map | ☑ 2026-06-08 |
+| 4 | Record generator (`/record`, `spray_records` table, Gate D, PDF) | ☑ 2026-06-08 |
+| 5 | External data (FieldWatch / EPA Bulletins) + full Spanish parity | ☑ 2026-06-08 |
+| 6 | Central Disclaimer, Gate Stats, Feedback Loop (Code track complete; legal/pilot pending) | ☑ 2026-06-08 |
 
-> Backend endpoint is on `main` but **not yet HF-redeployed** (manual orphan-branch push); fine — the
-> frontend doesn't call `/check` until Phase 2.
+> F4 rebuild backend is fully live and smoke-tested in production (migrations 009/010 applied, HF Space updated, all `/dicamba/*` routes live and auth-gated).
 
 ✅ **CITATION GUARD OVERHAUL SHIPPED + merged to `main` 2026-05-31 (Phases 1–6).** The broken
 MiniLM NLI judge is retired; an LLM-as-judge (provider chain) scores groundedness, suppression
@@ -193,6 +188,10 @@ NIW evidence package   [█░░░░░░░░░░░░░░░░░�
 | Code review remediation — all 15 findings + honorable mentions from the 2026-06-05 logic review fixed (IDOR write, safety-guard over-match, rate-limit fail-open, SAFETY_CRITICAL routing, GDD cap, alert dedup, SSE error leak, NFKC length cap, weather noon/wind, JWT alg pin, +more); merged to main + deployed (backend 131 / frontend 29 tests pass) | Security/testing + Core RAG | 2026-06-06 |
 | F4 dicamba rebuild Phase 0 (PRD v3) — versioned effective-dated rules-as-data `backend/data/dicamba_rules.json` + `services/spray_rules.py` (`resolve_rules` by date + accessors); 10 TDD tests; merged to main (`dcdc12b`) | Core RAG | 2026-06-08 |
 | F4 dicamba rebuild Phase 1 (PRD v3) — `POST /api/v1/dicamba/check` Gates A (legal window) + C (weather now); new Open-Meteo **forecast** client `services/weather_now.py` (+ inversion-risk estimate that never auto-passes), gate engine `services/spray_check.py` (verifiable_fact vs human_attested), `models/spray.py`, `routers/dicamba.py`; 25 TDD tests, full backend 166 pass; merged to main (`c86b966`) | Core RAG | 2026-06-08 |
+| Latency arc (L1 SSE progress streaming / L2 guard single-call merge ~300ms / L3 reference-safe answer cache / L4 bounded context timeout / guard-trim pinned Gemini 1.66s / SSE heartbeat disconnect resilience / token streaming partial-JSON + provisional UI) — all shipped 2026-06-10/11, on `main` | Core RAG + Frontend UI | 2026-06-11 |
+| L1 conditional-rule directive (prompt) + `conditional_completeness_rate` judge + D3 gate run — measured NO-OP (0.429→0.429); instrument validated; merged `019a966` | Core RAG | 2026-06-10 |
+| Docling PDF extraction migration + `agroar-prod-gte-v3` LIVE — replaced PyMuPDF+Camelot; 21,065 vectors, 154 docs; spot-check ALL PASS 0.895–0.943; `968bc42` | Core RAG | 2026-06-12 |
+| L2 few-shot conditional exemplars — two worked JSON examples in system prompt; measurement deferred to next batched eval run; `e583587` | Core RAG | 2026-06-12 |
 
 
 

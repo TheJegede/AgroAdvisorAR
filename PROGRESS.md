@@ -4,7 +4,7 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-11 (**LATENCY L2 GUARD SINGLE-CALL MERGE SHIPPED** — merged claims-decomposition and groundedness-judging into a single LLM call, reducing guard latency from ~2.0s to ~1.7s on Gemini, unit-tested and eval-gated).
+> **Last updated:** 2026-06-12 (**DOCLING v3 INGESTION + L2 FEW-SHOT EXEMPLARS SHIPPED** — Docling PDF extraction live, `agroar-prod-gte-v3` built + switched in prod; L2 few-shot conditional exemplars committed + deployed to HF; measurement deferred to next batched eval run).
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
@@ -429,7 +429,7 @@ Best of everything tested (`answer_eval_full --provider local`):
 
 | Knob | Value | Note |
 |---|---|---|
-| Index | `agroar-prod-gte-v2` | gte-base 768-dim, ~20,546 vectors, includes titles & sections |
+| Index | `agroar-prod-gte-v3` | Docling-extracted, gte-base 768-dim, 21,065 vectors, includes titles & sections |
 | Chunking | **512 CHARACTERS** (`ingestion/chunker.py`, `length_function=len`) | NOT tokens (token-chunking regressed — see rejected table) |
 | Retrieval | dense-only, top-5 | |
 | Reranker | **OFF** | |
@@ -438,7 +438,7 @@ Best of everything tested (`answer_eval_full --provider local`):
 | Groundedness judge | LLM-as-judge (`GROUNDEDNESS_JUDGE=llm`) | NLI offline fallback only |
 
 Run prod-config eval:
-`EMBEDDING_MODEL_PATH=thenlper/gte-base PINECONE_INDEX_NAME=agroar-prod-gte-v2 python evals/{eval_runner,answer_eval}.py`
+`EMBEDDING_MODEL_PATH=thenlper/gte-base PINECONE_INDEX_NAME=agroar-prod-gte-v3 python evals/{eval_runner,answer_eval}.py`
 
 ---
 
@@ -467,6 +467,8 @@ Reusable measurement harness kept in `evals/`: `eval_retrieval_matrix.py` (compa
 
 ## ✅ Recently shipped (earlier this arc)
 
+- **Docling PDF Extraction + `agroar-prod-gte-v3` LIVE (2026-06-12, `968bc42`)**: Replaced PyMuPDF+Camelot with IBM Docling (subprocess-per-10-page, `do_table_structure=False`, CPU-safe). Markdown-aware chunker (MarkdownHeaderTextSplitter). Pre-extracted `corpus_v3.jsonl` (21,065 chunks, 154 docs) embedded via `embed_corpus.py` and upserted to `agroar-prod-gte-v3`. HF Space `PINECONE_INDEX_NAME=agroar-prod-gte-v3` — live in prod. Spot-check ALL PASS (scores 0.895–0.943). `agroar-prod` + `agroar-prod-gte` deleted (free-tier index slots recovered).
+- **L2 Few-Shot Conditional Exemplars (`e583587`, 2026-06-12)**: Added `FEW_SHOT_EXEMPLARS` to `build_system_prompt` — two worked JSON examples (soil-texture rate split, crop-stage threshold) showing the LLM how to preserve multi-branch conditionals. L1 directive (no-op, 0.429→0.429) retained as cheap harmless additive. Measurement deferred; next batched eval run will cover both v3 corpus lift + L2 effect together.
 - **Latency L3 Reference-Safe Answer Cache**: New `backend/services/answer_cache.py` — exact-normalized key (lowercased, punctuation-stripped, whitespace-collapsed) over EN query + language + county_fips + rice-field profile sig; Upstash-backed via existing `cache.cache_get/cache_set` (best-effort, no-ops when Redis unset). `routers/query.py` READs after translate / before classify (first-turn only — `cache_key` stays `None` on a follow-up so no read/write) and serves the hit via `_advisory_sse` (same SSE frame shape as miss path, skips classify+retrieve+generate+guard, ~50ms). WRITEs after the final advisory only when first-turn, non-suppressed, and `is_cacheable_as_reference` (informational, NO products_rates, NO warnings, no time-sensitive term via `_TIME_SENSITIVE_RE` — Python port of PWA `offlineTiering.js`). Eligibility judged on EN text; stored value is user-facing advisory (ES if translated) + `_category` (stripped before the hit frame). A paraphrase MISSES; no rate/spray/timing answer ever cached. TDD: backend tests `test_answer_cache.py` (5) + `test_query_cache.py` (4) green; regression `-k "query or cache or rag"` 40 passed. Build PLAN 4 of 4 (L4→L2→L1→L3). 2026-06-10
 - **Latency L4 Bounded Context Fetch**: Implemented tight timeouts for NOAA and SSURGO context fetching clients and wrapped concurrent fetches with `asyncio.wait_for`. Prevents slow/hanging upstream requests from stalling the RAG critical path, safely falling back to the "unavailable" state on breach. Unit tests (3 passed) written in `backend/tests/test_context_budget.py`. 2026-06-10
 - **Shimmering Skeleton Screens**: Replaced standard loading spinners with highly responsive, custom-animated shimmering skeleton screens across all fetching/loading states. Includes custom CSS `@keyframes` in `index.css` supporting high-contrast accessibility mode. Handled loading layouts for past sessions, chat history, profile form, admin dashboard widgets, drift reports table, evaluation queue, and route guards. All 42 frontend tests pass, 0 lint errors. 2026-06-08
@@ -516,7 +518,7 @@ We traced the two informational soil queries through the retrieval index across 
 - **Stale test:** `test_citation_guard_v2.py::test_verifiable_text_includes_all_advisory_fields` asserts
   warnings in verifiable text; code excludes them by design. Pre-existing, unrelated.
 - **Groq key rotation** — leaked in a transcript; owner handling.
-- Delete unused Pinecone indexes when sure: `agroar-prod-multilingual`, legacy `agroar-prod` (MiniLM).
+- ~~Delete unused Pinecone indexes~~ — `agroar-prod` (MiniLM) + `agroar-prod-gte` deleted 2026-06-12. Remaining: `agroar-prod-retrieval-v3`, `agroar-prod-retrieval-v3-gte`, `agroar-prod-gte-v2` (old prod, keep for rollback), `agroar-prod-gte-v3` (current prod).
 
 ---
 

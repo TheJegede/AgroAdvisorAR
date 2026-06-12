@@ -62,15 +62,16 @@ The ingestion pipeline handles extraction, table parsing, recursive chunking, em
 ### Core Architecture Components
 
 1.  **Text & Table Extraction (`extractor.py`):**
-    *   **Text:** PyMuPDF (`fitz`) extracts page text and normalizes hyphenation/whitespace.
-    *   **Tables:** `camelot` (lattice flavor) extracts tables and formats them as pipe-delimited text (`Col 1 | Col 2 | Col 3`) to ensure the LLM can interpret row/column alignment.
-2.  **Recursive Chunking (`chunker.py`):**
-    *   Splits documents into `512`-character chunks with `50` characters overlap.
+    *   **IBM Docling** (subprocess-per-10-page, `do_table_structure=False`, `device="cpu"`). Produces layout-aware Markdown with reading order preserved. Tables extracted as flowing text (no TableFormer — OOM on CPU).
+    *   PyMuPDF + Camelot removed 2026-06-12.
+2.  **Markdown-Aware Chunking (`chunker.py`):**
+    *   `MarkdownHeaderTextSplitter` (H1/H2/H3) isolates structural sections first.
+    *   `RecursiveCharacterTextSplitter` (512 chars, 50 overlap) further splits large sections.
     *   Attaches deterministic SHA-256 hashes (`chunk_id`) to prevent duplicate indexing.
     *   Attaches critical metadata fields: `document_title`, `section_heading`, and `crop_type`.
 3.  **Embedding and Indexing (`pipeline.py` & `embedder.py`):**
     *   Loads `thenlper/gte-base` to encode chunks into 768-dimensional vectors.
-    *   Upserts vectors to the namespace specified by the filename prefix in `agroar-prod-gte-v2`.
+    *   Upserts vectors to the namespace specified by the filename prefix in `agroar-prod-gte-v3` (current prod; was v2 before 2026-06-12 Docling migration).
 
 ### Incremental Execution (Recommended)
 To ingest only new or modified PDFs:
