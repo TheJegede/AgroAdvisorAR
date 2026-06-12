@@ -1,21 +1,24 @@
 """Orchestrate: PDF → extract → chunk → embed → Pinecone upsert."""
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 import json
 import hashlib
 import glob
 import time
 from pathlib import Path
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
 
 load_dotenv(Path(__file__).parent.parent / ".env")
+
+from sentence_transformers import SentenceTransformer
 
 from extractor import extract_text, extract_tables_as_text
 from chunker import chunk_document
 from embedder import embed_and_upsert, MODEL_NAME
 
 PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
-PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod-gte-v2")
+PINECONE_INDEX_NAME = os.environ.get("PINECONE_INDEX_NAME", "agroar-prod-gte-v3")
 
 RAW_PDFS_DIR = Path(__file__).parent / "raw_pdfs"
 LOGS_DIR = Path(__file__).parent / "logs"
@@ -23,8 +26,6 @@ MANIFEST_PATH = Path(__file__).parent / "corpus_manifest.json"
 
 LOGS_DIR.mkdir(exist_ok=True)
 
-# Filename convention: {crop_type}_{description}.pdf
-# crop_type must be one of: rice, soybeans, poultry, general
 CROP_TYPE_PREFIXES = {"rice", "soybeans", "poultry", "general"}
 
 

@@ -49,7 +49,14 @@ def embed_and_upsert(
 
     for i in range(0, len(documents), BATCH_SIZE):
         batch = documents[i: i + BATCH_SIZE]
-        texts = [doc.page_content for doc in batch]
+        
+        texts = []
+        for doc in batch:
+            title = doc.metadata.get("document_title", "")
+            section = doc.metadata.get("section_heading", "")
+            prefix = f"{title} - {section}\n" if (title or section) else ""
+            texts.append(prefix + doc.page_content)
+            
         embeddings = model.encode(texts, normalize_embeddings=True).tolist()
 
         vectors = []
