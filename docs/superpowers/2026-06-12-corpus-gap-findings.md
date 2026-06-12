@@ -87,3 +87,25 @@ Soybean-bucket failures whose query topic does not match a soybean weed/brush la
 - `"I got a bunch of new pine seedlings..."` — **pine seedlings / forestry**, out of rice/soy/poultry scope.
 - `"How much chemical should I put in my sprayer to cover 40 acres..."` — generic **spray-math**, no crop.
 - `"I got a field with them pesky horseweeds and wild garlic..."` / `"...broadleaf weeds and brush..."` — generic weed/brush, plausibly KEEP as soybean weed control.
+
+## Eval-set label audit (Task 4)
+Decided from query text + gold `document_title` only; original `eval_set_v2.jsonl`
+NEVER mutated → cleaned copy `evals/eval_set_v2_clean.jsonl`.
+
+| Query (substring) | namespace | gold doc | decision | reason |
+|---|---|---|---|---|
+| "Clearfield rice" / Beyond Xtra | soybeans | soybeans recommended chemicals... | **RELABEL rice** | Clearfield + Beyond Xtra is a RICE herbicide-tolerance question, mis-tagged soybeans |
+| "pine seedlings" | soybeans | soybeans recommended chemicals... | **DROP** | forestry — out of rice/soy/poultry advisory scope |
+| "cover 40 acres" (sprayer math) | soybeans | soybeans recommended chemicals... | **DROP** | generic application-rate/calibration math, no crop anchor; gold doc is not the answer source |
+| "horseweeds and wild garlic" | soybeans | soybeans recommended chemicals... | KEEP | real soybean burndown targets (marestail + wild garlic) |
+| "broadleaf weeds and brush" | soybeans | soybeans recommended chemicals... | KEEP | soybean weed/brush control |
+| "low yields on my soybeans, what fertilizer" | soybeans | soybeans ch 5 fertilization | KEEP | correct |
+| "fixin' to plant soybeans, seeds per acre" | soybeans | soybeans ch 7 planting | KEEP | correct |
+
+Borderline (KEEP, noted not acted): rice "...nitrogen... to get a good corn" mentions
+*corn* but is tagged rice — likely transcription noise; rice N is in-scope, left as-is
+to stay conservative/reproducible.
+
+Net change vs original: 1 RELABEL (soybeans→rice), 2 DROP. Of the 5 soybean failing
+items, 3 are mislabel/out-of-scope, leaving 2 genuine soybean weed-control items — so
+the soybean "14%" is measured on a bucket that is ~60% contaminated at the sampled n.
