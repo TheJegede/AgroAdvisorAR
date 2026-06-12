@@ -1,5 +1,6 @@
 """Dynamic system prompt assembly per PRD Section 10.1."""
 import json
+import os
 from langchain_core.documents import Document
 
 ROLE_BLOCK = """You are AgroAdvisor AR, an expert agricultural advisory system specialized in
@@ -45,6 +46,65 @@ When the context states a conditional rule you MUST:
   different thresholds per growth stage), list every branch with its condition.
 - Never give a bare rate, threshold, or restriction without the condition that
   governs it when the context attaches one."""
+
+
+L3_VERBATIM_RATE_BLOCK = """VERBATIM RATES AND PRODUCTS — COPY, DO NOT PARAPHRASE:
+When the cited context states a numeric rate, product name, threshold, or interval,
+reproduce that exact string character-for-character in products_rates and key_points.
+- Never round, convert units, or paraphrase a rate (write "1.6 pt/A", not "about 1.5 pt").
+- Use the product name exactly as written in the chunk (brand + formulation).
+- If two chunks give different numbers, report the one from the cited document and say so.
+- If the context does not state a number, say it is not specified — never invent one."""
+
+# Worked example showing the verbatim copy in action (L2-style — exemplars moved
+# the needle where the bare L1 directive did not). The rate "3.2 pt/A" appears in
+# BOTH the retrieved-context line and the output products_rates value, modeling the
+# character-for-character copy the directive above demands.
+L3_VERBATIM_EXEMPLAR = """VERBATIM-RATE EXAMPLE:
+Retrieved Context:
+[Arkansas Soybean Weed Guide 2026 - Burndown Section] For glyphosate-resistant horseweed, apply Sharpen at 3.2 pt/A in the burndown, plus a methylated seed oil adjuvant. Do not exceed 6.4 pt/A per season.
+Output JSON (note the rate is copied EXACTLY as written — "3.2 pt/A", not "about 3 pt"):
+{
+  "response_type": "diagnostic",
+  "problem_summary": "Glyphosate-resistant horseweed burndown uses Sharpen at the labeled rate.",
+  "detailed_explanation": "For resistant horseweed, the cited guide specifies Sharpen at a precise burndown rate with an MSO adjuvant and a per-season cap.",
+  "key_points": [
+    "Apply Sharpen at 3.2 pt/A for glyphosate-resistant horseweed burndown.",
+    "Include a methylated seed oil (MSO) adjuvant.",
+    "Do not exceed 6.4 pt/A per season."
+  ],
+  "likely_causes": [],
+  "recommended_actions": [
+    "Apply Sharpen at 3.2 pt/A with an MSO adjuvant during burndown.",
+    "Track seasonal use so total does not exceed 6.4 pt/A."
+  ],
+  "products_rates": [
+    {
+      "product": "Sharpen",
+      "rate": "3.2 pt/A",
+      "application_method": "Burndown, ground application with MSO adjuvant",
+      "pre_harvest_interval": null
+    }
+  ],
+  "warnings": [
+    "Do not exceed 6.4 pt/A per season."
+  ],
+  "citations": [
+    {
+      "document_title": "Arkansas Soybean Weed Guide 2026",
+      "section": "Burndown Section",
+      "url": null
+    }
+  ],
+  "confidence": "High",
+  "confidence_explanation": "The rate and seasonal cap are stated explicitly in the cited document.",
+  "language": "en",
+  "context_meta": {
+    "soil_data_available": false,
+    "weather_data_available": false,
+    "county_fips": "05031"
+  }
+}"""
 
 
 OUT_OF_SCOPE_MESSAGES = {
@@ -234,6 +294,14 @@ def build_system_prompt(
 
     parts.append("")
     parts.append(FEW_SHOT_EXEMPLARS)
+
+    # L3 verbatim-rate lever — flag-gated (default OFF) so the paired A/B eval is a
+    # clean env toggle and prod is unchanged until a win is measured. Stacks on L2.
+    if os.environ.get("L3_VERBATIM_RATE") == "1":
+        parts.append("")
+        parts.append(L3_VERBATIM_RATE_BLOCK)
+        parts.append("")
+        parts.append(L3_VERBATIM_EXEMPLAR)
 
     return "\n".join(parts)
 
