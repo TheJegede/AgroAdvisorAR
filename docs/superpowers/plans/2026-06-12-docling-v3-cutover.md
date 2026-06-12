@@ -52,6 +52,7 @@ Test cases to cover:
 - [x] `corpus_v3.jsonl` generated (21,065 chunks, 154 docs)
 - [x] `embed_corpus.py` built and run — v3 index live
 - [x] HF Space env var updated
-- [ ] Option A: diagnostic eval
-- [ ] Option B: manual smoke test
-- [ ] Commit ingestion changes to main
+- [x] Option B: retrieval spot-check — ALL PASS (scores 0.895–0.943, 2026-06-12)
+- [x] Commit ingestion changes to main (968bc42)
+- [x] HF Space env var updated → LIVE in prod
+- [ ] Option A: full diagnostic eval (deferred — cost; run if answer quality regressions observed)
