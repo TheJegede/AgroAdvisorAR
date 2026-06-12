@@ -4,10 +4,28 @@
 > writing any plan so we don't re-propose dead ends. Update it after every session
 > with code changes (alongside CLAUDE.md + status-bar + memory).
 >
-> **Last updated:** 2026-06-12 (**CORPUS-GAP SPLIT RESULT** — zero-cost retrieval/generation diagnostic: gap is GENERATION-SPECIFICITY not corpus coverage; next lever = L3 "quote exact rate/product"; soybean bucket also ~60% label-contaminated → `eval_set_v2_clean.jsonl`. See top section. Earlier: **DOCS-DRIFT FIX** — CLAUDE.md de-staled: stripped to stable-only + un-gitignored + Stop-hook nudge; shipped spot_check.py `b953892`. See top section. Earlier: **L2 EXEMPLARS MEASURED = WIN** — batched DeepInfra eval: v3+L2 corr 20%→30% (paired, L2 helped 7/hurt 1), faith 40%→52.5%, suppression 15%→0%; F5 contamination probe CLEAN (0 bleed/40 answers). Earlier same day: Docling v3 ingestion + L2 shipped; 8/10 code-review findings fixed.
+> **Last updated:** 2026-06-12 (**L3 VERBATIM-RATE LEVER = MEASURED WIN + SHIPPED** — directive+exemplar, default ON; paired DeepInfra corr 30%→35%, faith 47.5%→52.5%, soybeans 14%→29%, GEN_SPECIFICITY 6→4, helped 3/hurt 1; Stage 2 schema not needed; backend changed → push triggers HF deploy. See top section. Earlier: **CORPUS-GAP SPLIT RESULT** — zero-cost retrieval/generation diagnostic: gap is GENERATION-SPECIFICITY not corpus coverage; next lever = L3 "quote exact rate/product"; soybean bucket also ~60% label-contaminated → `eval_set_v2_clean.jsonl`. See top section. Earlier: **DOCS-DRIFT FIX** — CLAUDE.md de-staled: stripped to stable-only + un-gitignored + Stop-hook nudge; shipped spot_check.py `b953892`. See top section. Earlier: **L2 EXEMPLARS MEASURED = WIN** — batched DeepInfra eval: v3+L2 corr 20%→30% (paired, L2 helped 7/hurt 1), faith 40%→52.5%, suppression 15%→0%; F5 contamination probe CLEAN (0 bleed/40 answers). Earlier same day: Docling v3 ingestion + L2 shipped; 8/10 code-review findings fixed.
 > Remaining: station satellite re-placement, external APIs, no-code legal+pilot.)
 > Companion docs: `CLAUDE.md` (Priorities), `docs/status-bar.md` (% rollup),
 > `~/.claude/.../memory/project_eval_contamination.md` (why the retrieval metric lies).
+
+---
+
+## ▶ L3 VERBATIM-RATE LEVER — MEASURED WIN + SHIPPED 2026-06-12
+> Built + measured the L3 "quote the exact rate/product from the cited chunk" generation lever (plan `docs/superpowers/plans/2026-06-12-l3-quote-exact-rate-generation-lever.md`), targeting the GEN_SPECIFICITY failures the corpus-gap split found dominant. **Stage 1 (directive + worked verbatim exemplar) WON — Stage 2 (schema `source_quote`) NOT needed.**
+
+- **What shipped:** `L3_VERBATIM_RATE_BLOCK` directive + `L3_VERBATIM_EXEMPLAR` (worked example copying "3.2 pt/A" verbatim) in `backend/utils/prompt.py`, appended in `build_system_prompt` (both intents). **Default ON** (`L3_VERBATIM_RATE` unset/≠"0"); `L3_VERBATIM_RATE=0` = kill-switch. Stacks on L2 (does not replace it). 8 unit tests + 291 backend green.
+- **Measured (paired DeepInfra n=20 seed=7, v3, L2 on in both arms):**
+  | metric | L3 off (B) | L3 on (A) |
+  |---|---|---|
+  | correctness | 30.0% | **35.0%** |
+  | faithfulness | 47.5% | **52.5%** |
+  | soybeans corr | 14% | **29%** |
+  | suppression | 0% | 0% |
+  Paired: **helped 3 / hurt 1 / same 16.** Split: GEN_SPECIFICITY 6→4, OK 10→12 (soybean OK 2→4).
+- **Decision:** all three gate conditions met (corr↑, GEN_SPECIFICITY↓, helped>hurt) → flipped default ON, skipped Stage 2. **Lever series so far: L1 directive = NO-OP, L2 exemplars = WIN, L3 directive+exemplar = WIN.** Pattern holds: exemplars move the needle, bare directives don't.
+- **Caveats:** n=20, DeepInfra self-judge (paired Δ valid, absolute optimistic); 2 of 3 helps are on the known mislabeled soybean items (Clearfield-rice, sprayer-40ac) — but faith +5pp, a rice help, and the GEN_SPECIFICITY 6→4 shrink are genuine. Dumps `evals/_out_v3_L3{off,on}.jsonl` (gitignored).
+- **NEXT:** remaining failures = RETRIEVAL_MISS 3 (rice/poultry) + GEN_SPECIFICITY 4 + 1 hallucination. GEN_SPECIFICITY no longer dominates alone. Re-measure on cleaned eval set (`eval_set_v2_clean.jsonl`) to get the un-contaminated soybean headline. **Backend changed → push to main triggers HF deploy (deploy Action watches `backend/**`); not pushed yet.**
 
 ---
 
