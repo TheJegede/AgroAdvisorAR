@@ -123,3 +123,35 @@ def test_aggregate_ignores_none_scores_in_means():
     assert p["faithfulness"] == 0.5      # (1.0 + 0.0)/2
     assert p["answer_relevancy"] == 0.5  # only the one non-None value
     assert p["llm_context_precision_without_reference"] is None  # all None
+
+
+from ragas_eval import format_report
+
+
+def test_format_report_renders_crops_and_provisional_marker():
+    report = {
+        "overall": {"count": 3, "faithfulness": 0.5, "answer_relevancy": 0.7,
+                    "llm_context_precision_without_reference": 0.66,
+                    "non_llm_context_recall": 0.6},
+        "by_crop": {
+            "rice": {"count": 2, "faithfulness": 0.5, "answer_relevancy": 0.7,
+                     "llm_context_precision_without_reference": 0.5,
+                     "non_llm_context_recall": 0.5,
+                     "non_llm_context_recall_provisional": True},
+        },
+        "by_suppressed": {
+            False: {"count": 2, "faithfulness": 1.0, "answer_relevancy": 0.9,
+                    "llm_context_precision_without_reference": 0.8,
+                    "non_llm_context_recall": 0.7},
+        },
+    }
+    text = format_report(report,
+                         ["faithfulness", "answer_relevancy",
+                          "llm_context_precision_without_reference",
+                          "non_llm_context_recall"])
+    assert "OVERALL" in text
+    assert "rice" in text
+    # provisional rice recall cell is marked
+    assert "provisional" in text.lower()
+    # suppressed segmentation present
+    assert "suppressed" in text.lower()

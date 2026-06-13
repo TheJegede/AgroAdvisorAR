@@ -102,3 +102,33 @@ def aggregate_scores(rows: list[dict], metric_keys: list[str]) -> dict:
         "by_suppressed": {s: _summarize_group(g, metric_keys)
                           for s, g in by_supp.items()},
     }
+
+
+def _fmt(x):
+    return " n/a" if x is None else f"{x:.2f}"
+
+
+def format_report(report: dict, metric_keys: list[str]) -> str:
+    lines = []
+    header = f"{'group':>20} {'n':>3} " + " ".join(f"{k[:14]:>14}" for k in metric_keys)
+
+    def row(label, d):
+        cells = []
+        for k in metric_keys:
+            val = _fmt(d.get(k))
+            if d.get(f"{k}_provisional"):
+                val += "*"
+            cells.append(f"{val:>14}")
+        lines.append(f"{label:>20} {d.get('count', 0):>3} " + " ".join(cells))
+
+    lines.append("=== RAGAS DIAGNOSTIC MATRIX ===")
+    lines.append(header)
+    row("OVERALL", report["overall"])
+    lines.append("--- by crop ---")
+    for crop, d in report["by_crop"].items():
+        row(str(crop), d)
+    lines.append("--- by suppressed ---")
+    for flag, d in report["by_suppressed"].items():
+        row(f"suppressed={flag}", d)
+    lines.append("* = provisional (contaminated rice gold; fixed in Phase 2)")
+    return "\n".join(lines)
