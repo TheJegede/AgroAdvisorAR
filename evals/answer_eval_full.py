@@ -46,6 +46,16 @@ def _is_suppressed(adv: dict) -> bool:
     escalation warning)."""
     return not (adv.get("problem_summary") or "").strip() and not adv.get("recommended_actions")
 
+
+def _capture_fields(adv: dict, chunks: list[dict]) -> dict:
+    """RAGAS-capture fields for the --dump record: the advisory as flat prose
+    (the 'answer' RAGAS scores) and the FULL retrieved chunk snippets (the
+    'contexts'), untruncated. Pure — no LLM, safe to unit-test."""
+    return {
+        "answer": _summarize_advisory(adv),
+        "contexts": [(c.get("snippet") or "") for c in chunks],
+    }
+
 EVAL_SET = Path(__file__).parent / "eval_set_v2.jsonl"
 EVAL_COUNTY_FIPS = "05031"  # Craighead County, AR
 _NS_TO_CAT = {"rice": "IN_SCOPE_RICE", "soybeans": "IN_SCOPE_SOYBEANS",
@@ -209,6 +219,7 @@ async def evaluate(item):
         "citations": adv.get("citations"),
         "products_rates": adv.get("products_rates"),
         "chunk_snippets": [(c.get("snippet") or "")[:500] for c in chunks],
+        **_capture_fields(adv, chunks),
     }
 
 
