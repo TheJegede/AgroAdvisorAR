@@ -108,3 +108,35 @@ def apply_curation(rows: list[dict], corpus_index: dict, decisions: list[dict]) 
             continue
         raise ValueError(f"unknown action {d['action']!r} for query {r['query']!r}")
     return out
+
+
+def write_audit(rows: list[dict], corpus_index: dict, decisions: list[dict]) -> str:
+    """Render a markdown audit table: one row per decision.
+
+    Columns: query | action | old_gold_title | new_gold_title | new_chunk_id | reason.
+    """
+    by_query = {r["query"]: r for r in rows}
+    lines = [
+        "# Rice Gold Curation — Audit",
+        "",
+        "Review each row. For a wrong re-point, edit the corresponding entry in",
+        "`evals/rice_curation_decisions.json` (change `new_chunk_id` or set",
+        "`action` to `drop`), then re-run Task 7.",
+        "",
+        "| query | action | old gold title | new gold title | new chunk_id | reason |",
+        "|---|---|---|---|---|---|",
+    ]
+    for d in decisions:
+        old_row = by_query.get(d["query"], {})
+        old_title = old_row.get("document_title", "?")
+        if d["action"] == "repoint":
+            chunk = corpus_index.get(d["new_chunk_id"], {})
+            new_title = chunk.get("document_title", "?")
+        else:
+            new_title = "—"
+        q = d["query"].replace("|", "\\|")
+        lines.append(
+            f"| {q[:70]} | {d['action']} | {old_title[:50]} | {new_title[:50]} "
+            f"| {d.get('new_chunk_id') or '—'} | {d.get('reason','')[:60]} |"
+        )
+    return "\n".join(lines) + "\n"

@@ -104,3 +104,32 @@ def test_apply_curation_raises_on_unknown_repoint_chunk():
         assert False, "expected KeyError for unknown chunk_id"
     except KeyError:
         pass
+
+
+from rice_gold_curation import write_audit
+
+
+def test_write_audit_renders_one_row_per_change():
+    rows = [
+        {"query": "how much potassium for rice", "namespace": "rice", "chunk_id": "old2",
+         "document_title": "rice 2023 br wells arkansas rice research studies"},
+        {"query": "corn nitrogen question", "namespace": "rice", "chunk_id": "old1",
+         "document_title": "rice 2019 br wells arkansas rice research studies"},
+    ]
+    corpus_index = {
+        "new_pot": {"chunk_id": "new_pot", "document_title": "rice ch 9 soil fertility",
+                    "source_text": "potassium guidance"},
+    }
+    decisions = [
+        {"query": "how much potassium for rice", "action": "repoint",
+         "new_chunk_id": "new_pot", "reason": "dedicated potassium doc"},
+        {"query": "corn nitrogen question", "action": "drop",
+         "new_chunk_id": None, "reason": "corn, not rice"},
+    ]
+    md = write_audit(rows, corpus_index, decisions)
+    assert "how much potassium for rice" in md
+    assert "rice 2023 br wells" in md                 # old title shown
+    assert "rice ch 9 soil fertility" in md           # new title shown
+    assert "new_pot" in md                            # new chunk_id shown
+    assert "drop" in md.lower()                       # drop action shown
+    assert "dedicated potassium doc" in md            # reason shown
