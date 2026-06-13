@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+sys.path.insert(0, str(Path(__file__).parent / "ground_truth"))  # answer_keys / answerkey_judge
 
 import services.rag as rag                        # noqa: E402
 import config                                      # noqa: E402
@@ -188,6 +189,28 @@ GRADE_MODE = "gold"  # set by --grade-mode: gold (single gold chunk) | answerkey
 _ANSWER_KEYS = {}    # {query -> record}, loaded only under --grade-mode answerkey
 
 
+def compute_correctness(grade_mode, query, adv_summary, answer_keys, gold_fn,
+                        judge=None):
+    """Pure grading-decision: return (correctness, corr_gold, corr_answerkey, rationale).
+
+    gold_fn() -> (score, rationale) is the (LLM) single-gold judge, invoked ONLY
+    when needed (never in answerkey mode with a validated key). `judge` overrides
+    the answerkey LLM judge for testing. correctness (primary) prefers the answer
+    key when one scored, else gold.
+    """
+    ak = None
+    if grade_mode in ("answerkey", "both") and answer_keys:
+        from answerkey_judge import grade_with_answer_key
+        kw = {"judge": judge} if judge is not None else {}
+        ak = grade_with_answer_key(query, adv_summary, answer_keys, **kw)
+    gold, gr = None, ""
+    if grade_mode in ("gold", "both") or ak is None:
+        gold, gr = gold_fn()
+    if ak is not None and grade_mode in ("answerkey", "both"):
+        return ak, gold, ak, "answerkey: graded vs validated reference"
+    return gold, gold, ak, gr
+
+
 async def evaluate(item):
     cat = _NS_TO_CAT.get(item["namespace"], "IN_SCOPE_GENERAL_AG")
     lang = item.get("lang", "en")
@@ -203,17 +226,15 @@ async def evaluate(item):
     )
     adv = advisory.model_dump() if hasattr(advisory, "model_dump") else advisory
     suppressed = _is_suppressed(adv)
-    # Multi-reference correctness: when --grade-mode answerkey and a VALIDATED key
-    # exists for this query, grade the advisory against the reference answer (any
-    # correct answer scores, regardless of which gold chunk it matched). Falls back
-    # to the single-gold judge when no validated key exists, so coverage never drops.
-    corr, c_r = None, ""
-    if GRADE_MODE == "answerkey" and _ANSWER_KEYS:
-        from answerkey_judge import grade_with_answer_key
-        corr = grade_with_answer_key(query, _summarize_advisory(adv), _ANSWER_KEYS)
-        c_r = "answerkey: graded vs validated reference" if corr is not None else ""
-    if corr is None:
-        corr, c_r = JUDGE_CORR(query, adv, item["chunk_text"])
+    # Correctness grading (gold | answerkey | both). answerkey/both grade the
+    # advisory against a VALIDATED reference answer (any correct answer scores,
+    # regardless of which gold chunk it matched) — the multi-reference fix for the
+    # single-gold artifact. `both` records gold AND answerkey side by side so the
+    # artifact magnitude is a paired delta on identical items.
+    corr, corr_gold, corr_ak, c_r = compute_correctness(
+        GRADE_MODE, query, _summarize_advisory(adv), _ANSWER_KEYS,
+        gold_fn=lambda: JUDGE_CORR(query, adv, item["chunk_text"]),
+    )
     faith, f_r = JUDGE_FAITH(adv, chunks)
     return {
         "namespace": item["namespace"],
@@ -221,6 +242,8 @@ async def evaluate(item):
         "query": query,
         "suppressed": suppressed,
         "correctness": corr,
+        "correctness_gold": corr_gold,
+        "correctness_answerkey": corr_ak,
         "faithfulness": faith,
         # None when the guard is disabled (--no-guard) or the model omits it.
         "confidence_score": adv.get("confidence_score"),
@@ -316,19 +339,20 @@ async def main():
                     help="B2 format-tax probe: unconstrained generation, then "
                          "parse (one Groq 8b repair call on failure). Requires "
                          "--provider deepinfra.")
-    ap.add_argument("--grade-mode", choices=["gold", "answerkey"], default="gold",
+    ap.add_argument("--grade-mode", choices=["gold", "answerkey", "both"], default="gold",
                     help="gold=single gold-chunk judge (default); "
-                         "answerkey=multi-reference judge vs validated answer keys")
+                         "answerkey=multi-reference judge vs validated answer keys; "
+                         "both=record gold AND answerkey per item (paired artifact delta)")
     args = ap.parse_args()
 
     global JUDGE_CORR, JUDGE_FAITH, BRIDGE, GRADE_MODE, _ANSWER_KEYS
     BRIDGE = args.bridge
     GRADE_MODE = args.grade_mode
-    if args.grade_mode == "answerkey":
+    if args.grade_mode in ("answerkey", "both"):
         sys.path.insert(0, str(Path(__file__).parent / "ground_truth"))
         from answer_keys import load_answer_keys
         _ANSWER_KEYS = {q: r for q, r in load_answer_keys().items() if r.get("validated")}
-        print(f"grade-mode=answerkey: {len(_ANSWER_KEYS)} validated answer keys loaded")
+        print(f"grade-mode={args.grade_mode}: {len(_ANSWER_KEYS)} validated answer keys loaded")
     if args.provider == "groq":
         _force_groq_generation()
     elif args.provider == "deepinfra":
@@ -439,6 +463,25 @@ async def main():
         print(f"suppression rate: {100*n_supp/n:.0f}%  ({n_supp}/{n})")
         print(f"correctness  mean: {100*sum(corr_s)/n:.1f}%")
         print(f"faithfulness mean: {100*sum(faith_s)/n:.1f}%")
+        if GRADE_MODE == "both":
+            keyed = [r for r in results if r.get("correctness_answerkey") is not None]
+            print("\n=== PAIRED (gold vs answerkey, items WITH a validated key) ===")
+            print(f"keyed items: {len(keyed)}/{n}")
+            if keyed:
+                g = _mean([r["correctness_gold"] for r in keyed])
+                a = _mean([r["correctness_answerkey"] for r in keyed])
+                print(f"  gold      corr: {_fmt_pct(g)}")
+                print(f"  answerkey corr: {_fmt_pct(a)}")
+                if g is not None and a is not None:
+                    print(f"  delta (artifact magnitude): {100*(a-g):+.1f} pts")
+                from collections import defaultdict
+                byns = defaultdict(list)
+                for r in keyed:
+                    byns[r["namespace"]].append(r)
+                for ns in sorted(byns):
+                    grp = byns[ns]
+                    print(f"  [{ns:>8}] n={len(grp):>2} gold={_fmt_pct(_mean([r['correctness_gold'] for r in grp]))}"
+                          f" answerkey={_fmt_pct(_mean([r['correctness_answerkey'] for r in grp]))}")
         print_per_namespace(results)
 
 
