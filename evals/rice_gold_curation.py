@@ -140,3 +140,67 @@ def write_audit(rows: list[dict], corpus_index: dict, decisions: list[dict]) -> 
             f"| {d.get('new_chunk_id') or '—'} | {d.get('reason','')[:60]} |"
         )
     return "\n".join(lines) + "\n"
+
+
+DECISIONS_PATH = Path(__file__).parent / "rice_curation_decisions.json"
+AUDIT_PATH = REPO_ROOT / "docs" / "superpowers" / "2026-06-12-rice-gold-curation-audit.md"
+
+# Wrong-crop items to DROP outright (substring-matched against the query so we
+# don't depend on exact wording). From the rice diagnosis EVAL_MISLABEL bucket:
+# a corn-nitrogen question and a soybean-variety question sitting in rice.
+_DROP_SUBSTRINGS = [
+    "planting soybeans later than usual",   # soybean-variety question (#10)
+]
+# NOTE: the corn-nitrogen mislabel (#9) is ambiguous by title alone; it is left
+# for the Task 6 human pass to confirm/drop. Do not guess it here.
+
+
+def _load_jsonl(path):
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def build_draft_decisions(rows: list[dict], corpus: list[dict]) -> list[dict]:
+    """Deterministic draft: drop known wrong-crop items, repoint each flagged
+    yearly-volume row to its top keyword candidate. Human-reviewed in Task 6."""
+    decisions = []
+    flagged = flag_yearly_volume_gold(rows)
+    flagged_queries = {r["query"] for r in flagged}
+    for r in rows:
+        if r["query"] not in flagged_queries:
+            continue
+        if any(s in r["query"].lower() for s in _DROP_SUBSTRINGS):
+            decisions.append({"query": r["query"], "action": "drop",
+                              "new_chunk_id": None, "reason": "wrong-crop (soybean) in rice namespace"})
+            continue
+        cands = candidate_chunks(r["query"], corpus, k=5)
+        if not cands:
+            decisions.append({"query": r["query"], "action": "drop",
+                              "new_chunk_id": None, "reason": "no topical rice candidate found"})
+            continue
+        top = cands[0]
+        decisions.append({"query": r["query"], "action": "repoint",
+                          "new_chunk_id": top["chunk_id"],
+                          "reason": f"keyword top-1: {top['document_title'][:40]} (score {top['score']})"})
+    return decisions
+
+
+def main():
+    rows = _load_jsonl(CLEAN_SET)
+    corpus = load_corpus_v3()
+    corpus_index = {c["chunk_id"]: c for c in corpus}
+    decisions = build_draft_decisions(rows, corpus)
+    with open(DECISIONS_PATH, "w", encoding="utf-8") as f:
+        json.dump(decisions, f, indent=2)
+    audit = write_audit(rows, corpus_index, decisions)
+    with open(AUDIT_PATH, "w", encoding="utf-8") as f:
+        f.write(audit)
+    n_drop = sum(1 for d in decisions if d["action"] == "drop")
+    n_repoint = sum(1 for d in decisions if d["action"] == "repoint")
+    print(f"draft decisions: {len(decisions)} ({n_repoint} repoint, {n_drop} drop)")
+    print(f"  -> {DECISIONS_PATH}")
+    print(f"  -> {AUDIT_PATH}")
+
+
+if __name__ == "__main__":
+    main()
