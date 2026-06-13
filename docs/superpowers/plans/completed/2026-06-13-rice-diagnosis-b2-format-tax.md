@@ -33,7 +33,7 @@
 Rice has the biggest item mass (n=19) and didn't move under L2/L3/B1 while poultry (+13pp) and soybeans (+6pp) did. Classify every failing rice item before spending on B2.
 
 **Files:**
-- Create: `docs/superpowers/2026-06-13-rice-diagnosis-findings.md`
+- Create: `docs/superpowers/findings/2026-06-13-rice-diagnosis-findings.md`
 - Read-only inputs: `evals/_out_clean_indepjudge_b1on.jsonl`, `evals/_out_clean_indepjudge.jsonl`, `evals/_retrieval_split_clean.jsonl`
 
 - [ ] **Step 1: Dump every failing rice item with its split label and judge rationales**
@@ -74,7 +74,7 @@ Read each item's query + rationales + gold_doc + top_titles. Buckets:
 
 - [ ] **Step 3: Write the findings doc**
 
-Create `docs/superpowers/2026-06-13-rice-diagnosis-findings.md` with: the bucket count table, one line per item (bucket + 10-word reason), and a **decision paragraph** answering:
+Create `docs/superpowers/findings/2026-06-13-rice-diagnosis-findings.md` with: the bucket count table, one line per item (bucket + 10-word reason), and a **decision paragraph** answering:
 
 - If `GEN_FAILURE` ≥ ~50% of rice failures → proceed to Task 2/3 unchanged (B2 attacks generation).
 - If `GOLD_ARTIFACT` + `EVAL_MISLABEL` ≥ ~50% → rice 18% is substantially an EVAL problem, not a pipeline problem. Still run B2 (it reads on all crops), but ALSO add a follow-up recommendation: curate `eval_set_v2_clean.jsonl` rice items (relabel/drop, same procedure as the soybean audit that produced the clean set) before trusting any rice headline.
@@ -83,7 +83,7 @@ Create `docs/superpowers/2026-06-13-rice-diagnosis-findings.md` with: the bucket
 - [ ] **Step 4: Commit**
 
 ```bash
-git add docs/superpowers/2026-06-13-rice-diagnosis-findings.md
+git add docs/superpowers/findings/2026-06-13-rice-diagnosis-findings.md
 git commit -m "docs(evals): rice failure diagnosis - bucket classification of 18%-corr rice items"
 ```
 
@@ -392,10 +392,10 @@ Also check `grep -c SKIPPED evals/_phaseB2_run.log` — a high skip count means 
 
 - [ ] **Step 5: Commit the run log reference + result into the findings doc**
 
-Append a "B2 result" section to `docs/superpowers/2026-06-13-rice-diagnosis-findings.md` with the table from Step 4 and the per-crop deltas (did rice finally move?).
+Append a "B2 result" section to `docs/superpowers/findings/2026-06-13-rice-diagnosis-findings.md` with the table from Step 4 and the per-crop deltas (did rice finally move?).
 
 ```bash
-git add docs/superpowers/2026-06-13-rice-diagnosis-findings.md
+git add docs/superpowers/findings/2026-06-13-rice-diagnosis-findings.md
 git commit -m "docs(evals): B2 format-tax probe result - <one-line verdict>"
 ```
 

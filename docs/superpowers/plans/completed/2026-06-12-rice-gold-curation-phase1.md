@@ -17,7 +17,7 @@
 No prior conversation context is required. Everything a cold session needs:
 
 - **Branch:** `feat/rice-gold-curation`. The spec and this plan are committed here, **NOT on `main`**. Run `git switch feat/rice-gold-curation` before starting. Eval-only changes → pushing this branch triggers **no** HF/Vercel deploy (deploy Actions watch `backend/**` and `frontend/`).
-- **Why this exists:** the 2026-06-13 rice diagnosis (`docs/superpowers/2026-06-13-rice-diagnosis-findings.md`) found rice correctness 18% is *substantially an eval-measurement artifact* — `GOLD_ARTIFACT + EVAL_MISLABEL = 58%` of rice failures, `TRUE_RETRIEVAL = 0`. **70 of 111 rice rows** (63%) have gold pointing at a yearly "br wells arkansas rice research studies" volume the judge itself calls a "table of contents" / "list of academic citations" with "no recommendations." A correct how-to answer cannot score `corr=1.0` against a non-answer-bearing gold passage. This is a DATA fix, not a pipeline lever — it will not change `rag.py` or any prompt.
+- **Why this exists:** the 2026-06-13 rice diagnosis (`docs/superpowers/findings/2026-06-13-rice-diagnosis-findings.md`) found rice correctness 18% is *substantially an eval-measurement artifact* — `GOLD_ARTIFACT + EVAL_MISLABEL = 58%` of rice failures, `TRUE_RETRIEVAL = 0`. **70 of 111 rice rows** (63%) have gold pointing at a yearly "br wells arkansas rice research studies" volume the judge itself calls a "table of contents" / "list of academic citations" with "no recommendations." A correct how-to answer cannot score `corr=1.0` against a non-answer-bearing gold passage. This is a DATA fix, not a pipeline lever — it will not change `rag.py` or any prompt.
 - **The honesty crux (read the spec §2):** replacement gold is chosen by independent topical correctness, never by what the model retrieved. Candidate search uses keyword/term overlap over v3 `source_text` (a *different* mechanism than the gte-dense prod retrieval) and is run blind to eval dumps. This avoids the train-on-test inflation that invalidated the MRR 0.65 figure (see `memory/project_eval_contamination.md`).
 - **Cost map:** Tasks 1–7 are **$0** — pure helpers + a deterministic draft + a human review + file writes + asserts. **Task 8 is the only token-spend** (a gen re-run n=40 + optional RAGAS matrix). **STOP and get explicit Taiwo OK before Task 8**, even mid-build (Taiwo is cost-averse — `memory/feedback_avoid_token_cost.md`).
 - **The one human-in-the-loop step is Task 6** (review the draft audit, supply overrides). A cold agent should pause there and surface the draft audit table to Taiwo, not invent agronomy silently.
@@ -33,7 +33,7 @@ No prior conversation context is required. Everything a cold session needs:
 - **Create** `evals/test_rice_gold_curation.py` — pytest for every pure helper, seeded in-memory fixtures, no file/network dependency.
 - **Create** `evals/rice_curation_decisions.json` — the decisions table (draft generated in Task 5, human-finalized in Task 6). One object per changed query: `{"query", "action": "repoint"|"drop", "new_chunk_id"|null, "reason"}`.
 - **Create** `evals/eval_set_v2_clean_rice.jsonl` — the curated output (Task 7). Same 5-key schema as the input.
-- **Create** `docs/superpowers/2026-06-12-rice-gold-curation-audit.md` — the human-review audit table (Task 5 draft, Task 6 finalized).
+- **Create** `docs/superpowers/findings/2026-06-12-rice-gold-curation-audit.md` — the human-review audit table (Task 5 draft, Task 6 finalized).
 
 > **Originals preserved:** `evals/eval_set_v2.jsonl` (pristine) and `evals/eval_set_v2_clean.jsonl` (current canonical) are READ-ONLY in this plan — never edited.
 
@@ -472,7 +472,7 @@ git commit -m "feat(evals): write_audit markdown table (curation Task 4)"
 
 **Files:**
 - Modify: `evals/rice_gold_curation.py` (add `main()`)
-- Create (generated): `evals/rice_curation_decisions.json`, `docs/superpowers/2026-06-12-rice-gold-curation-audit.md`
+- Create (generated): `evals/rice_curation_decisions.json`, `docs/superpowers/findings/2026-06-12-rice-gold-curation-audit.md`
 
 `main()` wires the helpers into a draft: load the clean set + v3 corpus, flag the 70 yearly-volume rows, and for each propose `repoint` to the top `candidate_chunks` hit (top-1 by keyword overlap). It seeds the two known wrong-crop drops (the corn-nitrogen and soybean-variety items the diagnosis found, identified by substring so the worker doesn't need their exact text). The draft is deterministic and reproducible; the human pass (Task 6) corrects it.
 
@@ -558,7 +558,7 @@ Expected: all PASS (5 passed).
 - [ ] **Step 4: Commit the draft**
 
 ```bash
-git add evals/rice_gold_curation.py evals/rice_curation_decisions.json docs/superpowers/2026-06-12-rice-gold-curation-audit.md
+git add evals/rice_gold_curation.py evals/rice_curation_decisions.json docs/superpowers/findings/2026-06-12-rice-gold-curation-audit.md
 git commit -m "feat(evals): generate draft rice-curation decisions + audit (curation Task 5)"
 ```
 
@@ -568,13 +568,13 @@ git commit -m "feat(evals): generate draft rice-curation decisions + audit (cura
 
 **Files:**
 - Modify (by hand, reviewed): `evals/rice_curation_decisions.json`
-- Regenerate: `docs/superpowers/2026-06-12-rice-gold-curation-audit.md`
+- Regenerate: `docs/superpowers/findings/2026-06-12-rice-gold-curation-audit.md`
 
 > **This is the one human-in-the-loop step. Do NOT silently accept the keyword top-1 picks — surface the draft audit to Taiwo and incorporate corrections.**
 
 - [ ] **Step 1: Present the draft audit to Taiwo**
 
-Open `docs/superpowers/2026-06-12-rice-gold-curation-audit.md` and show Taiwo the table (or the rows with low keyword score / suspicious new-title). Each repoint must be an agronomically-correct topical doc for that question; each drop must be genuinely off-crop. Flag for Taiwo any row where the keyword top-1 looks wrong (e.g. a water-management chunk picked for a fertility question).
+Open `docs/superpowers/findings/2026-06-12-rice-gold-curation-audit.md` and show Taiwo the table (or the rows with low keyword score / suspicious new-title). Each repoint must be an agronomically-correct topical doc for that question; each drop must be genuinely off-crop. Flag for Taiwo any row where the keyword top-1 looks wrong (e.g. a water-management chunk picked for a fertility question).
 
 - [ ] **Step 2: Apply corrections to the decisions JSON**
 
@@ -591,7 +591,7 @@ Expected: `audit regenerated`.
 - [ ] **Step 4: Commit the finalized decisions + audit**
 
 ```bash
-git add evals/rice_curation_decisions.json docs/superpowers/2026-06-12-rice-gold-curation-audit.md
+git add evals/rice_curation_decisions.json docs/superpowers/findings/2026-06-12-rice-gold-curation-audit.md
 git commit -m "chore(evals): finalize human-reviewed rice-curation decisions (curation Task 6)"
 ```
 

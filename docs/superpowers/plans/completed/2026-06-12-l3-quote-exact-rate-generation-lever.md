@@ -9,7 +9,7 @@ is the **dominant** failure (6 of 10 failures L2-on; soybeans 5/5), NOT corpus c
 Fix the generation step so it reproduces the rate/product/threshold *verbatim* from the
 cited chunk instead of paraphrasing or rounding.
 
-**Evidence driving the design (read `docs/superpowers/2026-06-12-corpus-gap-findings.md`):**
+**Evidence driving the design (read `docs/superpowers/findings/2026-06-12-corpus-gap-findings.md`):**
 - GEN_SPECIFICITY dominates; RETRIEVAL_MISS is only ~1/3 of failures → generation lever, not corpus.
 - **L1 (bare prompt directive `CONDITIONAL_RULE_BLOCK`) was a measured NO-OP** (0.429→0.429).
 - **L2 (worked few-shot exemplars `FEW_SHOT_EXEMPLARS`) was the WIN** (corr 15%→30% paired).

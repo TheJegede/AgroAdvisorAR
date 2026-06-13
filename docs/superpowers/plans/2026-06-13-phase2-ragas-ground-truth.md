@@ -31,7 +31,7 @@
 - **Create** `evals/ground_truth/answerkey_judge.py` — `judge_against_answer_key(answer, reference_answer)` → `(score, rationale)`; pure prompt-builder `build_judge_prompt` + a thin Gemini call. `--grade-mode answerkey` consumer lives in answer_eval_full (Task 6).
 - **Create** `evals/ground_truth/test_answer_keys.py` + `test_answerkey_judge.py` — pytest for every pure helper, seeded in-memory fixtures, no file/network dependency.
 - **Create (generated, Task 5)** `evals/ground_truth/answer_keys.jsonl` — `{query, namespace, reference_answer, source_chunk_ids, validated}` per query.
-- **Create (Task 5)** `docs/superpowers/2026-06-13-phase2-answer-key-validation.md` — the human-review sample + sign-off.
+- **Create (Task 5)** `docs/superpowers/findings/2026-06-13-phase2-answer-key-validation.md` — the human-review sample + sign-off.
 - **Modify** `evals/ragas_eval.py` — add `AnswerCorrectness` (uses `reference`) behind a `--with-answer-key` flag that loads `answer_keys.jsonl` and sets `SingleTurnSample.reference`.
 - **Modify** `evals/answer_eval_full.py` — add `--grade-mode {gold,answerkey}` (default `gold` = unchanged); `answerkey` swaps the correctness judge to `answerkey_judge` keyed on `answer_keys.jsonl`.
 
@@ -552,7 +552,7 @@ Expected: `answer keys: ~190 written, ~8 INSUFFICIENT/dropped -> .../answer_keys
 - [ ] **Step 2 (5b): Generate the validation sample + present it to Taiwo**
 
 ```bash
-python -c "import sys; sys.path.insert(0,'evals/ground_truth'); import json; from answer_keys import load_answer_keys, validation_sample; recs=list(load_answer_keys().values()); s=validation_sample(recs); open('docs/superpowers/2026-06-13-phase2-answer-key-validation.md','w',encoding='utf-8').write('# Phase 2 Answer-Key Validation\n\nReview each. Mark CORRECT/EDIT/DROP. Sign-off gates any NIW/arXiv use.\n\n' + '\n'.join(f'## {r[\"namespace\"]}: {r[\"query\"][:80]}\n- ref: {r[\"reference_answer\"]}\n- verdict: \n' for r in s)); print('validation doc written:', len(s), 'items')"
+python -c "import sys; sys.path.insert(0,'evals/ground_truth'); import json; from answer_keys import load_answer_keys, validation_sample; recs=list(load_answer_keys().values()); s=validation_sample(recs); open('docs/superpowers/findings/2026-06-13-phase2-answer-key-validation.md','w',encoding='utf-8').write('# Phase 2 Answer-Key Validation\n\nReview each. Mark CORRECT/EDIT/DROP. Sign-off gates any NIW/arXiv use.\n\n' + '\n'.join(f'## {r[\"namespace\"]}: {r[\"query\"][:80]}\n- ref: {r[\"reference_answer\"]}\n- verdict: \n' for r in s)); print('validation doc written:', len(s), 'items')"
 ```
 > **This is the circularity guard.** Surface the doc to Taiwo. For each item Taiwo marks CORRECT → set `validated: true` in `answer_keys.jsonl`; EDIT → fix `reference_answer` + set `validated: true`; DROP → remove the record. Do NOT mass-flip `validated` without the human pass.
 
@@ -561,7 +561,7 @@ python -c "import sys; sys.path.insert(0,'evals/ground_truth'); import json; fro
 - [ ] **Step 4: Commit**
 
 ```bash
-git add evals/ground_truth/answer_keys.jsonl docs/superpowers/2026-06-13-phase2-answer-key-validation.md
+git add evals/ground_truth/answer_keys.jsonl docs/superpowers/findings/2026-06-13-phase2-answer-key-validation.md
 git commit -m "chore(evals): synthesize + human-validate answer keys (Phase 2 Task 5)"
 ```
 

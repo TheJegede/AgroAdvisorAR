@@ -27,7 +27,7 @@
 - **Create `evals/retrieval_precision.py`** — the diagnostic. Pure helpers (`rank_of`, `classify_failure`, `join_dump`) with NO heavy module-level imports (so tests stay offline/fast); the network/sample/main logic imports `pinecone`/`sentence-transformers`/`answer_eval` *inside* `main()`.
 - **Create `evals/test_retrieval_precision.py`** — pytest for the three pure helpers (offline, mocked inputs).
 - **Create (output, gitignored) `evals/_retrieval_split.jsonl`** — one row per sampled item: `namespace, query, gold_chunk_id, hit5, rank, corr, faith, label, top_titles`.
-- **Create `docs/superpowers/2026-06-12-corpus-gap-findings.md`** — the writeup: taxonomy counts, per-crop split, label-audit decisions, chosen next lever.
+- **Create `docs/superpowers/findings/2026-06-12-corpus-gap-findings.md`** — the writeup: taxonomy counts, per-crop split, label-audit decisions, chosen next lever.
 - **Create (output) `evals/eval_set_v2_clean.jsonl`** — eval set with audited namespace labels fixed; original `eval_set_v2.jsonl` is NEVER mutated.
 - **Modify `PROGRESS.md`** — record the split result + decision (Task 5).
 
@@ -290,7 +290,7 @@ git commit -m "feat(evals): retrieval-precision split runner (zero-cost, reprodu
 ### Task 3: Record the split result in the findings doc
 
 **Files:**
-- Create: `docs/superpowers/2026-06-12-corpus-gap-findings.md`
+- Create: `docs/superpowers/findings/2026-06-12-corpus-gap-findings.md`
 
 - [ ] **Step 1: Capture the run output**
 
@@ -299,7 +299,7 @@ Then also run once against the baseline: `python -m evals.retrieval_precision --
 
 - [ ] **Step 2: Write the findings doc**
 
-Create `docs/superpowers/2026-06-12-corpus-gap-findings.md` and paste BOTH taxonomy tables (L2-on and L2-off) verbatim from the logs. Then fill the interpretation using this exact rubric (no placeholders — write the real counts you observed):
+Create `docs/superpowers/findings/2026-06-12-corpus-gap-findings.md` and paste BOTH taxonomy tables (L2-on and L2-off) verbatim from the logs. Then fill the interpretation using this exact rubric (no placeholders — write the real counts you observed):
 
 ```markdown
 # Corpus-Gap Findings — Retrieval/Generation Split (2026-06-12)
@@ -324,7 +324,7 @@ wrong specifics) / GEN_HALLUCINATION (gold retrieved, ungrounded) / OK.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add docs/superpowers/2026-06-12-corpus-gap-findings.md
+git add docs/superpowers/findings/2026-06-12-corpus-gap-findings.md
 git commit -m "docs(evals): record retrieval/generation failure split findings"
 ```
 
@@ -334,7 +334,7 @@ git commit -m "docs(evals): record retrieval/generation failure split findings"
 
 **Files:**
 - Create: `evals/eval_set_v2_clean.jsonl`
-- Modify: `docs/superpowers/2026-06-12-corpus-gap-findings.md` (append audit decisions)
+- Modify: `docs/superpowers/findings/2026-06-12-corpus-gap-findings.md` (append audit decisions)
 
 - [ ] **Step 1: Print every sampled item with its label for eyeball review**
 
@@ -351,7 +351,7 @@ PY
 
 - [ ] **Step 2: Record an audit decision for each suspect item**
 
-In `docs/superpowers/2026-06-12-corpus-gap-findings.md` append an "## Eval-set label audit" table. For each item where the query topic does NOT match its `namespace` (known suspects from prior inspection: the *Clearfield rice* question tagged soybeans, the *pine seedlings* forestry question, generic *spray-math / saddle-tank* questions), record one of: `KEEP` (label correct), `RELABEL <ns>` (wrong crop — fix namespace), or `DROP` (out of scope for rice/soy/poultry advisory, e.g. forestry). Decide from the query text + `document_title` only. Do not invent new items.
+In `docs/superpowers/findings/2026-06-12-corpus-gap-findings.md` append an "## Eval-set label audit" table. For each item where the query topic does NOT match its `namespace` (known suspects from prior inspection: the *Clearfield rice* question tagged soybeans, the *pine seedlings* forestry question, generic *spray-math / saddle-tank* questions), record one of: `KEEP` (label correct), `RELABEL <ns>` (wrong crop — fix namespace), or `DROP` (out of scope for rice/soy/poultry advisory, e.g. forestry). Decide from the query text + `document_title` only. Do not invent new items.
 
 - [ ] **Step 3: Produce the cleaned eval set (original untouched)**
 
@@ -391,7 +391,7 @@ Expected: prints the cleaned count (a few fewer than the original if any DROPs).
 - [ ] **Step 4: Commit**
 
 ```bash
-git add evals/eval_set_v2_clean.jsonl docs/superpowers/2026-06-12-corpus-gap-findings.md
+git add evals/eval_set_v2_clean.jsonl docs/superpowers/findings/2026-06-12-corpus-gap-findings.md
 git commit -m "chore(evals): audited eval-set labels -> eval_set_v2_clean.jsonl"
 ```
 
@@ -428,10 +428,10 @@ git commit -m "docs(progress): corpus-gap split result + next lever chosen"
 Run: `cd <repo> && python evals/answer_eval_full.py --eval-set evals/eval_set_v2_clean.jsonl --sample 20 --seed 7 --provider deepinfra --dump evals/_out_v3_clean.jsonl`
 Expected: per-namespace correctness table; soybean correctness should rise if mislabeled items were removed.
 
-- [ ] **Step 3: Record the cleaned headline number in `docs/superpowers/2026-06-12-corpus-gap-findings.md` and `PROGRESS.md`; commit.**
+- [ ] **Step 3: Record the cleaned headline number in `docs/superpowers/findings/2026-06-12-corpus-gap-findings.md` and `PROGRESS.md`; commit.**
 
 ```bash
-git add docs/superpowers/2026-06-12-corpus-gap-findings.md PROGRESS.md
+git add docs/superpowers/findings/2026-06-12-corpus-gap-findings.md PROGRESS.md
 git commit -m "docs(evals): cleaned-set headline correctness (paid re-run)"
 ```
 
