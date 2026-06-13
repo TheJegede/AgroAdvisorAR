@@ -29,3 +29,48 @@ def flag_yearly_volume_gold(rows: list[dict]) -> list[dict]:
         if r.get("namespace") == "rice"
         and _YEARLY_VOLUME_RE.search(r.get("document_title", ""))
     ]
+
+
+_WORD_RE = re.compile(r"[a-z]{3,}")  # 3+ letter lowercase tokens
+# Generic agronomy/question stopwords that don't discriminate topic.
+_STOP = {
+    "the", "and", "for", "with", "are", "can", "you", "your", "how", "what",
+    "much", "many", "should", "would", "could", "rice", "field", "fields",
+    "crop", "crops", "farm", "use", "using", "get", "got", "put", "have",
+    "this", "that", "from", "out", "about", "into", "they", "them", "some",
+    "best", "good", "more", "less", "when", "where", "which", "will", "does",
+}
+
+
+def _tokens(text: str) -> set:
+    return {w for w in _WORD_RE.findall((text or "").lower()) if w not in _STOP}
+
+
+def load_corpus_v3(path=CORPUS_V3) -> list[dict]:
+    """Load the v3 corpus (one JSON object per line)."""
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def candidate_chunks(question: str, corpus: list[dict], k: int = 10) -> list[dict]:
+    """Rank rice corpus chunks by term overlap with the question, EXCLUDING the
+    yearly-volume TOCs. Independent of the prod gte retrieval (keyword only).
+
+    Returns up to k dicts: {chunk_id, document_title, source_text, score}.
+    """
+    q = _tokens(question)
+    scored = []
+    for c in corpus:
+        if c.get("namespace") != "rice":
+            continue
+        if _YEARLY_VOLUME_RE.search(c.get("document_title", "")):
+            continue
+        overlap = len(q & _tokens(c.get("source_text", "")))
+        if overlap:
+            scored.append((overlap, c))
+    scored.sort(key=lambda t: t[0], reverse=True)
+    return [
+        {"chunk_id": c["chunk_id"], "document_title": c["document_title"],
+         "source_text": c["source_text"], "score": s}
+        for s, c in scored[:k]
+    ]
