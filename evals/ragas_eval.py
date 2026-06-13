@@ -132,3 +132,103 @@ def format_report(report: dict, metric_keys: list[str]) -> str:
         row(f"suppressed={flag}", d)
     lines.append("* = provisional (contaminated rice gold; fixed in Phase 2)")
     return "\n".join(lines)
+
+
+import argparse
+import os
+import sys
+
+# Make backend importable for the local gte embedder.
+sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+
+
+def _build_llm_and_embeddings():
+    """Gemini-2.5-flash judge + local gte embedder, wrapped for RAGAS."""
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent.parent / ".env")
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    from services.embedding import MiniLMEmbeddings  # local gte, $0
+
+    judge = ChatGoogleGenerativeAI(
+        model=os.environ.get("CONTAINMENT_JUDGE_MODEL", "gemini-2.5-flash"),
+        google_api_key=os.environ["GOOGLE_API_KEY"],
+        temperature=0,
+    )
+    return (LangchainLLMWrapper(judge),
+            LangchainEmbeddingsWrapper(MiniLMEmbeddings()))
+
+
+def run(dump_path, eval_set_path):
+    """Score a capture-enabled dump with the 4-metric matrix. Spends Gemini tokens."""
+    from ragas import EvaluationDataset, evaluate
+    from ragas.metrics import (
+        Faithfulness, ResponseRelevancy,
+        LLMContextPrecisionWithoutReference, NonLLMContextRecall,
+    )
+
+    dump = load_dump(dump_path)
+    gold = load_gold_reference_contexts(eval_set_path)
+    samples, meta = build_samples(dump, gold)
+
+    metrics = [
+        Faithfulness(),
+        ResponseRelevancy(),
+        LLMContextPrecisionWithoutReference(),
+        NonLLMContextRecall(),
+    ]
+    metric_keys = [m.name for m in metrics]
+
+    llm, embeddings = _build_llm_and_embeddings()
+    result = evaluate(
+        dataset=EvaluationDataset(samples=samples),
+        metrics=metrics,
+        llm=llm,
+        embeddings=embeddings,
+    )
+
+    df = result.to_pandas()
+    rows = []
+    for i, m in enumerate(meta):
+        row = {"namespace": m["namespace"], "suppressed": m["suppressed"]}
+        for k in metric_keys:
+            val = df[k].iloc[i] if k in df.columns else None
+            # RAGAS uses NaN for unscored cells; normalize to None.
+            row[k] = None if val is None or (isinstance(val, float) and val != val) else float(val)
+        rows.append(row)
+
+    report = aggregate_scores(rows, metric_keys)
+    print(format_report(report, metric_keys))
+    return report
+
+
+_COST_NOTE = """\
+COST GATE — this run spends Gemini-2.5-flash tokens.
+Estimate: ~n items x (faithfulness ~2 calls + answer_relevancy ~1 + context_precision
+~1/retrieved-context). For n=40 with ~5 contexts/item this is on the order of a few
+hundred gemini-2.5-flash calls (cheap, but non-zero). NonLLMContextRecall uses string
+similarity only ($0). Embeddings are local gte ($0).
+Re-run with --confirm-cost to proceed."""
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Offline RAGAS diagnostic eval.")
+    ap.add_argument("--dump", type=Path, required=True,
+                    help="capture-enabled dump from answer_eval_full.py --dump")
+    ap.add_argument("--eval-set", type=Path,
+                    default=Path(__file__).parent / "eval_set_v2_clean.jsonl",
+                    help="gold retrieval set (reference_contexts for context_recall)")
+    ap.add_argument("--confirm-cost", action="store_true",
+                    help="acknowledge token cost and run (otherwise prints estimate and exits)")
+    args = ap.parse_args()
+
+    if not args.confirm_cost:
+        print(_COST_NOTE)
+        raise SystemExit(0)
+
+    run(args.dump, args.eval_set)
+
+
+if __name__ == "__main__":
+    main()
