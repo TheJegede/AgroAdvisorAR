@@ -190,6 +190,51 @@ def build_draft_decisions(rows: list[dict], corpus: list[dict]) -> list[dict]:
     return decisions
 
 
+def validate_curated(clean_rows: list[dict], curated_rows: list[dict], dropped: int) -> None:
+    """Assert the curated set is well-formed. Raises ValueError on any violation."""
+    # row math
+    if len(curated_rows) != len(clean_rows) - dropped:
+        raise ValueError(
+            f"row count {len(curated_rows)} != clean {len(clean_rows)} - dropped {dropped}")
+    # no residual yearly-volume gold in rice
+    for r in curated_rows:
+        if r.get("namespace") == "rice" and _YEARLY_VOLUME_RE.search(r.get("document_title", "")):
+            raise ValueError(f"residual TOC gold for query {r['query']!r}")
+        if set(r.keys()) != {"query", "namespace", "chunk_id", "chunk_text", "document_title"}:
+            raise ValueError(f"unexpected schema for query {r['query']!r}: {sorted(r.keys())}")
+    # non-rice rows unchanged in count
+    n_nonrice_clean = sum(1 for r in clean_rows if r.get("namespace") != "rice")
+    n_nonrice_cur = sum(1 for r in curated_rows if r.get("namespace") != "rice")
+    if n_nonrice_clean != n_nonrice_cur:
+        raise ValueError(f"non-rice rows changed: {n_nonrice_clean} -> {n_nonrice_cur}")
+
+
+def build_curated_set(clean_path=CLEAN_SET, decisions_path=DECISIONS_PATH,
+                      out_path=None) -> dict:
+    """Apply the finalized decisions, validate, and write the curated set.
+
+    Returns a summary dict. Asserts via validate_curated before writing.
+    """
+    out_path = out_path or (Path(__file__).parent / "eval_set_v2_clean_rice.jsonl")
+    rows = _load_jsonl(clean_path)
+    corpus_index = {c["chunk_id"]: c for c in load_corpus_v3()}
+    with open(decisions_path, encoding="utf-8") as f:
+        decisions = json.load(f)
+    # every repoint chunk_id must exist in v3
+    for d in decisions:
+        if d["action"] == "repoint" and d["new_chunk_id"] not in corpus_index:
+            raise KeyError(f"repoint chunk_id {d['new_chunk_id']!r} absent from corpus_v3")
+    dropped = sum(1 for d in decisions if d["action"] == "drop")
+    curated = apply_curation(rows, corpus_index, decisions)
+    validate_curated(rows, curated, dropped)
+    with open(out_path, "w", encoding="utf-8") as f:
+        for r in curated:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    return {"in": len(rows), "out": len(curated), "dropped": dropped,
+            "repointed": sum(1 for d in decisions if d["action"] == "repoint"),
+            "path": str(out_path)}
+
+
 def main():
     rows = _load_jsonl(CLEAN_SET)
     corpus = load_corpus_v3()

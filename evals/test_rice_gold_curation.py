@@ -133,3 +133,38 @@ def test_write_audit_renders_one_row_per_change():
     assert "new_pot" in md                            # new chunk_id shown
     assert "drop" in md.lower()                       # drop action shown
     assert "dedicated potassium doc" in md            # reason shown
+
+
+from rice_gold_curation import validate_curated
+
+
+def test_validate_curated_catches_toc_and_count_errors():
+    clean = [
+        {"query": "a", "namespace": "rice", "chunk_id": "o", "chunk_text": "t",
+         "document_title": "rice 2019 br wells arkansas rice research studies"},
+        {"query": "b", "namespace": "soybeans", "chunk_id": "o2", "chunk_text": "t2",
+         "document_title": "soy"},
+    ]
+    # good: 'a' repointed off the TOC, 'b' untouched, 1 drop -> but here 0 drops, count must match
+    good = [
+        {"query": "a", "namespace": "rice", "chunk_id": "n", "chunk_text": "potash",
+         "document_title": "rice ch 9 soil fertility"},
+        {"query": "b", "namespace": "soybeans", "chunk_id": "o2", "chunk_text": "t2",
+         "document_title": "soy"},
+    ]
+    validate_curated(clean, good, dropped=0)  # no raise
+
+    # bad: still points at a br-wells TOC
+    bad_toc = [dict(good[0], document_title="rice 2023 br wells arkansas rice research studies"), good[1]]
+    try:
+        validate_curated(clean, bad_toc, dropped=0)
+        assert False, "expected ValueError for residual TOC gold"
+    except ValueError:
+        pass
+
+    # bad: row count doesn't match clean - dropped
+    try:
+        validate_curated(clean, good, dropped=1)
+        assert False, "expected ValueError for count mismatch"
+    except ValueError:
+        pass
