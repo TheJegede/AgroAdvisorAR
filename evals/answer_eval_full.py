@@ -343,6 +343,9 @@ async def main():
                     help="gold=single gold-chunk judge (default); "
                          "answerkey=multi-reference judge vs validated answer keys; "
                          "both=record gold AND answerkey per item (paired artifact delta)")
+    ap.add_argument("--item-timeout", type=float, default=180.0,
+                    help="per-item wall-clock budget (s); a hung provider call skips "
+                         "the item instead of stalling the whole run")
     args = ap.parse_args()
 
     global JUDGE_CORR, JUDGE_FAITH, BRIDGE, GRADE_MODE, _ANSWER_KEYS
@@ -437,7 +440,10 @@ async def main():
     results, skipped = [], 0
     for i, it in enumerate(sample, 1):
         try:
-            r = await evaluate(it)
+            # Per-item timeout: a single hung provider call (no client timeout)
+            # must skip the item, not stall the whole run (a 49-min infinite hang
+            # on one query happened otherwise).
+            r = await asyncio.wait_for(evaluate(it), timeout=args.item_timeout)
             results.append(r)
             tag = ("SUPPRESSED" if r["suppressed"]
                    else f"corr={r['correctness']:.1f} faith={r['faithfulness']:.1f}")
