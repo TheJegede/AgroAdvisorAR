@@ -68,4 +68,5 @@ evals/_log_*.txt
 evals/_retrieval_split*.jsonl
 evals/_retrieval_split*.log
 evals/_capture_*.jsonl
+evals/_capture_*.log
 evals/_ragas_matrix.log

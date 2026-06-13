@@ -1,0 +1,422 @@
+[
+  {
+    "query": "I'm planting soybeans later than usual, will some varieties grow faster than others and get to a decent height sooner?",
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
+  },
+  {
+    "query": "I'm thinkin' of plantin' my rice farther apart, but I'm worried about weeds takin' over, what else can I do to keep 'em under control?",
+    "action": "repoint",
+    "new_chunk_id": "b5b12bcf077e834d",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 5)"
+  },
+  {
+    "query": "How much nitrogen fertilizer should I put on my rice fields to get the best yield, and will using more always result in a better crop?",
+    "action": "repoint",
+    "new_chunk_id": "b96d58895b267a3a",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "How does the type of nitrogen I use affect my rice crop's growth and when it's ready to harvest?",
+    "action": "repoint",
+    "new_chunk_id": "d2dc859668de54fe",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+  },
+  {
+    "query": "I planted soybeans next to my rice field, will the spray I use on the soybeans hurt my rice crop?",
+    "action": "repoint",
+    "new_chunk_id": "34a1752afdf2e670",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 2)"
+  },
+  {
+    "query": "How long after I plant my crop can I expect it to come up and when should I be ready to flood my fields?",
+    "action": "repoint",
+    "new_chunk_id": "846939f2168fe057",
+    "reason": "keyword top-1: rice 2020 managing water seeded rice in  (score 3)"
+  },
+  {
+    "query": "My rice is gettin' hurt when it's hot and dry, especially when it's bloomin' and the grains are formmin', what can I do to help it?",
+    "action": "repoint",
+    "new_chunk_id": "445d0cc6159863e2",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 2)"
+  },
+  {
+    "query": "How do I get my rice to dry right after I soak it, so it don't spoil on me before I can get it milled?",
+    "action": "repoint",
+    "new_chunk_id": "460e3b3e6410a7a5",
+    "reason": "keyword top-1: rice ch 10 water management (score 4)"
+  },
+  {
+    "query": "I'm havin' trouble with bugs eatin' holes in my rice, what's a good chemical to use to get rid of 'em?",
+    "action": "repoint",
+    "new_chunk_id": "7395129643525c87",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 2)"
+  },
+  {
+    "query": "I'm having trouble killin' them winter weeds, what's the best way to spray to make sure I get 'em all?",
+    "action": "repoint",
+    "new_chunk_id": "8dc2ce34a60b006f",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 4)"
+  },
+  {
+    "query": "How are other rice farmers around here handling irrigation, I'm having trouble keeping my water levels right?",
+    "action": "repoint",
+    "new_chunk_id": "6e9873e6ac81b967",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 4)"
+  },
+  {
+    "query": "I'm having trouble with blight on my rice crop, what's the best time to spray fungicide to get rid of it?",
+    "action": "repoint",
+    "new_chunk_id": "626afc999b1c0b1b",
+    "reason": "keyword top-1: rice 2017 fungicide timing for selected  (score 3)"
+  },
+  {
+    "query": "I got a bad infestation of them little brown bugs in my fields, what's the cheapest way to get rid of 'em without breakin' the bank?",
+    "action": "repoint",
+    "new_chunk_id": "04d08d8cdea1c2d5",
+    "reason": "keyword top-1: rice 2020 managing water seeded rice in  (score 2)"
+  },
+  {
+    "query": "I'm havin' trouble with insects in my field, what's a good way to catch and get rid of 'em without sprayin' a lot of chemicals?",
+    "action": "repoint",
+    "new_chunk_id": "0b441f36faea77e6",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 2)"
+  },
+  {
+    "query": "My rice is maturing too quick and yields are down, could it be from them sprayin' dicamba on the soybeans next door?",
+    "action": "repoint",
+    "new_chunk_id": "626afc999b1c0b1b",
+    "reason": "keyword top-1: rice 2017 fungicide timing for selected  (score 2)"
+  },
+  {
+    "query": "My rice is lookin' a mite yellow, when's the best time to add more nitrogen so it'll green back up?",
+    "action": "repoint",
+    "new_chunk_id": "7e59108cbe3f19fb",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 4)"
+  },
+  {
+    "query": "I'm gettin' wrong readings on the starch content in my crops, is there a way to adjust my test results to get a more accurate measure?",
+    "action": "repoint",
+    "new_chunk_id": "ce552fae5ac32b1b",
+    "reason": "keyword top-1: rice ch 10 water management (score 4)"
+  },
+  {
+    "query": "I'm seein' some overlap in the research I'm gettin' on rice crops, is all this info from different places or is it just repeatin' the same thing?",
+    "action": "repoint",
+    "new_chunk_id": "9a5e46dfa9ef502e",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+  },
+  {
+    "query": "I'm tryin' to grow hybrid rice, but it's gettin' complicated. Do I need to separate my breeding programs to get the best results?",
+    "action": "repoint",
+    "new_chunk_id": "49d6887869ae3dd4",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 3)"
+  },
+  {
+    "query": "How much should I be makin' per acre after payin' for all my expenses, equipment, and overhead to know if my farm's doin' alright?",
+    "action": "repoint",
+    "new_chunk_id": "6d7d47ed9247cc37",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm having trouble with my rice crop, some areas didn't come up right after planting, what's the best time to plant to get a good stand?",
+    "action": "repoint",
+    "new_chunk_id": "1cfea6ca651658f0",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 5)"
+  },
+  {
+    "query": "I'm havin' trouble gettin' good yields from my hybrid rice crop, what makes some rice varieties better suited for hybrid production than others?",
+    "action": "repoint",
+    "new_chunk_id": "1c20366e16a84e72",
+    "reason": "keyword top-1: rice 2023 arkansas rice performance tria (score 4)"
+  },
+  {
+    "query": "My corn's been lookin' a mite yellow, what kind of fertilizer should I be puttin' down before plantin' to get it to grow right?",
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
+  },
+  {
+    "query": "I'm having trouble with stink bugs in my rice field, what's the best way to get rid of them?",
+    "action": "repoint",
+    "new_chunk_id": "d25d5a19631cd5d6",
+    "reason": "keyword top-1: rice 2026 arkansas rice management guide (score 2)"
+  },
+  {
+    "query": "Which rice variety should I plant to get the best yield and least moisture problems in my fields?",
+    "action": "repoint",
+    "new_chunk_id": "597172099d4859d9",
+    "reason": "keyword top-1: rice 2024 arkansas rice performance tria (score 3)"
+  },
+  {
+    "query": "My rice crop's been doin' poorly lately, what's been workin' best for other farmers in Arkansas to get a good yield?",
+    "action": "repoint",
+    "new_chunk_id": "f174b522a7e1807a",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "My rice crop got beat up by them storms, now it's missing a lot of leaves, how much will that hurt my yield?",
+    "action": "repoint",
+    "new_chunk_id": "7ee821913f57913a",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 2)"
+  },
+  {
+    "query": "I'm having trouble with my rice crop, it's getting a low grade at the mill. What's the best way to measure the oil in my rice to figure out why it's happening?",
+    "action": "repoint",
+    "new_chunk_id": "60c426524d52afd6",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 2)"
+  },
+  {
+    "query": "How much nitrogen fertilizer should I put on my rice fields to get the best yield, I've been using the same amount for years but I'm not sure if it's enough?",
+    "action": "repoint",
+    "new_chunk_id": "646b8906a3634586",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 5)"
+  },
+  {
+    "query": "I'm fixin' to plant rice late, what kind should I use if I can't get it in the ground till after April 15th?",
+    "action": "repoint",
+    "new_chunk_id": "82011eed93811269",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm havin' trouble with my rice crop, is there someone I can talk to around here that can give me some advice on how to improve it?",
+    "action": "repoint",
+    "new_chunk_id": "271f07b0055b55c2",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 3)"
+  },
+  {
+    "query": "My well water's been lookin' kinda funny lately, got a weird taste too. Is there somethin' goin' on with the groundwater around here that I should know about?",
+    "action": "repoint",
+    "new_chunk_id": "7836f57495467c27",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 3)"
+  },
+  {
+    "query": "I got a bad weed problem in my rice field, what's the best way to spray and how often to get rid of that pesky weedy rice?",
+    "action": "repoint",
+    "new_chunk_id": "b94fccce6069e207",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 3)"
+  },
+  {
+    "query": "How's the outlook for rice prices and profits over the next few years, I'm thinkin' of plantin' more acres but wanna know if it's gonna be worth it?",
+    "action": "repoint",
+    "new_chunk_id": "451c47c95df450cc",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 3)"
+  },
+  {
+    "query": "I'm gettin' different prices for my soybeans depending on how many are broken, but I'm wonderin' if it's really makin' a difference in what I get paid?",
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
+  },
+  {
+    "query": "My crops have been struggling with the dry weather, how's the water table doing and is it gonna cost me more to plant rice, soybeans, or corn this season?",
+    "action": "repoint",
+    "new_chunk_id": "8d8658c8f9a104c4",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 4)"
+  },
+  {
+    "query": "I'm havin' trouble with weeds in my rice field, what's a good way to control 'em without hurtin' my crop?",
+    "action": "repoint",
+    "new_chunk_id": "efdd156ea3a67a0d",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 3)"
+  },
+  {
+    "query": "I'm havin' trouble with them stink bugs in my rice field, how many times do I need to spray to keep 'em under control?",
+    "action": "repoint",
+    "new_chunk_id": "62bf0b6198b264f3",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "My rice crop's yield is sufferin' near them pigweeds, what's the best time to take care of 'em so they don't hurt my harvest?",
+    "action": "repoint",
+    "new_chunk_id": "02b14cf144202d4c",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+  },
+  {
+    "query": "My rice crops have been yieldin' less than usual, especially during them hot summers. Is the heat at night hurtin' my crop?",
+    "action": "repoint",
+    "new_chunk_id": "2b4c33b27971bb9b",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 3)"
+  },
+  {
+    "query": "My soybean yields are down, what's a good variety to plant to get more bushels per acre?",
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
+  },
+  {
+    "query": "I'm seein' lower corn yields than usual, think it might be potassium. Will addin' some potassium fertilizer make a big difference?",
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
+  },
+  {
+    "query": "I got a rice field with weeds takin' over, what's the best way to get rid of 'em about a month after plantin'?",
+    "action": "repoint",
+    "new_chunk_id": "dced4f117b6debe2",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+  },
+  {
+    "query": "How many rows of rice should I harvest to get a good idea of my crop's yield, considerin' I planted 'em 10 inches apart?",
+    "action": "repoint",
+    "new_chunk_id": "242635877b241a5f",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 3)"
+  },
+  {
+    "query": "My wheat's been fallin' over in the rain, what can I do to find a variety that'll stay upright?",
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
+  },
+  {
+    "query": "I'm having trouble with stink bugs in my rice field, how many should I expect to see before I need to spray something to control them?",
+    "action": "repoint",
+    "new_chunk_id": "ff0752ccba2ae0fe",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm seeing some damage to my rice crop after using Brake, how does the timing of when I apply it affect how much harm it does to my plants?",
+    "action": "repoint",
+    "new_chunk_id": "57e6ea7005d8ad0d",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm having trouble with some of my rice crops, they're not yielding like they used to, what can I do to figure out what's causing the problem and find a better variety to plant?",
+    "action": "repoint",
+    "new_chunk_id": "aaa3bf5fb014704a",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm thinkin' of plantin' some new rice varieties, but I don't know which ones will do well in my fields, can you tell me which ones came out best in the Stuttgart trials last year?",
+    "action": "repoint",
+    "new_chunk_id": "08b32034b1236f77",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 3)"
+  },
+  {
+    "query": "How can I save water when irrigating my rice fields, I'm lookin' for ways to cut back without hurtin' my crop?",
+    "action": "repoint",
+    "new_chunk_id": "cddf35fa16eb9416",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 3)"
+  },
+  {
+    "query": "I'm havin' trouble with weeds in my rice field, what's the best way to control 'em using them new herbicides?",
+    "action": "repoint",
+    "new_chunk_id": "a0eb28352a808ca2",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 4)"
+  },
+  {
+    "query": "I sprayed a mix of chemicals on my rice field and now the crop's not doin' so well, yield's down. Will usin' less of that stuff help my rice grow better?",
+    "action": "repoint",
+    "new_chunk_id": "ae6668b87f6db0a5",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 4)"
+  },
+  {
+    "query": "I'm having trouble with blast disease in my rice fields, what can I do to find varieties that are more resistant to it?",
+    "action": "repoint",
+    "new_chunk_id": "799212249bed8ee7",
+    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 4)"
+  },
+  {
+    "query": "I'm thinkin' of addin' some biochar to my soil, but I've heard some works better than others - how does the way it's made affect how well it works in my fields?",
+    "action": "repoint",
+    "new_chunk_id": "6d7d47ed9247cc37",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm having trouble with weeds in my fields, what's the best way to spread fertilizer so it kills them without hurting my crops?",
+    "action": "repoint",
+    "new_chunk_id": "602e38d4bdc9f989",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+  },
+  {
+    "query": "My rice is gettin' beat up by them storms, losin' a lot of leaves. How many days behind will it be if I lose some leaves at different times of the growin' season?",
+    "action": "repoint",
+    "new_chunk_id": "ce8257b564d6f86e",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "How much nitrogen do I need to add to my irrigation water to get a good corn yield, my crops have been lookin' a mite puny lately?",
+    "action": "repoint",
+    "new_chunk_id": "db3cec0c8fe67248",
+    "reason": "keyword top-1: rice ch 9 soil fertility (score 5)"
+  },
+  {
+    "query": "I've been puttin' a lot of potassium on my rice fields, but the plants seem to be gettin' weaker as they mature - is that normal?",
+    "action": "repoint",
+    "new_chunk_id": "646b8906a3634586",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+  },
+  {
+    "query": "Is rice production gonna get better in the future, or are we lookin' at smaller harvests?",
+    "action": "repoint",
+    "new_chunk_id": "8d297cf8f3690774",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 2)"
+  },
+  {
+    "query": "I'm seeing weird growths on my rice heads, what's the best way to control them, and will spraying help or hurt the problem?",
+    "action": "repoint",
+    "new_chunk_id": "86daa26ca08b0f3c",
+    "reason": "keyword top-1: rice recommended chemicals for weed and  (score 3)"
+  },
+  {
+    "query": "Which wheat varieties are less likely to fall over in the wind and still give me a good crop yield?",
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
+  },
+  {
+    "query": "How do I figure out if my rice crop is good enough to sell, and what kind of numbers should I be lookin' for when it comes to the quality of the grain?",
+    "action": "repoint",
+    "new_chunk_id": "c022c5f14578fb34",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+  },
+  {
+    "query": "How early can I start plantin' rice this year, considerin' all the new seed treatments and equipment I've got?",
+    "action": "repoint",
+    "new_chunk_id": "06d442da0a9786b5",
+    "reason": "keyword top-1: rice rice insecticide seed treatments is (score 5)"
+  },
+  {
+    "query": "What's gonna happen to rice prices over the next few years, I'm tryin' to decide if I should plant more or less?",
+    "action": "repoint",
+    "new_chunk_id": "c3febd644d8611a7",
+    "reason": "keyword top-1: rice 2020 managing water seeded rice in  (score 3)"
+  },
+  {
+    "query": "How much fertilizer can I safely cut back on without hurtin' my crop yields?",
+    "action": "repoint",
+    "new_chunk_id": "3b5cd61231f79d46",
+    "reason": "keyword top-1: rice 2015 riceseed update (score 2)"
+  },
+  {
+    "query": "How can I get better seed for my crops, I've been noticing my yields have been lower than usual and I'm looking for ways to improve them?",
+    "action": "repoint",
+    "new_chunk_id": "41f11b9566af205f",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I got a fungus problem in my rice field, how soon after I see the disease show up should I spray fungicide to get the best results?",
+    "action": "repoint",
+    "new_chunk_id": "92629802721bb962",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm using a lot of well water to irrigate my rice fields, is that gonna hurt the water table around here?",
+    "action": "repoint",
+    "new_chunk_id": "328b4a31db759869",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "My rice crop's been doin' poorly lately, what's been workin' best for other farmers in Arkansas to get a good yield?",
+    "action": "repoint",
+    "new_chunk_id": "f174b522a7e1807a",
+    "reason": "keyword top-1: rice arkansas rice production handbook (score 4)"
+  },
+  {
+    "query": "I'm seein' some blast and blight in my rice fields, what can I expect from CLL18 in terms of holdin' up to them diseases?",
+    "action": "repoint",
+    "new_chunk_id": "fc9014955f88adf4",
+    "reason": "keyword top-1: rice 2019 arkansas rice cultivar testing (score 4)"
+  }
+]
