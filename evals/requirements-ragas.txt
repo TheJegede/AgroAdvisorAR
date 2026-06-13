@@ -1,0 +1,10 @@
+# RAGAS diagnostic eval — EVAL-ONLY dependency.
+# Do NOT add to backend/requirements.txt: ragas is never imported by the
+# backend/request path, and keeping it out preserves the lean HF Docker image.
+# Verified clean against langchain 1.2.x / langchain-core 1.4.x (no downgrade).
+# Known benign side-effect: ragas bumps fsspec, which trips an s3fs==2025.3.2
+# pin warning; s3fs still imports fine and is unused by evals.
+ragas==0.4.3
+# Required by NonLLMContextRecall (string-distance recall) — NOT pulled in by
+# ragas itself; without it the metric raises at runtime.
+rapidfuzz
