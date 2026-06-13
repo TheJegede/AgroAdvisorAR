@@ -54,3 +54,53 @@ def test_candidate_chunks_ranks_topical_overlap_and_excludes_toc():
     assert ids[0] == "c_pot"
     assert "c_toc" not in ids
     assert "c_soy" not in ids
+
+
+from rice_gold_curation import apply_curation
+
+
+def test_apply_curation_drops_repoints_and_passes_through():
+    rows = [
+        {"query": "q_drop", "namespace": "rice", "chunk_id": "old1",
+         "chunk_text": "old text 1", "document_title": "rice 2019 br wells arkansas rice research studies"},
+        {"query": "q_repoint", "namespace": "rice", "chunk_id": "old2",
+         "chunk_text": "old text 2", "document_title": "rice 2023 br wells arkansas rice research studies"},
+        {"query": "q_keep_rice", "namespace": "rice", "chunk_id": "old3",
+         "chunk_text": "keep me", "document_title": "rice arkansas rice production handbook"},
+        {"query": "q_soy", "namespace": "soybeans", "chunk_id": "old4",
+         "chunk_text": "soy", "document_title": "soybeans doc"},
+    ]
+    corpus_index = {
+        "new_pot": {"chunk_id": "new_pot", "document_title": "rice ch 9 soil fertility",
+                    "source_text": "potassium guidance text"},
+    }
+    decisions = [
+        {"query": "q_drop", "action": "drop", "new_chunk_id": None, "reason": "corn question"},
+        {"query": "q_repoint", "action": "repoint", "new_chunk_id": "new_pot", "reason": "potassium doc"},
+    ]
+    out = apply_curation(rows, corpus_index, decisions)
+
+    queries = [r["query"] for r in out]
+    assert "q_drop" not in queries                 # dropped
+    assert queries == ["q_repoint", "q_keep_rice", "q_soy"]  # order preserved, drop removed
+
+    repointed = next(r for r in out if r["query"] == "q_repoint")
+    assert repointed["chunk_id"] == "new_pot"
+    assert repointed["chunk_text"] == "potassium guidance text"
+    assert repointed["document_title"] == "rice ch 9 soil fertility"
+    assert set(repointed.keys()) == {"query", "namespace", "chunk_id", "chunk_text", "document_title"}
+
+    # untouched rows pass through byte-for-byte
+    assert next(r for r in out if r["query"] == "q_keep_rice")["chunk_text"] == "keep me"
+    assert next(r for r in out if r["query"] == "q_soy")["document_title"] == "soybeans doc"
+
+
+def test_apply_curation_raises_on_unknown_repoint_chunk():
+    rows = [{"query": "q", "namespace": "rice", "chunk_id": "o",
+             "chunk_text": "t", "document_title": "rice 2019 br wells arkansas rice research studies"}]
+    decisions = [{"query": "q", "action": "repoint", "new_chunk_id": "missing", "reason": "x"}]
+    try:
+        apply_curation(rows, {}, decisions)
+        assert False, "expected KeyError for unknown chunk_id"
+    except KeyError:
+        pass

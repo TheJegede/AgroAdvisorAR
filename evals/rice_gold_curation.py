@@ -74,3 +74,37 @@ def candidate_chunks(question: str, corpus: list[dict], k: int = 10) -> list[dic
          "source_text": c["source_text"], "score": s}
         for s, c in scored[:k]
     ]
+
+
+def apply_curation(rows: list[dict], corpus_index: dict, decisions: list[dict]) -> list[dict]:
+    """Apply the decisions table to the clean rows.
+
+    rows          : the full eval set (all namespaces), order preserved.
+    corpus_index  : {chunk_id -> v3 chunk dict} for repoint lookups.
+    decisions     : [{query, action: 'drop'|'repoint', new_chunk_id, reason}, ...]
+
+    Returns a new list: dropped queries removed, repointed gold replaced from v3,
+    every other row passed through unchanged. Raises KeyError if a repoint names a
+    chunk_id absent from corpus_index.
+    """
+    by_query = {d["query"]: d for d in decisions}
+    out = []
+    for r in rows:
+        d = by_query.get(r["query"])
+        if d is None:
+            out.append(r)
+            continue
+        if d["action"] == "drop":
+            continue
+        if d["action"] == "repoint":
+            chunk = corpus_index[d["new_chunk_id"]]  # KeyError if unknown
+            out.append({
+                "query": r["query"],
+                "namespace": r["namespace"],
+                "chunk_id": chunk["chunk_id"],
+                "chunk_text": chunk["source_text"],
+                "document_title": chunk["document_title"],
+            })
+            continue
+        raise ValueError(f"unknown action {d['action']!r} for query {r['query']!r}")
+    return out
