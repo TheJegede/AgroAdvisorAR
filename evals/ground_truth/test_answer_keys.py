@@ -71,3 +71,23 @@ def test_validation_sample_is_stratified_and_deterministic():
     rice = [r for r in s1 if r["namespace"] == "rice"]
     soy = [r for r in s1 if r["namespace"] == "soybeans"]
     assert len(rice) == 5 and len(soy) == 3  # capped per namespace; soy has only 3
+
+
+def test_synth_build_records_uses_injected_llm(monkeypatch):
+    import synth
+    rows = [
+        {"query": "q1", "namespace": "rice", "chunk_id": "a",
+         "chunk_text": "Apply 90 lb N per acre.", "document_title": "g"},
+        {"query": "q2", "namespace": "rice", "chunk_id": "b",
+         "chunk_text": "no answer here", "document_title": "g"},
+    ]
+    # fake LLM: answers q1, says INSUFFICIENT for q2
+    def fake_call(prompt):
+        return "Apply 90 lb N/acre." if "90 lb N" in prompt else "INSUFFICIENT"
+
+    records = synth.build_records(load_gold_by_query(rows), call_llm=fake_call)
+    # q2 dropped (INSUFFICIENT); q1 kept and grounded
+    assert [r["query"] for r in records] == ["q1"]
+    assert records[0]["reference_answer"] == "Apply 90 lb N/acre."
+    assert records[0]["source_chunk_ids"] == ["a"]
+    assert records[0]["validated"] is False
