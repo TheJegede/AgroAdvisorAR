@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Build order: PLAN 2 of 4** (L4 → **L2** → L1 → L3). Independent of L1/L3; build after L4. Spec: `docs/superpowers/specs/2026-06-10-guard-merge-latency-design.md`.
+> **Build order: PLAN 2 of 4** (L4 → **L2** → L1 → L3). Independent of L1/L3; build after L4. Spec: `docs/superpowers/specs/completed/2026-06-10-guard-merge-latency-design.md`.
 
 **Goal:** Halve the citation guard's LLM round-trips (~1.3s → ~0.65s) by merging claim-decomposition and groundedness-judging into one LLM call, with no change to judgment quality and the existing two-step path retained as fallback.
 
@@ -458,10 +458,10 @@ Expected: `guard` column ~1262ms → ~650ms; `SERIAL` down ~0.65s.
 
 - [ ] **Step 5: Decision + record**
 
-PASS criterion: faithfulness AND suppression do not regress beyond noise (~±1 item on n=20). If faithfulness drops, keep `GUARD_MERGED_JUDGE=false` and STOP (do not merge the default-on). Record both eval tables + the latency delta in `docs/superpowers/specs/2026-06-10-guard-merge-latency-design.md` (Eval gate section) and `PROGRESS.md`.
+PASS criterion: faithfulness AND suppression do not regress beyond noise (~±1 item on n=20). If faithfulness drops, keep `GUARD_MERGED_JUDGE=false` and STOP (do not merge the default-on). Record both eval tables + the latency delta in `docs/superpowers/specs/completed/2026-06-10-guard-merge-latency-design.md` (Eval gate section) and `PROGRESS.md`.
 
 ```bash
-git add docs/superpowers/specs/2026-06-10-guard-merge-latency-design.md PROGRESS.md
+git add docs/superpowers/specs/completed/2026-06-10-guard-merge-latency-design.md PROGRESS.md
 git commit -m "docs(guard): record merged-judge eval + latency results"
 ```
 

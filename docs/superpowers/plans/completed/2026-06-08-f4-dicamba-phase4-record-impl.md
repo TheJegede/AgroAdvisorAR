@@ -8,7 +8,7 @@
 
 **Tech Stack:** FastAPI, Pydantic, Supabase (service-role client), ReportLab, React 19 + react-leaflet, Vitest, Playwright, pytest.
 
-**Design spec:** `docs/superpowers/specs/2026-06-08-f4-dicamba-phase4-record-design.md`
+**Design spec:** `docs/superpowers/specs/completed/2026-06-08-f4-dicamba-phase4-record-design.md`
 
 ---
 

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.13, pytest. No new dependencies, no LLM, no network for Tasks 1–7. Re-measure (Task 8) reuses the existing `evals/answer_eval_full.py` + `evals/ragas_eval.py`.
 
-**Spec:** `docs/superpowers/specs/2026-06-12-rice-gold-curation-design.md`.
+**Spec:** `docs/superpowers/specs/completed/2026-06-12-rice-gold-curation-design.md`.
 
 ---
 
@@ -97,7 +97,7 @@ Re-points rice gold off the non-answer-bearing "br wells ... research studies"
 yearly-volume TOCs onto dedicated topical rice docs drawn from corpus_v3, by an
 INDEPENDENT keyword search (not the prod gte embedder, blind to eval dumps) so
 the post-curation rice headline stays honest. See the design spec:
-docs/superpowers/specs/2026-06-12-rice-gold-curation-design.md
+docs/superpowers/specs/completed/2026-06-12-rice-gold-curation-design.md
 
 NEVER imported by backend/rag.py or the request path.
 """

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Build order: PLAN 4 of 4 — LAST** (L4 → L2 → L1 → **L3**). Build after L1 so the cache HIT path reuses the same SSE frame contract. Spec: `docs/superpowers/specs/2026-06-10-answer-cache-latency-design.md`.
+> **Build order: PLAN 4 of 4 — LAST** (L4 → L2 → L1 → **L3**). Build after L1 so the cache HIT path reuses the same SSE frame contract. Spec: `docs/superpowers/specs/completed/2026-06-10-answer-cache-latency-design.md`.
 
 **Goal:** Serve a stored advisory for a verbatim-repeat, first-turn, reference-safe query in ~50ms — skipping classify + retrieve + generate + guard — without ever serving a stale or mismatched safety answer.
 

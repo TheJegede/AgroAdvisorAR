@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.13, pytest, `ragas==0.4.3` (eval-only dep), `langchain-google-genai` (Gemini judge), `backend/services/embedding.MiniLMEmbeddings` (local gte, $0). RAGAS LangChain wrappers: `LangchainLLMWrapper`, `LangchainEmbeddingsWrapper`.
 
-**Spec:** `docs/superpowers/specs/2026-06-12-ragas-diagnostic-eval-design.md`.
+**Spec:** `docs/superpowers/specs/completed/2026-06-12-ragas-diagnostic-eval-design.md`.
 
 ---
 

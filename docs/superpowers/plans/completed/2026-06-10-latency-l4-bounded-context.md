@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Build order: PLAN 1 of 4** (L4 → L2 → L1 → L3). L4 is first: smallest, lowest-risk, no dependency on the others. Spec: `docs/superpowers/specs/2026-06-10-context-timeout-latency-design.md`.
+> **Build order: PLAN 1 of 4** (L4 → L2 → L1 → L3). L4 is first: smallest, lowest-risk, no dependency on the others. Spec: `docs/superpowers/specs/completed/2026-06-10-context-timeout-latency-design.md`.
 
 **Goal:** Ensure SSURGO+NOAA context fetch can never stall the query critical path beyond a fixed budget, degrading to the already-handled "unavailable" state instead of hanging.
 

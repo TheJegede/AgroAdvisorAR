@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Build order: PLAN 3 of 4** (L4 → L2 → **L1** → L3). Build after L2 (no hard code dependency, but L1's frame contract should exist before L3's cache short-circuit). Spec: `docs/superpowers/specs/2026-06-10-sse-progress-streaming-design.md`.
+> **Build order: PLAN 3 of 4** (L4 → L2 → **L1** → L3). Build after L2 (no hard code dependency, but L1's frame contract should exist before L3's cache short-circuit). Spec: `docs/superpowers/specs/completed/2026-06-10-sse-progress-streaming-design.md`.
 
 **Goal:** Stream real pipeline-stage progress (Searching → Found N sources + titles → Writing → Verifying) so perceived time-to-first-feedback drops from ~2.8s (blank) to ~0.3s, while the verified advisory still appears only after the guard.
 
