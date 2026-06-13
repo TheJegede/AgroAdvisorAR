@@ -64,3 +64,41 @@ def build_samples(dump_records: list[dict], gold_map: dict) -> tuple[list, list]
             "suppressed": bool(r.get("suppressed")),
         })
     return samples, meta
+
+
+# Reference-based metric(s) whose rice numbers are provisional until Phase 2
+# (rice gold labels are contaminated — see spec §3).
+_PROVISIONAL_FOR_RICE = {"non_llm_context_recall"}
+
+
+def _mean(xs):
+    xs = [x for x in xs if x is not None]
+    return sum(xs) / len(xs) if xs else None
+
+
+def _summarize_group(rows: list[dict], metric_keys: list[str], crop=None) -> dict:
+    out = {"count": len(rows)}
+    for k in metric_keys:
+        out[k] = _mean([r.get(k) for r in rows])
+    if crop is not None:
+        for k in _PROVISIONAL_FOR_RICE:
+            out[f"{k}_provisional"] = (crop == "rice")
+    return out
+
+
+def aggregate_scores(rows: list[dict], metric_keys: list[str]) -> dict:
+    """Group per-row RAGAS scores into a report: overall, per-crop (namespace),
+    and per-suppressed-flag. Rice reference-based cells marked provisional."""
+    by_crop = defaultdict(list)
+    by_supp = defaultdict(list)
+    for r in rows:
+        by_crop[r.get("namespace")].append(r)
+        by_supp[bool(r.get("suppressed"))].append(r)
+
+    return {
+        "overall": _summarize_group(rows, metric_keys),
+        "by_crop": {c: _summarize_group(g, metric_keys, crop=c)
+                    for c, g in sorted(by_crop.items(), key=lambda kv: str(kv[0]))},
+        "by_suppressed": {s: _summarize_group(g, metric_keys)
+                          for s, g in by_supp.items()},
+    }

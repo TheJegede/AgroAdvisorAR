@@ -62,3 +62,64 @@ def test_build_samples_pairs_dump_with_gold_and_metadata():
     # metadata aligned by index for aggregation
     assert meta[0] == {"namespace": "rice", "suppressed": False}
     assert meta[1] == {"namespace": "soybeans", "suppressed": True}
+
+
+from ragas_eval import aggregate_scores
+
+METRICS = ["faithfulness", "answer_relevancy",
+           "llm_context_precision_without_reference", "non_llm_context_recall"]
+
+
+def test_aggregate_means_per_crop_and_flags_rice_recall_provisional():
+    rows = [
+        {"namespace": "rice", "suppressed": False,
+         "faithfulness": 1.0, "answer_relevancy": 0.8,
+         "llm_context_precision_without_reference": 0.5,
+         "non_llm_context_recall": 0.4},
+        {"namespace": "rice", "suppressed": True,
+         "faithfulness": 0.0, "answer_relevancy": 0.6,
+         "llm_context_precision_without_reference": 0.5,
+         "non_llm_context_recall": 0.6},
+        {"namespace": "soybeans", "suppressed": False,
+         "faithfulness": 0.5, "answer_relevancy": 1.0,
+         "llm_context_precision_without_reference": 1.0,
+         "non_llm_context_recall": 0.8},
+    ]
+    report = aggregate_scores(rows, METRICS)
+
+    # per-crop means
+    rice = report["by_crop"]["rice"]
+    assert rice["count"] == 2
+    assert rice["faithfulness"] == 0.5            # (1.0 + 0.0) / 2
+    assert rice["answer_relevancy"] == 0.7        # (0.8 + 0.6) / 2
+    soy = report["by_crop"]["soybeans"]
+    assert soy["faithfulness"] == 0.5
+
+    # overall
+    assert report["overall"]["count"] == 3
+
+    # by suppressed flag
+    assert report["by_suppressed"][False]["count"] == 2
+    assert report["by_suppressed"][True]["count"] == 1
+
+    # rice context_recall flagged provisional (contaminated gold); others not
+    assert report["by_crop"]["rice"]["non_llm_context_recall_provisional"] is True
+    assert report["by_crop"]["soybeans"]["non_llm_context_recall_provisional"] is False
+
+
+def test_aggregate_ignores_none_scores_in_means():
+    rows = [
+        {"namespace": "poultry", "suppressed": False,
+         "faithfulness": 1.0, "answer_relevancy": None,
+         "llm_context_precision_without_reference": None,
+         "non_llm_context_recall": None},
+        {"namespace": "poultry", "suppressed": False,
+         "faithfulness": 0.0, "answer_relevancy": 0.5,
+         "llm_context_precision_without_reference": None,
+         "non_llm_context_recall": None},
+    ]
+    report = aggregate_scores(rows, METRICS)
+    p = report["by_crop"]["poultry"]
+    assert p["faithfulness"] == 0.5      # (1.0 + 0.0)/2
+    assert p["answer_relevancy"] == 0.5  # only the one non-None value
+    assert p["llm_context_precision_without_reference"] is None  # all None
