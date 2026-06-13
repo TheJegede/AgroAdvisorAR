@@ -57,3 +57,16 @@ def judge_against_answer_key(query: str, answer: str, reference_answer: str):
     prompt = build_judge_prompt(query, answer, reference_answer)
     raw = _get_judge().invoke(prompt).content
     return _parse_judge_score(raw), raw
+
+
+def grade_with_answer_key(query, answer, answer_keys, judge=judge_against_answer_key):
+    """Grade `answer` for `query` against a VALIDATED answer key.
+
+    Returns the score, or None when there is no key for the query or the key is
+    not human-validated (circularity guard — unvalidated keys never score).
+    """
+    key = answer_keys.get(query)
+    if not key or not key.get("validated"):
+        return None
+    score, _ = judge(query, answer, key["reference_answer"])
+    return score

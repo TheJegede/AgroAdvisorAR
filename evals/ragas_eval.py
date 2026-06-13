@@ -45,20 +45,30 @@ def load_gold_reference_contexts(eval_set_path) -> dict:
 from ragas import SingleTurnSample
 
 
-def build_samples(dump_records: list[dict], gold_map: dict) -> tuple[list, list]:
+def build_samples(dump_records: list[dict], gold_map: dict,
+                  answer_key_map: dict | None = None) -> tuple[list, list]:
     """Build (SingleTurnSamples, metadata) aligned by index.
 
     metadata[i] = {"namespace", "suppressed"} for per-crop / per-suppressed
     aggregation, since RAGAS results don't carry our domain fields.
+
+    When answer_key_map is provided ({query -> reference_answer}), each sample's
+    `reference` is set from it so RAGAS AnswerCorrectness can score against the
+    human-validated reference answer (Phase 2 multi-reference correctness).
     """
     samples, meta = [], []
     for r in dump_records:
-        samples.append(SingleTurnSample(
+        kwargs = dict(
             user_input=r["query"],
             response=r.get("answer") or "",
             retrieved_contexts=list(r.get("contexts") or []),
             reference_contexts=list(gold_map.get(r["query"], [])),
-        ))
+        )
+        if answer_key_map is not None:
+            ref = answer_key_map.get(r["query"])
+            if ref:
+                kwargs["reference"] = ref
+        samples.append(SingleTurnSample(**kwargs))
         meta.append({
             "namespace": r.get("namespace"),
             "suppressed": bool(r.get("suppressed")),
@@ -160,8 +170,13 @@ def _build_llm_and_embeddings():
             LangchainEmbeddingsWrapper(MiniLMEmbeddings()))
 
 
-def run(dump_path, eval_set_path):
-    """Score a capture-enabled dump with the 4-metric matrix. Spends Gemini tokens."""
+def run(dump_path, eval_set_path, with_answer_key=False):
+    """Score a capture-enabled dump with the 4-metric matrix. Spends Gemini tokens.
+
+    with_answer_key=True adds RAGAS AnswerCorrectness scored against the VALIDATED
+    answer keys (Phase 2 multi-reference correctness); only validated keys are used
+    (circularity guard) and unkeyed items score NaN -> None for that metric.
+    """
     from ragas import EvaluationDataset, evaluate
     from ragas.metrics import (
         Faithfulness, ResponseRelevancy,
@@ -170,7 +185,16 @@ def run(dump_path, eval_set_path):
 
     dump = load_dump(dump_path)
     gold = load_gold_reference_contexts(eval_set_path)
-    samples, meta = build_samples(dump, gold)
+
+    answer_key_map = None
+    if with_answer_key:
+        sys.path.insert(0, str(Path(__file__).parent / "ground_truth"))
+        from answer_keys import load_answer_keys
+        answer_key_map = {q: r["reference_answer"]
+                          for q, r in load_answer_keys().items() if r.get("validated")}
+        print(f"--with-answer-key: {len(answer_key_map)} validated answer keys loaded")
+
+    samples, meta = build_samples(dump, gold, answer_key_map)
 
     metrics = [
         Faithfulness(),
@@ -178,6 +202,9 @@ def run(dump_path, eval_set_path):
         LLMContextPrecisionWithoutReference(),
         NonLLMContextRecall(),
     ]
+    if with_answer_key:
+        from ragas.metrics import AnswerCorrectness
+        metrics.append(AnswerCorrectness())
     metric_keys = [m.name for m in metrics]
 
     llm, embeddings = _build_llm_and_embeddings()
@@ -221,13 +248,16 @@ def main():
                     help="gold retrieval set (reference_contexts for context_recall)")
     ap.add_argument("--confirm-cost", action="store_true",
                     help="acknowledge token cost and run (otherwise prints estimate and exits)")
+    ap.add_argument("--with-answer-key", action="store_true",
+                    help="add AnswerCorrectness scored vs VALIDATED answer keys "
+                         "(Phase 2 multi-reference correctness; off = 4-metric matrix)")
     args = ap.parse_args()
 
     if not args.confirm_cost:
         print(_COST_NOTE)
         raise SystemExit(0)
 
-    run(args.dump, args.eval_set)
+    run(args.dump, args.eval_set, with_answer_key=args.with_answer_key)
 
 
 if __name__ == "__main__":

@@ -184,6 +184,8 @@ def faithfulness(advisory: dict, chunks: list[dict]) -> tuple[float, str]:
 JUDGE_CORR = score_item
 JUDGE_FAITH = faithfulness
 BRIDGE = False  # set by --bridge: translate each query ES->EN before the pipeline
+GRADE_MODE = "gold"  # set by --grade-mode: gold (single gold chunk) | answerkey (multi-reference)
+_ANSWER_KEYS = {}    # {query -> record}, loaded only under --grade-mode answerkey
 
 
 async def evaluate(item):
@@ -201,7 +203,17 @@ async def evaluate(item):
     )
     adv = advisory.model_dump() if hasattr(advisory, "model_dump") else advisory
     suppressed = _is_suppressed(adv)
-    corr, c_r = JUDGE_CORR(query, adv, item["chunk_text"])
+    # Multi-reference correctness: when --grade-mode answerkey and a VALIDATED key
+    # exists for this query, grade the advisory against the reference answer (any
+    # correct answer scores, regardless of which gold chunk it matched). Falls back
+    # to the single-gold judge when no validated key exists, so coverage never drops.
+    corr, c_r = None, ""
+    if GRADE_MODE == "answerkey" and _ANSWER_KEYS:
+        from answerkey_judge import grade_with_answer_key
+        corr = grade_with_answer_key(query, _summarize_advisory(adv), _ANSWER_KEYS)
+        c_r = "answerkey: graded vs validated reference" if corr is not None else ""
+    if corr is None:
+        corr, c_r = JUDGE_CORR(query, adv, item["chunk_text"])
     faith, f_r = JUDGE_FAITH(adv, chunks)
     return {
         "namespace": item["namespace"],
@@ -304,10 +316,19 @@ async def main():
                     help="B2 format-tax probe: unconstrained generation, then "
                          "parse (one Groq 8b repair call on failure). Requires "
                          "--provider deepinfra.")
+    ap.add_argument("--grade-mode", choices=["gold", "answerkey"], default="gold",
+                    help="gold=single gold-chunk judge (default); "
+                         "answerkey=multi-reference judge vs validated answer keys")
     args = ap.parse_args()
 
-    global JUDGE_CORR, JUDGE_FAITH, BRIDGE
+    global JUDGE_CORR, JUDGE_FAITH, BRIDGE, GRADE_MODE, _ANSWER_KEYS
     BRIDGE = args.bridge
+    GRADE_MODE = args.grade_mode
+    if args.grade_mode == "answerkey":
+        sys.path.insert(0, str(Path(__file__).parent / "ground_truth"))
+        from answer_keys import load_answer_keys
+        _ANSWER_KEYS = {q: r for q, r in load_answer_keys().items() if r.get("validated")}
+        print(f"grade-mode=answerkey: {len(_ANSWER_KEYS)} validated answer keys loaded")
     if args.provider == "groq":
         _force_groq_generation()
     elif args.provider == "deepinfra":
