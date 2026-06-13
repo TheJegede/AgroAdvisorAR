@@ -42,6 +42,20 @@ def _force_deepinfra_generation():
     config.LLM_PRIMARY = "deepinfra"
 
 
+def _apply_gen_model_override(model_id: str) -> str:
+    """Phase C: swap ONLY the DeepInfra generation model id.
+
+    Points config at the new id and clears rag's cached client so run_rag_query
+    rebuilds generation with it. Retrieval + judge are untouched → the corr/faith
+    delta is attributable to the model. Requires --provider deepinfra (DeepInfra
+    dodges Groq's free-tier rate limits during batched eval). Candidates also live
+    on Groq's free tier (gpt-oss-120b, qwen3-32b) so a winner productionizes at $0.
+    """
+    config.DEEPINFRA_MODEL = model_id
+    rag._deepinfra_llm = None  # drop cached 70B client → rebuild with model_id
+    return model_id
+
+
 def _is_suppressed(adv: dict) -> bool:
     """The NLI guard blanks low-confidence advisories (problem_summary='' +
     escalation warning)."""
@@ -339,6 +353,11 @@ async def main():
                     help="B2 format-tax probe: unconstrained generation, then "
                          "parse (one Groq 8b repair call on failure). Requires "
                          "--provider deepinfra.")
+    ap.add_argument("--gen-model", default=None,
+                    help="Phase C: swap ONLY generation to this DeepInfra model id "
+                         "(e.g. openai/gpt-oss-120b, Qwen/Qwen3-32B); same retrieval "
+                         "+ judge. Requires --provider deepinfra. Pair with "
+                         "--judge-provider gemini for an independent judge.")
     ap.add_argument("--grade-mode", choices=["gold", "answerkey", "both"], default="gold",
                     help="gold=single gold-chunk judge (default); "
                          "answerkey=multi-reference judge vs validated answer keys; "
@@ -410,6 +429,14 @@ async def main():
         import judge as _judge_mod
         _judge_mod._judge_llm = _gemini_judge
         _judge_mod._deepinfra_judge_llm = _gemini_judge
+    if args.gen_model:
+        if args.provider != "deepinfra":
+            raise SystemExit("--gen-model requires --provider deepinfra.")
+        if args.two_step:
+            raise SystemExit("--gen-model and --two-step are mutually exclusive.")
+        _apply_gen_model_override(args.gen_model)
+        print(f"gen-model override: generation -> {args.gen_model} "
+              f"(retrieval + judge unchanged)")
     if args.two_step:
         if args.provider != "deepinfra":
             raise SystemExit("--two-step currently supports --provider deepinfra only.")
