@@ -31,3 +31,43 @@ def test_build_synthesis_prompt_grounds_in_chunks_only():
     assert "90 lb N per acre" in prompt
     assert "how much nitrogen for rice" in prompt
     assert "only" in prompt.lower()  # "use ONLY the passages" grounding instruction
+
+
+from answer_keys import (parse_answer_key, write_answer_keys, load_answer_keys,
+                         validation_sample)
+
+
+def test_parse_answer_key_drops_insufficient_and_marks_unvalidated():
+    ok = parse_answer_key("q", "rice", ["a"], "Apply 90 lb N per acre, split.")
+    assert ok["reference_answer"].startswith("Apply 90")
+    assert ok["validated"] is False
+    assert ok["source_chunk_ids"] == ["a"]
+    assert parse_answer_key("q", "rice", ["a"], "INSUFFICIENT") is None
+    assert parse_answer_key("q", "rice", ["a"], "   ") is None
+
+
+def test_answer_keys_round_trip(tmp_path):
+    recs = [
+        {"query": "q1", "namespace": "rice", "reference_answer": "A",
+         "source_chunk_ids": ["a"], "validated": False},
+        {"query": "q2", "namespace": "soybeans", "reference_answer": "B",
+         "source_chunk_ids": ["b"], "validated": True},
+    ]
+    p = tmp_path / "ak.jsonl"
+    write_answer_keys(recs, p)
+    loaded = load_answer_keys(p)
+    assert set(loaded) == {"q1", "q2"}
+    assert loaded["q2"]["validated"] is True
+
+
+def test_validation_sample_is_stratified_and_deterministic():
+    recs = ([{"query": f"r{i}", "namespace": "rice", "reference_answer": "x",
+              "source_chunk_ids": [], "validated": False} for i in range(20)]
+            + [{"query": f"s{i}", "namespace": "soybeans", "reference_answer": "y",
+                "source_chunk_ids": [], "validated": False} for i in range(3)])
+    s1 = validation_sample(recs, per_namespace=5, seed=7)
+    s2 = validation_sample(recs, per_namespace=5, seed=7)
+    assert [r["query"] for r in s1] == [r["query"] for r in s2]  # deterministic
+    rice = [r for r in s1 if r["namespace"] == "rice"]
+    soy = [r for r in s1 if r["namespace"] == "soybeans"]
+    assert len(rice) == 5 and len(soy) == 3  # capped per namespace; soy has only 3
