@@ -11,6 +11,18 @@
 
 ---
 
+## ▶▶ RESUME HERE (next session) — BUILD RAGAS Phase 1
+- **Plan:** `docs/superpowers/plans/2026-06-12-ragas-diagnostic-eval-phase1.md` (TDD, 7 tasks, verified against ragas 0.4.3 API). **Spec:** `docs/superpowers/specs/2026-06-12-ragas-diagnostic-eval-design.md`.
+- **Branch:** `feat/ragas-diagnostic-eval` — plan+spec committed here, **NOT main**; branch also carries the `plans/` → `plans/completed/` reorg. Start the build session on this branch.
+- **How:** new session → `/build` pointed at the plan path above (see the plan's "Handoff" section for the airtight checklist).
+- **What:** standalone OFFLINE RAGAS scorer (`evals/ragas_eval.py`) completing the retrieval×generation matrix — `faithfulness`, `answer_relevancy`, `context_precision` (ref-free), `context_recall` (gold-chunk reference) — per crop, segmented by guard-`suppressed`. **DIAGNOSTIC instrument, NOT a lever** (won't raise the faith/corr ceilings). Eval-only — never touches `rag.py`/guard. `answer_correctness` deferred to Phase 2 (no gold answers exist).
+- **Cost:** Tasks 0–6 = **$0** (pure helpers, mocked judge, no live LLM). **Task 7 is the only token-spend** (gen re-run n=40 + ~hundreds of gemini-2.5-flash calls) → **HOLD for explicit Taiwo OK** even mid-build.
+- **Env note:** `ragas==0.4.3` + `rapidfuzz` already pip-installed locally this session (Task 0 front-run); coexists clean with langchain 1.2.x / langchain-core 1.4.x (no downgrade); benign `s3fs`/`fsspec` pin warning only.
+- **Phase 2 (plan later):** RAGAS synthetic ground-truth + human-validated subset → un-provisions rice `context_recall`, enables `answer_correctness`, **absorbs the "curate rice gold" loose end** (no separate hand-curation plan needed). This is also the novelty angle — circularity (LLM-grades-LLM) must be human-validated before any paper claim.
+- **Also this session:** B3 `source_quote` branch **DISCARDED** (DISPROVEN, fully recorded above + memory; reflog ~30-90d if ever needed); 3 completed plans moved into `plans/completed/`.
+
+---
+
 ## ▶ RICE DIAGNOSIS + B2 FORMAT-TAX PROBE + B3 DECISION — 2026-06-13
 > Plan `docs/superpowers/plans/2026-06-13-rice-diagnosis-b2-format-tax.md` executed. Findings doc: `docs/superpowers/2026-06-13-rice-diagnosis-findings.md`. Evals-only (no prod code) → push does NOT trigger HF deploy.
 

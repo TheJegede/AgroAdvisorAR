@@ -12,6 +12,20 @@
 
 ---
 
+## Handoff (read first — this plan is meant to be built in a FRESH session)
+
+Standard workflow: plans are developed in one session and built in another (`/build`), so this section carries everything a cold session needs. No prior conversation context is required.
+
+- **Branch:** `feat/ragas-diagnostic-eval`. The spec, this plan, and a `plans/` → `plans/completed/` reorg are committed here — **NOT on `main`**. `git switch feat/ragas-diagnostic-eval` before starting.
+- **Where the "why" lives:** the spec (link above) for design rationale + the 3 pending issues; `PROGRESS.md` top "RESUME HERE" block for one-screen orientation. Read the spec once before Task 1.
+- **What this is:** a DIAGNOSTIC instrument (completes the retrieval×generation metric matrix), **NOT a lever** — it will not raise the faithfulness (~≤67%) / correctness (~≤37%) ceilings, only explain them. Eval-only: nothing here imports `rag.py` or touches the production guard / `confidence_score`.
+- **Cost discipline (hard rule, user is cost-averse):** Tasks 0–6 cost **$0** — pure helpers, judge/embedder mocked, no live LLM. **Task 7 is the only token-spending step** (a gen re-run of n=40 + a few hundred gemini-2.5-flash calls). **STOP and get explicit user OK before running Task 7**, even mid-build.
+- **Env state (Task 0 front-run):** `ragas==0.4.3` + `rapidfuzz` were already `pip install`-ed into the local env during planning, and verified to coexist cleanly with `langchain 1.2.x` / `langchain-core 1.4.x` (no downgrade). `pip install -r evals/requirements-ragas.txt` is therefore idempotent locally. A benign `s3fs==2025.3.2` vs `fsspec` pin warning appears on install — ignore it (`s3fs` still imports, unused by evals).
+- **Run all commands from the repo root.** Tests: `python -m pytest evals/...`. The eval scripts add `backend/` to `sys.path` themselves.
+- **Definition of done for the build session:** Tasks 0–6 implemented, committed per-task, full pytest suite green ($0). Task 7 left pending the user's cost OK; once run, its results go in `PROGRESS.md`.
+
+---
+
 ## File Structure
 
 - **Create** `evals/requirements-ragas.txt` — eval-only dependency pin (ragas). NOT added to `backend/requirements.txt` (keeps the HF Docker image lean).
