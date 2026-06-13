@@ -40,3 +40,27 @@ def load_gold_reference_contexts(eval_set_path) -> dict:
             if text:
                 out[row["query"]].append(text)
     return dict(out)
+
+
+from ragas import SingleTurnSample
+
+
+def build_samples(dump_records: list[dict], gold_map: dict) -> tuple[list, list]:
+    """Build (SingleTurnSamples, metadata) aligned by index.
+
+    metadata[i] = {"namespace", "suppressed"} for per-crop / per-suppressed
+    aggregation, since RAGAS results don't carry our domain fields.
+    """
+    samples, meta = [], []
+    for r in dump_records:
+        samples.append(SingleTurnSample(
+            user_input=r["query"],
+            response=r.get("answer") or "",
+            retrieved_contexts=list(r.get("contexts") or []),
+            reference_contexts=list(gold_map.get(r["query"], [])),
+        ))
+        meta.append({
+            "namespace": r.get("namespace"),
+            "suppressed": bool(r.get("suppressed")),
+        })
+    return samples, meta
