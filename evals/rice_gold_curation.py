@@ -147,12 +147,17 @@ AUDIT_PATH = REPO_ROOT / "docs" / "superpowers" / "2026-06-12-rice-gold-curation
 
 # Wrong-crop items to DROP outright (substring-matched against the query so we
 # don't depend on exact wording). From the rice diagnosis EVAL_MISLABEL bucket:
-# a corn-nitrogen question and a soybean-variety question sitting in rice.
+# cross-crop (corn/soybean/wheat) questions mis-filed in the rice namespace.
+# Task 6 human review (Taiwo, 2026-06-13) confirmed all 7 should drop, not repoint.
 _DROP_SUBSTRINGS = [
-    "planting soybeans later than usual",   # soybean-variety question (#10)
+    "planting soybeans later than usual",        # soybean-variety question
+    "corn's been lookin",                        # corn-nitrogen question
+    "lower corn yields",                         # corn-potassium question
+    "my soybean yields are down",                # soybean-variety question
+    "different prices for my soybeans",          # soybean-grading question
+    "my wheat's been fallin' over in the rain",  # wheat-lodging question
+    "which wheat varieties are less likely to fall over",  # wheat-lodging question
 ]
-# NOTE: the corn-nitrogen mislabel (#9) is ambiguous by title alone; it is left
-# for the Task 6 human pass to confirm/drop. Do not guess it here.
 
 
 def _load_jsonl(path):

@@ -133,9 +133,9 @@
   },
   {
     "query": "My corn's been lookin' a mite yellow, what kind of fertilizer should I be puttin' down before plantin' to get it to grow right?",
-    "action": "repoint",
-    "new_chunk_id": "a794d83eb328ca68",
-    "reason": "keyword top-1: rice alternate wetting drying rice manag (score 3)"
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
   },
   {
     "query": "I'm having trouble with stink bugs in my rice field, what's the best way to get rid of them?",
@@ -205,9 +205,9 @@
   },
   {
     "query": "I'm gettin' different prices for my soybeans depending on how many are broken, but I'm wonderin' if it's really makin' a difference in what I get paid?",
-    "action": "repoint",
-    "new_chunk_id": "3821008569e968b8",
-    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 2)"
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
   },
   {
     "query": "My crops have been struggling with the dry weather, how's the water table doing and is it gonna cost me more to plant rice, soybeans, or corn this season?",
@@ -241,15 +241,15 @@
   },
   {
     "query": "My soybean yields are down, what's a good variety to plant to get more bushels per acre?",
-    "action": "repoint",
-    "new_chunk_id": "4e581fb4729683c3",
-    "reason": "keyword top-1: rice arkansas rice production handbook (score 5)"
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
   },
   {
     "query": "I'm seein' lower corn yields than usual, think it might be potassium. Will addin' some potassium fertilizer make a big difference?",
-    "action": "repoint",
-    "new_chunk_id": "86845aedec5e801a",
-    "reason": "keyword top-1: rice potassium requirements and fertiliz (score 5)"
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
   },
   {
     "query": "I got a rice field with weeds takin' over, what's the best way to get rid of 'em about a month after plantin'?",
@@ -265,9 +265,9 @@
   },
   {
     "query": "My wheat's been fallin' over in the rain, what can I do to find a variety that'll stay upright?",
-    "action": "repoint",
-    "new_chunk_id": "08b32034b1236f77",
-    "reason": "keyword top-1: rice 2020 arkansas furrow irrigated rice (score 2)"
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
   },
   {
     "query": "I'm having trouble with stink bugs in my rice field, how many should I expect to see before I need to spray something to control them?",
@@ -361,9 +361,9 @@
   },
   {
     "query": "Which wheat varieties are less likely to fall over in the wind and still give me a good crop yield?",
-    "action": "repoint",
-    "new_chunk_id": "9dd82d71e7d0deff",
-    "reason": "keyword top-1: rice arkansas rice production handbook (score 3)"
+    "action": "drop",
+    "new_chunk_id": null,
+    "reason": "wrong-crop (soybean) in rice namespace"
   },
   {
     "query": "How do I figure out if my rice crop is good enough to sell, and what kind of numbers should I be lookin' for when it comes to the quality of the grain?",
